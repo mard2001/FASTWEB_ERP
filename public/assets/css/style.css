@@ -1,0 +1,191 @@
+.modal-body label {
+    font-size: 14px;
+}
+
+table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.5);
+    cursor: pointer;
+}
+
+
+/* Exclude specific columns (e.g., column 3) from hover effect */
+table tbody tr:hover td.nhover {
+    background-color: white;
+    /* No background change for these columns */
+}
+
+
+
+.rowSelected {
+    background-color: rgba(0, 123, 255, 0.5) !important;
+}
+
+.loader {
+    width: 20px;
+    height: 20px;
+    border: 5px solid #5bc0de;
+    border-bottom-color: #f7f7f7;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+.w-85 {
+    width: 85%;
+}
+
+.loaderRotate {
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: inline-block;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f2f2f2;
+    margin: 0;
+    padding: 0;
+}
+
+/* .container {
+    width: 80%;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+} */
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+.upload-container {
+    display: flex;
+    align-items: center;
+}
+
+.file-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+}
+
+.upload-btn {
+    padding: 10px 20px;
+    margin-left: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.error {
+    color: red;
+}
+
+.importCsv {
+    width: 100%;
+    height: 400px;
+    background-color: #282C34;
+    color: #ffffff;
+    font-family: monospace;
+    font-size: 13px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: none;
+}
+
+.upload-status {
+    margin-top: 20px;
+    padding: 10px;
+    /* background-color: #d4edda; */
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    max-height: auto;
+    /* max-height: 550px; */
+    /* overflow: auto; */
+}
+
+/* #fileListTable {
+    height: 500px;
+    overflow: auto;
+} */
+
+/* 
+#fileListDiv table {
+    font-size: 14px;
+} */
+
+/* #fileListDiv tr {
+    display: flex;
+    align-items: center;
+} */
+
+#fileListTable img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.imgSizeContainer {
+    height: 50px;
+    width: 50px;
+}
+
+@media (min-width: 767px) {
+    .main-content {
+        font-size: 10px;
+    }
+}
+
+.secBtns .selected {
+    background-color: rgba(23, 162, 184, 0.10);
+    border-bottom: 2px solid #0275d8;
+}
+
+.secBtns button {
+    border-bottom: 2px solid transparent;
+    border-top: 1px solid transparent;
+    border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
+}
+
+.secBtns button:hover {
+    background-color: rgba(23, 162, 184, 0.10);
+    border-bottom: 2px solid #0275d8;
+    border-top: 0.5px solid #0275d8;
+    border-left: 0.5px solid #0275d8;
+    border-right: 0.5px solid #0275d8;
+}
+
+.autocompleteHover:hover {
+    background-color: #3B71CA;
+    cursor: pointer;
+}
+
+.ui-autocomplete {
+    z-index: 9999 !important;
+}
+
+.fs15 * {
+    font-size: 15px;
+}

@@ -1,0 +1,79 @@
+.mainInnerDiv{
+    background-color: #FDFDFF !important;
+    padding: 20px 5px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 10px 10px 10px #d3d5de;
+}
+
+.pageHeaderOuterDiv{
+    background-color: #FDFDFF !important;
+    box-shadow: 10px 10px 10px #d3d5de;
+    color: #636363;
+    padding: 10px 0;
+    margin: 10px auto;
+    border-radius: 5px;
+}
+
+.headerUserDiv{
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background-color: transparent;
+    color: #636363;
+}
+
+.headerUserDiv:hover{
+    border: 1px solid #636363;
+    
+}
+
+.statusBadge1{
+    display: inline-block;
+    padding: 0.35em 0.85em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+    color: #22bb33;
+    border: 1px solid #22bb33;
+    background-color: #caf8d2;
+}
+
+.statusBadge2{
+    display: inline-block;
+    padding: 0.35em 0.85em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+    color: #df3639;
+    border: 1px solid #df3639;
+    background-color: #efcdc4;
+}
+
+.statusBadge3{
+    display: inline-block;
+    padding: 0.35em 0.85em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+    color: #076aff;
+    border: 1px solid #076aff;
+    background-color: #b3dbf2;
+}
+
+.userIcon{
+    background-color: #eff1f8;
+    padding: 8px;
+    border-radius: 50%;
+}
