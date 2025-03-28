@@ -6,7 +6,7 @@
         <div class="sidebar-logo">
             <img src="{{ asset('assets/resources/TempLogoIcon.png') }}" alt="FASET ERP" style="height: 50px; width: 50px;">
 
-            <a href="#">FAST ERP</a>
+            <a href="#">FAST ERP </a>
         </div>
     </div>
     <ul class="sidebar-nav">
