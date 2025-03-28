@@ -55,7 +55,7 @@ class SOMaster extends Model
 
     protected $attributes = [
         'DocumentType' => 'B',
-        'OrderStatus' => '2',
+        'OrderStatus' => '1',
         'AltShipAddrFlag' => 'Y',
         'OrderType' => 'N',
         'TaxExemptFlag' => 0,

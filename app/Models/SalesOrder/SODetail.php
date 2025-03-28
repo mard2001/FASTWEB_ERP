@@ -56,6 +56,7 @@ class SODetail extends Model
         'MMpsGrossReqd',
         'MSupplementaryUn',
         'MUnitQuantity',
+        'QTYinPCS'
     ];
     
     protected $attributes = [

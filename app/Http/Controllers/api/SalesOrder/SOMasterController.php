@@ -126,19 +126,13 @@ class SOMasterController extends Controller
     public function show(string $salesorderID)
     {
         try {
-            $ID = (string) $salesorderID; 
-            // $ID = mb_convert_encoding($salesorderID, 'UTF-8', 'auto');
-            // $data = SOMaster::select('SalesOrder', 'NextDetailLine', 'OrderStatus', 'DocumentType', 'Customer', 'CustomerName', 'Salesperson', 'CustomerPoNumber', 'OrderDate', 'EntrySystemDate', 'ReqShipDate', 'DateLastDocPrt', 'InvoiceCount', 'Branch', 'Warehouse', 'ShipAddress1', 'ShipToGpsLat', 'ShipToGpsLong')
-            //                     ->with('sodetails')
-            //                     ->where('SalesOrder', $salesorderID)
-            //                     ->get();
-
             $data = SOMaster::select('SalesOrder', 'NextDetailLine', 'OrderStatus', 'DocumentType', 'Customer', 'CustomerName', 'Salesperson', 'CustomerPoNumber', 'OrderDate', 'EntrySystemDate', 'ReqShipDate', 'DateLastDocPrt', 'InvoiceCount', 'Branch', 'Warehouse', 'ShipAddress1', 'ShipToGpsLat', 'ShipToGpsLong')
                 ->where('SalesOrder', $salesorderID)
                 ->first();
-            $data->details = SODetail::select('SalesOrder', 'SalesOrderLine', 'MStockCode', 'MStockDes', 'MWarehouse', 'MOrderQty', 'MOrderUom', 'MStockQtyToShp', 'MStockingUom', 'MconvFactOrdUm', 'MPrice', 'MPriceUom', 'MProductClass', 'MStockUnitMass', 'MStockUnitVol', 'MPriceCode', 'MConvFactAlloc', 'MConvFactUnitQ', 'MAltUomUnitQ')
+            $details = SODetail::select('SalesOrder', 'SalesOrderLine', 'MStockCode', 'MStockDes', 'MWarehouse', 'MOrderQty', 'MOrderUom', 'MStockQtyToShp', 'MStockingUom', 'MconvFactOrdUm', 'MPrice', 'MPriceUom', 'MProductClass', 'MStockUnitMass', 'MStockUnitVol', 'MPriceCode', 'MConvFactAlloc', 'MConvFactUnitQ', 'MAltUomUnitQ', 'MUnitCost', 'QTYinPCS')
                 ->where('SalesOrder', $salesorderID)
                 ->get();
+            $data->details = $details;
 
             if ($data) {
 
@@ -195,5 +189,152 @@ class SOMasterController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    public function SOStatus_Available(Request $request)
+    {   
+        try{
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                'OrderStatus' => '4',
+                'LastOperator' => $request->lastOperator
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Order Set Status to In Warehouse',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function SOStatus_NotAvailable(Request $request)
+    {   
+        try{
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                'OrderStatus' => '2',
+                'LastOperator' => $request->lastOperator
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Order Set Status to Not Available',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function SOStatus_InAvailable(Request $request)
+    {   
+        try{
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                'OrderStatus' => '3',
+                'LastOperator' => $request->lastOperator
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Order Set Status to Release Back Order',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    
+    public function SOStatus_InSuspense(Request $request)
+    {   
+        try{
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                'OrderStatus' => 'S',
+                'LastOperator' => $request->lastOperator
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Order Set Status to In Suspense',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function SOStatus_ToInvoice(Request $request)
+    {   
+        try{
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                'OrderStatus' => '8',
+                'LastOperator' => $request->lastOperator
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Order Set Status to Invoice',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function SOStatus_Complete(Request $request)
+    {   
+        try{
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                'OrderStatus' => '9',
+                'LastOperator' => $request->lastOperator
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Order Set Status to Completed',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function SOStatus_Delete(Request $request)
+    {   
+        try{
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                'OrderStatus' => '\\',
+                'LastOperator' => $request->lastOperator
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Order Set Status to Completed',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

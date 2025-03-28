@@ -58,6 +58,9 @@ const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto
                             </div>`;
 
 $(document).ready(async function () {
+    const user = localStorage.getItem('user');
+    const userObject = JSON.parse(user);
+
     await datatables.loadSOData();
     await initVS.liteDataVS();
     await initVS.bigDataVS();
@@ -65,6 +68,7 @@ $(document).ready(async function () {
     SOItemsModal.setValidator();
     // datatables.initDetailsDatatable([]);
     setDate();
+    
     
 
     $("#soTable").on("click", "tbody tr", async function () {
@@ -83,8 +87,9 @@ $(document).ready(async function () {
             Swal.close();
             if (response.success == 1) {
                 // console.log(response);
-                SOModal.viewMode(response.data);
                 selectedMain = response.data;
+                SOModal.buttonsView();
+                SOModal.viewMode(response.data);
                 // originalSelected = JSON.parse(JSON.stringify(response.data));
 
             } else {
@@ -128,13 +133,38 @@ $(document).ready(async function () {
         $('#editSOBtn').hide();
         itemTmpSave = [];
         selectedMain = null;
-
         datatables.initSOItemsDatatable(null);
         $('#confirmSO').hide();
         $('#addItems').show();
         // ItemsTH.column(6).visible(true);
+        SOModal.buttonsView();
         SOModal.show();
     });
+    
+    $('#availableSO').on('click', function () {
+        SOStatus.ChangeSOStatus('in-warehouse', selectedMain.SalesOrder, userObject.name);
+    });
+
+    $('#unavailableSO').on('click', function () {
+        SOStatus.ChangeSOStatus('open-back-order', selectedMain.SalesOrder, userObject.name);
+    });
+
+    $('#restockedSO').on('click', function () {
+        SOStatus.ChangeSOStatus('release-back-order', selectedMain.SalesOrder, userObject.name);
+    });
+
+    $('#suspenseSO').on('click', function () {
+        SOStatus.ChangeSOStatus('in-suspense', selectedMain.SalesOrder, userObject.name);
+    });
+
+    $('#invoiceSO').on('click', function () {
+        SOStatus.ChangeSOStatus('to-invoice', selectedMain.SalesOrder, userObject.name);
+    });
+
+    $('#completeSO').on('click', function () {
+        SOStatus.ChangeSOStatus('complete', selectedMain.SalesOrder,userObject.name);
+    });
+
 
     $("#saveSOBtn").on("click", function () {
         if (SOModal.isValid()) {
@@ -332,7 +362,29 @@ const datatables = {
                             },
                         },
                         { data: 'SalesOrder',  title: 'Sales Order' },
-                        { data: 'OrderStatus',  title: 'Status' },
+                        {
+                            data: 'OrderStatus',
+                            title: 'Status',
+                            createdCell: function(td, cellData) {
+                                let color = '';
+                                let backgroundColor = '';
+                                let text = '';
+                        
+                                switch (cellData) {
+                                    case '1': color = '#f39c12'; backgroundColor = '#fde3a7'; text = 'Open Order'; break;
+                                    case '2': color = '#f39c12'; backgroundColor = '#fde3a7'; text = 'Open Back Order'; break;
+                                    case '3': color = '#f1c40f'; backgroundColor = '#fdf5c7'; text = 'Released Back Order'; break;
+                                    case '4': color = '#3498db'; backgroundColor = '#d6eaf8'; text = 'In Warehouse'; break;
+                                    case '8': color = '#9b59b6'; backgroundColor = '#e8daef'; text = 'To Invoice'; break;
+                                    case 'F': color = '#1abc9c'; backgroundColor = '#d1f2eb'; text = 'Forward Order'; break;
+                                    case 'S': color = '#e74c3c'; backgroundColor = '#fadbd8'; text = 'In Suspense'; break;
+                                    case '9': color = '#28a745'; backgroundColor = '#d4edda'; text = 'Complete'; break;
+                                    default: color = '#808080'; backgroundColor = '#f0f0f0'; text = 'Unknown';
+                                }
+                        
+                                $(td).html(`<span class="statusbadge" style="color: ${color}; background-color: ${backgroundColor};" border: 1px solid ${color}">${text}</span>`);
+                            }
+                        },
                         { data: 'DocumentType',  title: 'Document Type' },
                         { data: 'Customer',  title: 'Customer ID' },
                         { data: 'CustomerName',  title: 'Customer Name' },
@@ -768,7 +820,7 @@ const initVS = {
                         const isAlreadyExist = itemTmpSave.find(
                             (item) => item.MStockCode == stockCode
                         );
-      
+                        console.log(isAlreadyExist);
                         if (isAlreadyExist) {
                             selectedItem = isAlreadyExist;
                             SOItemsModal.itemEditMode(uoms, isAlreadyExist);
@@ -846,7 +898,7 @@ const SOModal = {
     },
     viewMode: async (SOData) => {
         SOModal.fill(SOData);
-        console.log(SOData);
+        itemTmpSave = SOData.details;
         // datatables.initSOItemsDatatable(SOData.details);
         $('#rePrintPage').show();
         SOModal.show();
@@ -860,10 +912,11 @@ const SOModal = {
         $('#ShipAddress1').html(SODetails.ShipAddress1);
         $('#SalesOrder').html(SODetails.SalesOrder);
         $('#OrderStatus').html(SODetails.OrderStatus);
-        $('#OrderDate').html(SODetails.OrderDate);
-        $('#ReqShipDate').html(SODetails.ReqShipDate);
+        $('#OrderDate').val(SODetails.OrderDate.substring(0, 10)); 
+        $('#ReqShipDate').val(SODetails.ReqShipDate.substring(0, 10)); 
 
-        // initSOItemsDatatable.clear().rows.add(SODetails.details).draw();
+        // detailsDatatable.clear().rows.add(SODetails.details).draw();
+        datatables.initSOItemsDatatable(SODetails.details);
     },
     SOSave: async () => {
         const user = localStorage.getItem('user');
@@ -876,7 +929,6 @@ const SOModal = {
     
         SOData.LastOperator = userObject.name;
         SOData.CustomerInfo = selectedShippedTo;
-        
         await ajax( "api/sales-order/header", "POST", JSON.stringify({ data: SOData }),
             (response) => {
                 if (response.success) {
@@ -929,6 +981,36 @@ const SOModal = {
     
         return data;
     },
+    buttonsView: () => {
+        if(!selectedMain){
+            $('.statBtns').hide();
+            $('#saveSOBtn').show();
+            $('#editSOBtn').hide();
+            $('#cancelEditSOBtn').hide();
+            $('#deleteSOBtn').hide();
+            $('#rePrintPage').hide();
+            $('#statBtns').hide();
+        } else{
+            $('.statBtns').hide();
+            $('#saveSOBtn').hide();
+            $('#editSOBtn').hide();
+            $('#cancelEditSOBtn').hide();
+            $('#deleteSOBtn').hide();
+            $('#rePrintPage').hide();
+            $('#statBtns').hide();
+            if(selectedMain.OrderStatus == "1"){
+                $('#availableSO').show();
+                $('#unavailableSO').show();
+            } else if(selectedMain.OrderStatus == "2"){
+                $('#restockedSO').show();
+            } else if(selectedMain.OrderStatus == "4"){
+                $('#suspenseSO').show();
+                $('#invoiceSO').show();
+            } else if(selectedMain.OrderStatus == "8"){
+                $('#completeSO').show();
+            }
+        }
+    }
 }
 
 const SOItemsModal = {
@@ -1061,13 +1143,15 @@ const SOItemsModal = {
         return totalInPieces;
     },
     itemEditMode: (uoms, isAlreadyExist) => {
-        // console.log(isAlreadyExist);
+        console.log(isAlreadyExist);
         
         if (!isAlreadyExist.UomAndQuantity) {
-          isAlreadyExist.UomAndQuantity = SOItemsModal.reverseItemCalculateUOM(
-            uoms,
-            isAlreadyExist.TotalQtyInPCS
-          );
+            console.log(isAlreadyExist.QTYinPCS);
+            isAlreadyExist.UomAndQuantity = SOItemsModal.reverseItemCalculateUOM(
+                uoms,
+                isAlreadyExist.QTYinPCS
+            );
+          console.log(isAlreadyExist.UomAndQuantity);
         }
     
         Object.entries(isAlreadyExist.UomAndQuantity).forEach(([key, value]) => {
@@ -1079,7 +1163,7 @@ const SOItemsModal = {
     reverseItemCalculateUOM: (uoms, totalInPieces) => {
         console.log("totalINPIECS: "+ totalInPieces);
         var moduloResult = 0;
-        totalInPieces = selectedItem.MOrderQty;
+        totalInPieces = selectedItem.QTYinPCS;
         let UomAndQuantity = {};
     
         const ConvFactAltUom = productConFact.ConvFactAltUom;
@@ -1115,39 +1199,36 @@ const SOItemsModal = {
             MStockCode: $("#StockCode").val().trim(),
             MStockDes: $("#Decription").val(),
             MOrderUom: getUOM,
-            MStockingUom: getUOM,
-            MPriceUom: getUOM,
             UomAndQuantity: getUOM,
             MOrderQty: $("#Quantity").val(),
             MUnitCost: parseFloat($("#PricePerUnit").val()) || 0,  
             MPrice: parseMoney($("#TotalPrice").val()),
             MProductClass: 'GROC',
-            MStockUnitMass: '',
-            MStockUnitVol: '',
+            MStockUnitMass: 0,
+            MStockUnitVol: 0,
             MPriceCode: selectedVendor.PriceCode,
         };
         
     },
     itemCalculateUOM: (getItem) => {
-        const uomsAndQty = getItem.MOrderUom;
+        const uomsAndQty = getItem.UomAndQuantity;
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
     
         const totalInPieces = SOItemsModal.getTotalQuantity(uomsAndQty);
-    
         if (uomsAndQty.CS) {
             getItem.MOrderUom = "CS";
-            getItem.MOrderQty = parseFloat((totalInPieces / ConvFactAltUom).toFixed(2));
+            getItem.MOrderQty = (totalInPieces / ConvFactAltUom).toFixed(2);
         } else if (uomsAndQty.IB) {
             getItem.MOrderUom = "IB";
-            getItem.MOrderQty = parseFlaot((
-                totalInPieces /
-                (ConvFactAltUom / ConvFactOthUom)
-            ).toFixed(2));
+            getItem.MOrderQty = ( totalInPieces / (ConvFactAltUom / ConvFactOthUom) ).toFixed(2);
         } else if (uomsAndQty.PC) {
             getItem.MOrderUom = "PC";
-            getItem.MOrderQty = parseFloat(totalInPieces);
+            getItem.MOrderQty = totalInPieces;
         }
+        getItem.MPriceUom = getItem.MOrderUom;
+        getItem.MStockingUom = getItem.MOrderUom;
+        getItem.QTYinPCS = totalInPieces;
         return getItem;
     },
     itemTmpDelete: (skuCode) => {
@@ -1517,3 +1598,37 @@ function setDate(){
         }
     });
 }
+
+
+const SOStatus = {
+    ChangeSOStatus: async (status, salesOrder, lastOperator) => {
+        await ajax("api/sales-order/orderstatus/"+status, "POST", JSON.stringify({ salesOrder, lastOperator }),
+            (response) => {
+            // Success callback
+            if (response.success) {
+    
+                Swal.fire({
+                    title: "Success!",
+                    text: response.message,
+                    icon: "success",
+                });
+
+                SOModal.hide();
+                datatables.loadSOData();
+            }
+            },
+            (xhr, status, error) => {
+            // Error callback
+    
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                Swal.fire({
+                title: "Opppps..",
+                text: xhr.responseJSON.message,
+                icon: "error",
+                });
+            }
+            }
+        );
+    },
+}
+  

@@ -17,7 +17,13 @@
                     <button type="button" class="btn btn-sm btn-primary" id="rePrintPage" style="display: none;">Print Sheet</button>
                 </div>
                 <div>
-                    <button type="button" class="btn btn-sm btn-primary text-white" id="confirmSO">Confrim Order</button>
+                    <button type="button" class="btn btn-sm btn-primary text-white statBtns" id="availableSO">Available</button>
+                    <button type="button" class="btn btn-sm btn-secondary text-white statBtns" id="unavailableSO">Unavailable</button>
+                    <button type="button" class="btn btn-sm btn-primary text-white statBtns" id="restockedSO">Restocked</button>
+                    <button type="button" class="btn btn-sm btn-danger text-white statBtns" id="suspenseSO">Suspense Order</button>
+                    <button type="button" class="btn btn-sm btn-info text-white statBtns" id="invoiceSO">Proceed to Invoice</button>
+                    <button type="button" class="btn btn-sm btn-success text-white statBtns" id="completeSO">Completed Order</button>
+
                     <button type="button" class="btn btn-sm btn-primary text-white" id="saveSOBtn">Save Details</button>
                     <button type="button" class="btn btn-sm btn-info text-white" id="editSOBtn">Edit Order</button>
                     <button type="button" class="btn btn-sm btn-danger text-white" id="cancelEditSOBtn">Cancel Changes</button>

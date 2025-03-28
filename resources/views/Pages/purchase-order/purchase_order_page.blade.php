@@ -451,8 +451,7 @@
                                         <label for="CSQuantity">CS Quantity</label>
                                         <div class="input-group">
                                             <span class="input-group-text w-25 rounded-0">CS</span>
-                                            <input disabled type="number" id="CSQuantity" name="CSQuantity" class="form-control bg-white rounded-0"
-                                                required>
+                                            <input disabled type="number" id="CSQuantity" name="CSQuantity" class="form-control bg-white rounded-0" min="0" onkeypress="return /[0-9]/.test(event.key)">
                                             <div class="w-25 d-flex justify-content-evenly align-items-center">
                                                 <i class="text-danger fa-solid fa-minus"></i>
                                                 <i class="text-primary fa-solid fa-plus"></i>
@@ -467,8 +466,7 @@
                                         <label for="IBQuantity">IB Quantity</label>
                                         <div class="input-group">
                                             <span class="input-group-text w-25 rounded-0">IB</span>
-                                            <input disabled type="number" id="IBQuantity" name="IBQuantity" class="form-control bg-white rounded-0"
-                                                required>
+                                            <input disabled type="number" id="IBQuantity" name="IBQuantity" class="form-control bg-white rounded-0" min="0" onkeypress="return /[0-9]/.test(event.key)">
                                             <div class="w-25 d-flex justify-content-evenly align-items-center">
                                                 <i class="text-danger fa-solid fa-minus"></i>
                                                 <i class="text-primary fa-solid fa-plus"></i>
@@ -484,8 +482,7 @@
                                         <label for="PCQuantity">PC Quantity</label>
                                         <div class="input-group">
                                             <span class="input-group-text w-25 rounded-0">PC</span>
-                                            <input disabled type="number" id="PCQuantity" name="PCQuantity" class="form-control bg-white rounded-0"
-                                                required>
+                                            <input disabled type="number" id="PCQuantity" name="PCQuantity" class="form-control bg-white rounded-0" min="0" onkeypress="return /[0-9]/.test(event.key)">
                                             <div class="w-25 d-flex justify-content-evenly align-items-center">
                                                 <i class="text-danger fa-solid fa-minus"></i>
                                                 <i class="text-primary fa-solid fa-plus"></i>

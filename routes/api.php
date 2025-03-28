@@ -115,6 +115,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('sales-order')->group(function () {
         // Route::post('/v2/so/upload', [ProdController::class, 'storeBulk']);
         Route::apiResource('/header', SOMasterController::class);
+        Route::post('/orderstatus/delete', [SOMasterController::class, 'SOStatus_Delete']);
+        Route::post('/orderstatus/open-back-order', [SOMasterController::class, 'SOStatus_NotAvailable']);
+        Route::post('/orderstatus/release-back-order', [SOMasterController::class, 'SOStatus_InAvailable']);
+        Route::post('/orderstatus/in-warehouse', [SOMasterController::class, 'SOStatus_Available']);
+        Route::post('/orderstatus/to-invoice', [SOMasterController::class, 'SOStatus_ToInvoice']);
+        Route::post('/orderstatus/in-suspense', [SOMasterController::class, 'SOStatus_InSuspense']);
+        Route::post('/orderstatus/complete', [SOMasterController::class, 'SOStatus_Complete']);
         Route::apiResource('/detail', SODetailController::class);
     });
     
