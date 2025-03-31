@@ -113,7 +113,32 @@
 
 <x-so_modal>
     <x-slot:form_fields>
-        <div class="row g-4">
+        <div class="row mt-3">
+            <div class="col-6 text-center text-white mt-2">
+                <label for="OrderStatus" class="w-100 border-0 bg-primary py-1">SALES ORDER STATUS</label>
+                <input type="text" disabled id="OrderStatus" name="OrderStatus" class="form-control form-control-sm bg-white py-2 rounded-0" required>
+            </div>
+            <div class="col-6 text-center text-white mt-2">
+                <label for="SalesOrder" class="w-100 border-0 bg-primary py-1">SALES ORDER</label>
+                <input type="text" disabled id="SalesOrder" name="SalesOrder" class="form-control form-control-sm bg-white py-2 rounded-0" required>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col text-center text-white mt-2">
+                <label for="CustomerPONumber" class="w-100 border-0 bg-primary py-1">SALES ORDER REFERENCE</label>
+                <input type="text" disabled id="CustomerPONumber" name="CustomerPONumber" class="form-control form-control-sm bg-white py-2 rounded-0" required>
+            </div>
+            <div class="col text-center text-white mt-2">
+                <label for="Branch" class="w-100 border-0 bg-primary py-1">BRANCH</label>
+                <input type="text" disabled id="Branch" name="Branch" class="form-control form-control-sm bg-white py-2 rounded-0" required>
+            </div>
+            <div class="col text-center text-white mt-2">
+                <label for="Warehouse" class="w-100 border-0 bg-primary py-1">WAREHOUSE</label>
+                <input type="text" disabled id="Warehouse" name="Warehouse" class="form-control form-control-sm bg-white py-2 rounded-0" required>
+            </div>
+        </div>
+
+        <div class="row mt-2">
             <div class="col-6" style="display: none">
                 <div class="mt-2 fs12">
                     <div class="my-sm-2 ResMWidth">
@@ -137,20 +162,8 @@
                         <label id="vendorPhone-error" class="error d-block" for="vendorPhone"></label>
                     </div>
                 </div>
-                
             </div>
-            <div class="col-4">
-                <div class="mt-2 fs12">
-                    <div class="col pe-0 text-center text-white">
-                        <label for="OrderDate" class="w-100 border-0 bg-primary py-1">ORDER DATE</label>
-                        <input type="date" disabled id="OrderDate" name="OrderDate" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-                    </div>
-                    <div class="col pe-0 text-center text-white mt-5">
-                        <label for="ReqShipDate" class="w-100 border-0 bg-primary py-1">REQUEST SHIP DATE</label>
-                        <input type="date" disabled id="ReqShipDate" name="ReqShipDate" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-                    </div>
-                </div>
-            </div>
+            
             <div class="col-8">
                 <div class=" mt-2 fs12">
                     <div class="my-sm-2 ResMWidth">
@@ -180,9 +193,22 @@
                     </div>
                 </div>
             </div>
+
+            <div class="col-4">
+                <div class="mt-2 fs12">
+                    <div class="col pe-0 text-center text-white">
+                        <label for="OrderDate" class="w-100 border-0 bg-primary py-1">ORDER DATE</label>
+                        <input type="date" disabled id="OrderDate" name="OrderDate" class="form-control form-control-sm bg-white py-2 rounded-0" required>
+                    </div>
+                    <div class="col pe-0 text-center text-white mt-5">
+                        <label for="ReqShipDate" class="w-100 border-0 bg-primary py-1">REQUEST SHIP DATE</label>
+                        <input type="date" disabled id="ReqShipDate" name="ReqShipDate" class="form-control form-control-sm bg-white py-2 rounded-0" required>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="row d-flex flex-wrap mt-1 fs12">
+        {{-- <div class="row d-flex flex-wrap mt-1 fs12">
             <div class="col pe-0 text-center text-white">
                 <label for="requisitioner" class="w-100 border-0 bg-primary py-1">REQUISITIONER</label>
                 <input type="text" disabled id="requisitioner" name="requisitioner"
@@ -210,17 +236,12 @@
                 <input type="text" disabled id="shippingTerms" name="shippingTerms"
                     class="form-control form-control-sm bg-white py-2" required>
             </div>
-        </div>
+        </div> --}}
 
         <div class="row mt-2">
             <div class="d-flex align-items-center px-2 fs12">
-
-                <div>
-                    <button type="button" class="btn btn-primary btn-sm text-white mx-1" id="addItems">Add Item</button>
-                    <!-- <button type="button" class="btn btn-danger btn-sm text-white mx-1" id="itemDelete" disabled>Delete Item</button> -->
-                </div>
+                <button type="button" class="btn btn-primary btn-sm text-white mx-1" id="addItems">Add Item</button>
             </div>
-
             <x-sub_table id="itemTables" class="fs12 table-bordered">
                 <x-slot:td>
                     <td class="col">StockCode</td>
@@ -269,60 +290,6 @@
         </div>
     </x-slot:form_fields>
 
-    {{-- <x-slot:form_fields>
-        <div class="row g-4">
-            <div class="col">
-                <table class="soTableHeader" style="font-size: 14px">
-                    <tbody>
-                        <tr>
-                            <td style="white-space: nowrap;">Branch:</td>
-                            <th class="px-2"><span id="Branch" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Warehouse:</td>
-                            <th class="px-2"><span id="Warehouse" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Customer ID:</td>
-                            <th class="px-2"><span id="Customer" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Customer Name:</td>
-                            <th class="px-2"><span id="CustomerName" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Address:</td>
-                            <th class="px-2"><span id="ShipAddress1" style="font-weight: 550"></span></th>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="col ">
-                <table class="soTableHeader" style="font-size: 14px">
-                    <tbody>
-                        <tr>
-                            <td style="white-space: nowrap;">Sales Order:</td>
-                            <th class="px-2"><span id="SalesOrder" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Order Status:</td>
-                            <th class="px-2"><span id="OrderStatus" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Order Date:</td>
-                            <th class="px-2"><span id="OrderDate" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Req. Ship Date:</td>
-                            <th class="px-2"><span id="ReqShipDate" style="font-weight: 550"></span></th>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <hr>
-        <table class="table" style="font-size: 12px; width: 100%;" id="SODetails"></table>
-    </x-slot:form_fields> --}}
 </x-so_modal>
 
 <div class="modal fade modal modal-lg text-dark" id="itemModal">

@@ -91,6 +91,8 @@ class SOMasterController extends Controller
                     'Customer'=> $data['CustomerInfo']['Customer'],
                     'Salesperson'=> $data['CustomerInfo']['Salesperson'],
                     'OrderDate' => $data['OrderDate'],
+                    'Branch' => $data['Branch'],
+                    'Warehouse' => $data['Warehouse'],
                     'EntrySystemDate'=> date('Y-m-d'),
                     'ReqShipDate' => $data['ReqShipDate'],
                     'DateLastDocPrt'=> date('Y-m-d'),
@@ -126,13 +128,14 @@ class SOMasterController extends Controller
     public function show(string $salesorderID)
     {
         try {
-            $data = SOMaster::select('SalesOrder', 'NextDetailLine', 'OrderStatus', 'DocumentType', 'Customer', 'CustomerName', 'Salesperson', 'CustomerPoNumber', 'OrderDate', 'EntrySystemDate', 'ReqShipDate', 'DateLastDocPrt', 'InvoiceCount', 'Branch', 'Warehouse', 'ShipAddress1', 'ShipToGpsLat', 'ShipToGpsLong')
+            $data = SOMaster::select('SalesOrder', 'NextDetailLine', 'OrderStatus', 'DocumentType', 'Customer', 'CustomerName', 'Salesperson', 'CustomerPoNumber', 'OrderDate', 'EntrySystemDate', 'ReqShipDate', 'DateLastDocPrt', 'InvoiceCount', 'Branch', 'Warehouse', 'ShipAddress1', 'ShipAddress2', 'ShipAddress3', 'ShipToGpsLat', 'ShipToGpsLong', 'Branch', )
                 ->where('SalesOrder', $salesorderID)
                 ->first();
             $details = SODetail::select('SalesOrder', 'SalesOrderLine', 'MStockCode', 'MStockDes', 'MWarehouse', 'MOrderQty', 'MOrderUom', 'MStockQtyToShp', 'MStockingUom', 'MconvFactOrdUm', 'MPrice', 'MPriceUom', 'MProductClass', 'MStockUnitMass', 'MStockUnitVol', 'MPriceCode', 'MConvFactAlloc', 'MConvFactUnitQ', 'MAltUomUnitQ', 'MUnitCost', 'QTYinPCS')
                 ->where('SalesOrder', $salesorderID)
                 ->get();
             $data->details = $details;
+            $data->grandTotal = $details->sum('MPrice');
 
             if ($data) {
 
@@ -175,10 +178,57 @@ class SOMasterController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, string $salesOrderId)
     {
-        //
+        $data = $request->data['Items'];
+        $SOdata = SOMaster::select('SalesOrder')->with('sodetails')->where('SalesOrder', $salesOrderId)->first();
+        $sodetails = $SOdata ? $SOdata->sodetails->toArray() : []; // Convert collection to array
+
+        // Define a comparison function based on MStockCode
+        $compareByStockCode = function ($a, $b) {
+            return $a['MStockCode'] <=> $b['MStockCode'];
+        };
+
+        // Find objects present in both $data and $sodetails (existing items to update)
+        $commonItems = array_uintersect($data, $sodetails, $compareByStockCode);
+
+        // Find new items (present in $data but not in $sodetails)
+        $newItems = array_udiff($data, $sodetails, $compareByStockCode);
+
+        // Find deleted items (present in $sodetails but not in $data)
+        $deletedItems = array_udiff($sodetails, $data, $compareByStockCode);
+
+        // Process existing items (update)
+        foreach ($commonItems as $item) {
+            SODetail::where('SalesOrder', $salesOrderId)
+                ->where('MStockCode', $item['MStockCode'])
+                ->update([
+                    'MOrderQty' => $item['MOrderQty'],
+                    'MPrice' => $item['MPrice'],
+                    'QTYinPCS' => $item['QTYinPCS']
+                ]);
+        }
+
+        // Process new items (insert)
+        $SOdata->sodetails()->createMany($newItems);
+
+        // Process deleted items (remove)
+        foreach ($deletedItems as $item) {
+            SODetail::where('SalesOrder', $salesOrderId)
+                ->where('MStockCode', $item['MStockCode'])
+                ->delete();
+        }
+
+
+        return response()->json([
+            // 'success' => true,
+            'message' => 'Sales Order updated successfully',
+            'commonItems' => $commonItems,
+            'newItems' => $newItems,
+            'deletedItems' => $deletedItems,
+        ]);
     }
+
 
     /**
      * Remove the specified resource from storage.

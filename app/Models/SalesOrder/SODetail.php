@@ -2,6 +2,7 @@
 
 namespace App\Models\SalesOrder;
 
+use App\Models\Product;
 use App\Observers\SOItemsObserver;
 use App\Models\SalesOrder\SOMaster;
 use Illuminate\Database\Eloquent\Model;
@@ -13,12 +14,12 @@ class SODetail extends Model
 
     protected $table = "SorDetail";
 
-    public $timestamps = false; // Disable timestamps if they don't exist
+    public $timestamps = false; 
 
-    protected $casts = [
-        'SalesOrder' => 'string', // Ensure SalesOrder is treated as a string
-        'SalesOrderLine' => 'integer', // If it's an integer
-    ];
+    // protected $casts = [
+    //     'SalesOrder' => 'string',  
+    //     'SalesOrderLine' => 'integer',  
+    // ];
 
     protected $fillable = [
         'SalesOrder',
@@ -87,8 +88,8 @@ class SODetail extends Model
                 ->select(['SalesOrder', 'NextDetailLine', 'OrderStatus', 'DocumentType', 'Customer', 'CustomerName', 'Salesperson', 'CustomerPoNumber', 'OrderDate', 'EntrySystemDate', 'ReqShipDate', 'DateLastDocPrt', 'InvoiceCount', 'Branch', 'Warehouse', 'ShipAddress1', 'ShipToGpsLat', 'ShipToGpsLong',]);
     }
 
-    // public function somaster()
-    // {
-    //     return $this->belongsTo(SOMaster::class, 'SalesOrder', 'SalesOrder');
-    // }
+    public function productdetails()
+    {
+        return $this->belongsTo(Product::class, 'MStockCode', 'StockCode');
+    }
 }

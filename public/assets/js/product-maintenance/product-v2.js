@@ -82,8 +82,8 @@ $(document).ready(async function () {
                     denyButtonText: `Cancel`
                 }).then(async (result) => {
                     if (result.isConfirmed) {
-                        var $selectedStockCode = $('#StockCode').val();
-                        await ajax('api/prod/v2/product/' + $selectedStockCode, 'POST', JSON.stringify({
+                        var selectedStockCode = $('#StockCode').val();
+                        await ajax('api/prod/v2/product/' + selectedStockCode, 'POST', JSON.stringify({
                             data: ProdModal.getData(),
                             _method: "PUT"
                         }), (response) => { // Success callback

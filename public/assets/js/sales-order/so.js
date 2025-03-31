@@ -89,6 +89,7 @@ $(document).ready(async function () {
                 // console.log(response);
                 selectedMain = response.data;
                 SOModal.buttonsView();
+                SOModal.enable(false);
                 SOModal.viewMode(response.data);
                 // originalSelected = JSON.parse(JSON.stringify(response.data));
 
@@ -122,8 +123,8 @@ $(document).ready(async function () {
     });
 
     $(document).on('click', '#addBtn', async function () {
-        SOModal.enable(true);
         SOModal.clear();
+        SOModal.enable(true);
         
         // $('#editXmlDataModal').modal('show');
 
@@ -165,6 +166,35 @@ $(document).ready(async function () {
         SOStatus.ChangeSOStatus('complete', selectedMain.SalesOrder,userObject.name);
     });
 
+    $("#editSOBtn").on("click", function () {
+        if($(this).text().toLowerCase() == "edit order") {
+            $(this).text("Save Changes");
+            SOModal.enable(true);
+            ItemsTH.column(6).visible(true);
+            $('.statBtns').hide();
+        } else {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Do you want to update this data?",
+                icon: "question",
+                showDenyButton: true,
+                confirmButtonText: "Yes, Update",
+                denyButtonText: `Cancel`,
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    if($('#editSOBtn').text().toLowerCase() == "save changes"){
+                        console.log('saving');
+                        $(this).text("Edit Order");
+                        SOModal.enable(false);
+                        ItemsTH.column(6).visible(false);
+                        SOModal.SOUpdate();
+                        SOModal.buttonsView();
+                    }
+                }
+            });
+        }
+        
+    });
 
     $("#saveSOBtn").on("click", function () {
         if (SOModal.isValid()) {
@@ -207,6 +237,7 @@ $(document).ready(async function () {
 
         $("#itemEdit").hide();
         $("#itemSave").show();
+        ItemsTH.column(6).visible(true);
     });
 
     $("#itemSave").on("click", function () {
@@ -342,7 +373,7 @@ const datatables = {
     },
 
     initSODatatable: (response) => {
-        console.log(response.data);
+        // console.log(response.data);
         if (response.success) {
             if (MainTH) {
                 MainTH.clear().draw();
@@ -575,6 +606,7 @@ const datatables = {
                     { className: "text-start", targets: [0, 1] },
                     { className: "text-center", targets: [2, 3] },
                     { className: "text-end", targets: [4, 5] },
+                    { className: "text-nowrap", targets: '_all' },
                 ],
                 searching: true,
                 scrollCollapse: true,
@@ -778,6 +810,7 @@ const initVS = {
                     var findProduct = products.find(
                         (item) => item.StockCode == stockCode
                     );
+                    // console.log(findProduct);
                     $("#Decription").val(findProduct.Description);
       
                     let priceCode = selectedVendor.PriceCode.trim();
@@ -820,7 +853,7 @@ const initVS = {
                         const isAlreadyExist = itemTmpSave.find(
                             (item) => item.MStockCode == stockCode
                         );
-                        console.log(isAlreadyExist);
+                        // console.log(isAlreadyExist);
                         if (isAlreadyExist) {
                             selectedItem = isAlreadyExist;
                             SOItemsModal.itemEditMode(uoms, isAlreadyExist);
@@ -882,40 +915,66 @@ const SOModal = {
     clear: () => {
         $('#modalFields input[type="text"]').val('');
         $('#modalFields input[type="number"]').val('');
+        $('#modalFields input[type="date"]').val('');
         $('#modalFields textarea').val('');
-
+        $('#subTotal').html('0');
+        $('#taxCost').html('0');
+        $('#totalItemsLabel').html('0');
+        $('#grandTotal').html('0');
         // $('#shippedToContactName').val('');
         // $('#shippedToAddress').val('');
         // $('#shippedToPhone').val('');
-        // document.querySelector('#shippedToName').virtualSelect.setValue(null);
-        // document.querySelector('#shipVia').virtualSelect.setValue(null);
+        if (document.querySelector('#shippedToName')?.virtualSelect) {
+            document.querySelector('#shippedToName').reset();
+        }
     },
     enable: (enable) => {
         $('#modalFields input[type="text"]').prop('disabled', !enable);
         $('#modalFields input[type="number"]').prop('disabled', !enable);
         $('#modalFields input[type="date"]').prop('disabled', !enable);
         $('#modalFields textarea').prop('disabled', !enable);
+        $('#modalFields #OrderStatus').prop('disabled', true);
+        $('#modalFields #SalesOrder').prop('disabled', true);
+
+        if (enable) {
+            document.querySelector("#shippedToName").enable();
+        } else {
+            document.querySelector("#shippedToName").disable();
+        }
     },
     viewMode: async (SOData) => {
         SOModal.fill(SOData);
         itemTmpSave = SOData.details;
         // datatables.initSOItemsDatatable(SOData.details);
         $('#rePrintPage').show();
+        $('#editSOBtn').text("Edit Order");
+        SOItemsModal.enable(false);
+        ItemsTH.column(6).visible(false);
         SOModal.show();
     },
     fill: async (SODetails) => {
         console.log(SODetails);
-        $('#Branch').html(SODetails.Branch);
-        $('#Warehouse').html(SODetails.Warehouse);
-        $('#Customer').html(SODetails.Customer);
-        $('#CustomerName').html(SODetails.CustomerName);
-        $('#ShipAddress1').html(SODetails.ShipAddress1);
-        $('#SalesOrder').html(SODetails.SalesOrder);
-        $('#OrderStatus').html(SODetails.OrderStatus);
+        SOModal.clear();
+        
+        $('#OrderStatus').val(orderStatusSting(SODetails.OrderStatus));
+        $('#Branch').val(SODetails.Branch);
+        $('#CustomerPONumber').val(SODetails.CustomerPoNumber);
+        $('#Warehouse').val(SODetails.Warehouse);
+        $('#SalesOrder').val(SODetails.SalesOrder);
+        $('#shippedToContactName').val(SODetails.CustomerName);
+        $('#shippedToAddress').val(SODetails.ShipAddress1+", "+SODetails.ShipAddress2+", "+SODetails.ShipAddress3);
+        // $('#shippedToPhone').val(SODetails.)
+        $('#subTotal').html((SODetails.grandTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#grandTotal').html((SODetails.grandTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         $('#OrderDate').val(SODetails.OrderDate.substring(0, 10)); 
         $('#ReqShipDate').val(SODetails.ReqShipDate.substring(0, 10)); 
 
-        // detailsDatatable.clear().rows.add(SODetails.details).draw();
+        const select = document.querySelector("#shippedToName");
+        select.setValue(SODetails.Customer);
+
+        const event = new CustomEvent("afterClose");
+        select.dispatchEvent(event);
+
         datatables.initSOItemsDatatable(SODetails.details);
     },
     SOSave: async () => {
@@ -954,10 +1013,43 @@ const SOModal = {
             }
         );
     },
+    SOUpdate: async () => {
+        let updateBody = SOModal.getData();
+        updateBody.Items = itemTmpSave;
+        var salesOrderID = selectedMain.SalesOrder;
+
+        // console.log(updateBody);
+        await ajax( "api/sales-order/header/" + salesOrderID, "POST", JSON.stringify({ 
+            data: updateBody,
+            _method: "PUT",
+            }),
+            (response) => {
+                if (response.success) {
+                    datatables.loadSOData();
+                    SOModal.hide();
+            
+                    Swal.fire({
+                        title: "Success!",
+                        text: response.message,
+                        icon: "success",
+                    });
+                }
+            },
+            (xhr, status, error) => {
+                // Error callback
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                Swal.fire({
+                    title: "Opppps..",
+                    text: xhr.responseJSON.message,
+                    icon: "error",
+                });
+                }
+            }
+        );
+    },
     getData: () => {
         var user = JSON.parse(localStorage.getItem("user"));
         var data = {
-            // PODate: moment().format("YYYY-MM-DD"),
             OrderDate: $('#OrderDate').val(),
             ReqShipDate: $('#ReqShipDate').val(),
             SupplierCode: selectedVendor.SupplierCode.trim(),
@@ -973,10 +1065,11 @@ const SOModal = {
             SpecialInstruction: $("#poComment").val(),
             EncoderID: user.user_id,
             orderPlacer: $("#requisitioner").val(),
-            // orderPlacerEmail: user.email,
             subTotal: parseMoney($("#subTotal").text()),
             TermsCode: $("#shippingTerms").val(),
             totalCost: parseMoney($("#grandTotal").text()),
+            Branch: $('#Branch').val(),
+            Warehouse: $('#Warehouse').val()
         };
     
         return data;
@@ -993,7 +1086,7 @@ const SOModal = {
         } else{
             $('.statBtns').hide();
             $('#saveSOBtn').hide();
-            $('#editSOBtn').hide();
+            $('#editSOBtn').show();
             $('#cancelEditSOBtn').hide();
             $('#deleteSOBtn').hide();
             $('#rePrintPage').hide();
@@ -1146,12 +1239,12 @@ const SOItemsModal = {
         console.log(isAlreadyExist);
         
         if (!isAlreadyExist.UomAndQuantity) {
-            console.log(isAlreadyExist.QTYinPCS);
+            // console.log(isAlreadyExist.QTYinPCS);
             isAlreadyExist.UomAndQuantity = SOItemsModal.reverseItemCalculateUOM(
                 uoms,
                 isAlreadyExist.QTYinPCS
             );
-          console.log(isAlreadyExist.UomAndQuantity);
+        //   console.log(isAlreadyExist.UomAndQuantity);
         }
     
         Object.entries(isAlreadyExist.UomAndQuantity).forEach(([key, value]) => {
@@ -1161,35 +1254,39 @@ const SOItemsModal = {
         $("#itemSave").text("Update Item");
     },
     reverseItemCalculateUOM: (uoms, totalInPieces) => {
-        console.log("totalINPIECS: "+ totalInPieces);
-        var moduloResult = 0;
-        totalInPieces = selectedItem.QTYinPCS;
-        let UomAndQuantity = {};
     
-        const ConvFactAltUom = productConFact.ConvFactAltUom;
-        const ConvFactOthUom = productConFact.ConvFactOthUom;
+        let UomAndQuantity = {};
+        let moduloResult = totalInPieces % productConFact.ConvFactAltUom;
+    
+        const { ConvFactAltUom, ConvFactOthUom } = productConFact;
     
         uoms.forEach((element) => {
-            if (element.value === "CS") {
-                // Handle Case (CS) - Largest unit
-                const getCS = Math.floor(totalInPieces / ConvFactAltUom);
-                UomAndQuantity.CS = getCS;
-                moduloResult = totalInPieces % ConvFactAltUom;
-            } else if (element.value === "IB") {
-                // Handle Intermediate Unit (IB)
-                const conFact = ConvFactAltUom / ConvFactOthUom; // Calculate conversion factor between IB and CS
-                moduloResult = moduloResult > 0 ? moduloResult : totalInPieces;
-        
-                const getIB = Math.floor(moduloResult / conFact);
-                UomAndQuantity.IB = getIB;
-        
-                moduloResult = moduloResult % conFact;
-            } else if (element.value === "PC") {
-                UomAndQuantity.PC = moduloResult;
-                // console.log(`PC: ${moduloResult}`);
+            switch (element.value) {
+                case "CS":
+                    UomAndQuantity.CS = Math.floor(totalInPieces / ConvFactAltUom);
+                    console.log(`CS: ${UomAndQuantity.CS}`);
+                    break;
+    
+                case "IB":
+                    console.log("IB inside", { totalInPieces, ConvFactAltUom, ConvFactOthUom });
+                    
+                    const conFact = ConvFactAltUom / ConvFactOthUom;
+                    UomAndQuantity.IB = Math.floor((moduloResult === 0 ? totalInPieces : moduloResult) / conFact);
+                    
+                    console.log(`IB: ${UomAndQuantity.IB}`);
+                    break;
+    
+                case "PC":
+                    const hasIB = uoms.some(item => item.value === "IB");
+                    let remainingForPC = hasIB ? moduloResult % (ConvFactAltUom / ConvFactOthUom) : totalInPieces % ConvFactOthUom;
+    
+                    UomAndQuantity.PC = remainingForPC;
+                    console.log(`PC: ${UomAndQuantity.PC}`);
+                    break;
             }
         });
-        console.log(UomAndQuantity);
+    
+        // console.log(UomAndQuantity);
         return UomAndQuantity;
     },
     getData: () => {
@@ -1632,3 +1729,20 @@ const SOStatus = {
     },
 }
   
+
+function orderStatusSting(status){
+    let text = '';
+    switch (String(status)) {
+        case '1': text = 'Open Order'; break;
+        case '2': text = 'Open Back Order'; break;
+        case '3': text = 'Released Back Order'; break;
+        case '4': text = 'In Warehouse'; break;
+        case '8': text = 'To Invoice'; break;
+        case 'F': text = 'Forward Order'; break;
+        case 'S': text = 'In Suspense'; break;
+        case '9': text = 'Complete'; break;
+        default: text = 'Unknown';
+    }
+
+    return text;
+}
