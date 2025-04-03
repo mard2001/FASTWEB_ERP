@@ -3,6 +3,13 @@
 @section('html_title')
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <title>Sales Order</title>
+    {{-- DATE PICKER --}}
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
+
 @endsection
 
 @section('title_header')
@@ -59,7 +66,37 @@
     #soTable thead tr td .dt-column-title{
         white-space: nowrap;
     }
+    
+    .FilterRES{
+        border: 1px solid #5d5d5d;
+        border-radius: 5px;
+        font-size: 13px;
+    }
+    .FilterRES:hover{
+        background: #33336F;
+        color: #FFF;
+    }
 </style>
+
+
+<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
+    <div class="btn d-flex justify-content-around px-2 align-items-center me-1" id="addBtn">
+        <div class="btnImg me-2" id="addImg">
+        </div>
+        <span>Add new</span>
+    </div>
+    <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvDLBtn">
+        <div class="btnImg me-2" id="dlImg">
+        </div>
+        <span>Download Report</span>
+    </div>
+    <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvUploadShowBtn">
+        <div class="btnImg me-2" id="ulImg">
+        </div>
+        <span>Upload Template</span>
+    </div>
+</div>
+
 
 <x-table id="soTable">
     <x-slot:td>
@@ -580,6 +617,27 @@
             <!-- Modal Footer -->
             <div class="modal-footer">
                 <button id="uploadBtn2" class="btn btn-primary px-4">Upload</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="filterSOModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Filter Sales Orders</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reportrange" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                    <i class="fa fa-calendar"></i>&nbsp;
+                    <span></span> <i class="fa fa-caret-down"></i>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary px-4">Filter</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

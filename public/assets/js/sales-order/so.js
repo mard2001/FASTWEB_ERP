@@ -59,7 +59,11 @@ const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto
                                     <span>Upload Template</span>
                                 </div>
                             </div>`;
-
+const dataTableFilter = `<div class="FilterBtnDiv ">
+                            <button type="button" id="filterBtn" class="btn FilterRES">
+                                Filter Sales Orders <i class="fa-solid fa-filter"></i>
+                            </button>
+                        </div>`;
 
 $(document).ready(async function () {
     const user = localStorage.getItem('user');
@@ -71,8 +75,12 @@ $(document).ready(async function () {
     await getProductPriceCodes();
     SOItemsModal.setValidator();
     setDate();
+    datePicker();
     
     
+    $('#filterBtn').on("click", function () {
+        $('#filterSOModal').modal('show');
+    });
 
     $("#soTable").on("click", "tbody tr", async function () {
         Swal.fire({
@@ -463,7 +471,7 @@ const datatables = {
                     data: response.data,
                     layout: {
                         topStart: function () {
-                            return $(dataTableCustomBtn);
+                            return $(dataTableFilter);
                         }
                     },
                     columns: [
@@ -1819,4 +1827,29 @@ function hasChanges(original, modified) {
         }
     }
     return isSelectedEdited = false;
+}
+
+
+function datePicker(){
+    var start = moment().subtract(29, 'days');
+    var end = moment();
+
+    function cb(start, end) {
+        $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+    }
+
+    $('#reportrange').daterangepicker({
+        startDate: start,
+        endDate: end,
+        ranges: {
+           'Today': [moment(), moment()],
+           'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+           'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+           'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+           'This Month': [moment().startOf('month'), moment().endOf('month')],
+           'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+        }
+    }, cb);
+
+    cb(start, end);
 }
