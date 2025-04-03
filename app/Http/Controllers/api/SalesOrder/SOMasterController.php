@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\SalesOrder\SODetail;
 use App\Models\SalesOrder\SOMaster;
 use App\Http\Controllers\Controller;
+use App\Models\Customer\Customer;
 
 class SOMasterController extends Controller
 {
@@ -19,6 +20,9 @@ class SOMasterController extends Controller
     public function index()
     {
         try {
+            $today = date('Y-m-d'); // Today's date
+            $oneMonthAgo = date('Y-m-d', strtotime('-1 month'));
+
             $data = SOMaster::select(
                 'SalesOrder',
                 'NextDetailLine',
@@ -40,7 +44,7 @@ class SOMasterController extends Controller
                 'ShipAddress3',
                 'ShipToGpsLat',
                 'ShipToGpsLong',
-            )->get();
+            )->whereBetween('EntrySystemDate', [$oneMonthAgo, $today])->where('OrderStatus', '8')->get();
             
             if (count($data) == 0) {
                 return response()->json([
@@ -82,28 +86,26 @@ class SOMasterController extends Controller
     {
         try {
             $data = $request->data;
-
-            // dd($data['CustomerInfo']['ContactPerson']);
-            // DB::transaction(function () use ($data) {
-                $items = Arr::pull($data, 'Items');
-                $so = SOMaster::create([
-                    'NextDetailLine'=> count($items)+1,
-                    'Customer'=> $data['CustomerInfo']['Customer'],
-                    'Salesperson'=> $data['CustomerInfo']['Salesperson'],
-                    'OrderDate' => $data['OrderDate'],
-                    'Branch' => $data['Branch'],
-                    'Warehouse' => $data['Warehouse'],
-                    'EntrySystemDate'=> date('Y-m-d'),
-                    'ReqShipDate' => $data['ReqShipDate'],
-                    'DateLastDocPrt'=> date('Y-m-d'),
-                    'CustomerName'=> $data['CustomerInfo']['Contact'],
-                    'ShipAddress1'=> $data['CustomerInfo']['SoldToAddr1'],
-                    'ShipAddress2'=> $data['CustomerInfo']['SoldToAddr2'],
-                    'ShipAddress3'=> $data['CustomerInfo']['SoldToAddr3'],
-                    'LastOperator' => $data['LastOperator'],
-                ]);
-                $so->sodetails()->createMany($items);
-            // });
+            $items = Arr::pull($data, 'Items');
+            $so = SOMaster::create([
+                'NextDetailLine'=> count($items)+1,
+                'Customer'=> $data['CustomerInfo']['Customer'],
+                'Salesperson'=> $data['CustomerInfo']['Salesperson'],
+                'OrderDate' => $data['OrderDate'],
+                'Branch' => $data['Branch'],
+                'Warehouse' => $data['Warehouse'],
+                'EntrySystemDate'=> date('Y-m-d'),
+                'ReqShipDate' => $data['ReqShipDate'],
+                'DateLastDocPrt'=> date('Y-m-d'),
+                'CustomerName'=> $data['CustomerInfo']['Contact'],
+                'ShipAddress1'=> $data['CustomerInfo']['SoldToAddr1'],
+                'ShipAddress2'=> $data['CustomerInfo']['SoldToAddr2'],
+                'ShipAddress3'=> $data['CustomerInfo']['SoldToAddr3'],
+                'ShipToGpsLat'=> $data['CustomerInfo']['SoldToGpsLat'],
+                'ShipToGpsLong'=> $data['CustomerInfo']['SoldToGpsLong'],
+                'LastOperator' => $data['LastOperator'],
+            ]);
+            $so->sodetails()->createMany($items);
 
             return response()->json([
                 'success' => true,
@@ -150,8 +152,6 @@ class SOMasterController extends Controller
                     'message' => 'No Data Found'
                 ]);
             }
-
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -160,6 +160,54 @@ class SOMasterController extends Controller
         }
     }
 
+    public function Showfiltered(Request $request)
+    {
+        try {
+            $today = date('Y-m-d'); // Today's date
+            $oneMonthAgo = date('Y-m-d', strtotime('-1 month'));
+
+            $data = SOMaster::select(
+                'SalesOrder',
+                'NextDetailLine',
+                'OrderStatus',
+                'DocumentType',
+                'Customer',
+                'CustomerName',
+                'Salesperson',
+                'CustomerPoNumber',
+                'OrderDate',
+                'EntrySystemDate',
+                'ReqShipDate',
+                'DateLastDocPrt',
+                'InvoiceCount',
+                'Branch',
+                'Warehouse',
+                'ShipAddress1',
+                'ShipAddress2',
+                'ShipAddress3',
+                'ShipToGpsLat',
+                'ShipToGpsLong',
+            )->whereBetween('EntrySystemDate', [$oneMonthAgo, $today])->where('OrderStatus', '8')->get();
+            
+            if (count($data) == 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No Sales Orders Data found',
+                ], 200);  // HTTP 404 Not Found
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Orders Data retrieved successfully',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
     /**
      * Show the form for editing the specified resource.
      *
@@ -181,6 +229,22 @@ class SOMasterController extends Controller
     public function update(Request $request, string $salesOrderId)
     {
         $data = $request->data['Items'];
+        $customerDetails = Customer::select('Customer', 'Name', 'ShortName', 'Salesperson', 'PriceCode', 'CustomerClass', 'Telephone', 'Contact', 'SoldToAddr1', 'SoldToAddr2', 'SoldToAddr3', 'SoldToGpsLat', 'SoldToGpsLong')
+                                    ->with('salesman')->where('Customer',  $request->data['shippedToName'])->first();
+        SOMaster::where('SalesOrder', $salesOrderId)->update([
+            'OrderDate' =>  $request->data['OrderDate'],
+            'Branch' =>  $request->data['Branch'],
+            'Warehouse' =>  $request->data['Warehouse'],
+            'ReqShipDate' =>  $request->data['ReqShipDate'], 
+            'Customer'=> $customerDetails->Customer,
+            'Salesperson' => $customerDetails->Salesperson,
+            'CustomerName' => $customerDetails->Contact, 
+            'ShipAddress1' => $customerDetails->SoldToAddr1,
+            'ShipAddress2' => $customerDetails->SoldToAddr2,
+            'ShipAddress3' => $customerDetails->SoldToAddr3,
+            'ShipToGpsLat' => $customerDetails->SoldToGpsLat,
+            'ShipToGpsLong' => $customerDetails->SoldToGpsLong,
+        ]);
         $SOdata = SOMaster::select('SalesOrder')->with('sodetails')->where('SalesOrder', $salesOrderId)->first();
         $sodetails = $SOdata ? $SOdata->sodetails->toArray() : []; // Convert collection to array
 
@@ -221,7 +285,7 @@ class SOMasterController extends Controller
 
 
         return response()->json([
-            // 'success' => true,
+            'success' => true,
             'message' => 'Sales Order updated successfully',
             'commonItems' => $commonItems,
             'newItems' => $newItems,

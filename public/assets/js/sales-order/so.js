@@ -13,6 +13,9 @@ var detailsDatatable;
 var isEditable = false;
 var originalSelected = [];
 var productConFact;
+var isEditing = false;
+var isSelectedEdited = false;
+var tmpUpdatedMain;
 
 // FOR THE MEANTIME
 selectedVendor = {
@@ -57,6 +60,7 @@ const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto
                                 </div>
                             </div>`;
 
+
 $(document).ready(async function () {
     const user = localStorage.getItem('user');
     const userObject = JSON.parse(user);
@@ -66,7 +70,6 @@ $(document).ready(async function () {
     await initVS.bigDataVS();
     await getProductPriceCodes();
     SOItemsModal.setValidator();
-    // datatables.initDetailsDatatable([]);
     setDate();
     
     
@@ -86,6 +89,8 @@ $(document).ready(async function () {
         await ajax('api/sales-order/header/' + selectedSalesOrderID, 'GET', null, (response) => { 
             Swal.close();
             if (response.success == 1) {
+                isEditing = false;
+                isSelectedEdited = false;
                 // console.log(response);
                 selectedMain = response.data;
                 SOModal.buttonsView();
@@ -168,30 +173,59 @@ $(document).ready(async function () {
 
     $("#editSOBtn").on("click", function () {
         if($(this).text().toLowerCase() == "edit order") {
+            isEditing = true;
             $(this).text("Save Changes");
             SOModal.enable(true);
             ItemsTH.column(6).visible(true);
             $('.statBtns').hide();
         } else {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "Do you want to update this data?",
-                icon: "question",
-                showDenyButton: true,
-                confirmButtonText: "Yes, Update",
-                denyButtonText: `Cancel`,
-            }).then(async (result) => {
-                if (result.isConfirmed) {
+            const updatedData = SOModal.checkData();
+            console.log(updatedData);
+            hasChanges(selectedMain, updatedData);
+            if(isEditing && isSelectedEdited){
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "Do you want to update this data?",
+                    icon: "question",
+                    showDenyButton: true,
+                    confirmButtonText: "Yes, Update",
+                    denyButtonText: `Cancel`,
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        SOModal.SOUpdate();
+                        Swal.fire({
+                            text: "Please wait... Saving New Changes...",
+                            timerProgressBar: true,
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,  
+                            allowEnterKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            },
+                        });
+                    } else{
+                        SOModal.fill(selectedMain);
+                    }
                     if($('#editSOBtn').text().toLowerCase() == "save changes"){
-                        console.log('saving');
                         $(this).text("Edit Order");
                         SOModal.enable(false);
                         ItemsTH.column(6).visible(false);
-                        SOModal.SOUpdate();
                         SOModal.buttonsView();
+                        isEditing = false;
+                        isSelectedEdited = false;
                     }
+                });
+            } else{
+                if($('#editSOBtn').text().toLowerCase() == "save changes"){
+                    $(this).text("Edit Order");
+                    SOModal.enable(false);
+                    ItemsTH.column(6).visible(false);
+                    SOModal.buttonsView();
+                    isEditing = false;
+                    isSelectedEdited = false;
                 }
-            });
+            }
+            
         }
         
     });
@@ -215,6 +249,17 @@ $(document).ready(async function () {
                 }).then(async (result) => {
                     if (result.isConfirmed) {
                         SOModal.SOSave();
+                        SOModal.hide();
+                        Swal.fire({
+                            text: "Please wait... Saving Sales Order...",
+                            timerProgressBar: true,
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,  
+                            allowEnterKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            },
+                        });
                     }
                 });
             } 
@@ -244,10 +289,32 @@ $(document).ready(async function () {
         if ( SOItemsModal.isValid() && $("#TotalPrice").val() && parseInt(parseMoney($("#TotalPrice").val())) > 0 ) {
             const getItem = SOItemsModal.getData();
             if ($(this).text().toLowerCase() == "update item") {
-                SOItemsModal.itemTmpUpdate(getItem);
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "Do you want to update the item?",
+                    icon: "question",
+                    showDenyButton: true,
+                    confirmButtonText: "Yes, Update",
+                    denyButtonText: `Cancel`,
+                }).then(async (result) => {
+                    if(result.isConfirmed){
+                        SOItemsModal.itemTmpUpdate(getItem);
+                    }
+                });
             } else {
-                getItem.PRD_INDEX = itemTmpSave ? itemTmpSave.length + 1 : 1;
-                SOItemsModal.itemTmpSave(getItem);
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "Do you want to save the item?",
+                    icon: "question",
+                    showDenyButton: true,
+                    confirmButtonText: "Yes, Save",
+                    denyButtonText: `Cancel`,
+                }).then(async (result) => {
+                    if(result.isConfirmed){
+                        getItem.PRD_INDEX = itemTmpSave ? itemTmpSave.length + 1 : 1;
+                        SOItemsModal.itemTmpSave(getItem);
+                    }
+                });
             }
             datatables.initSOItemsDatatable(itemTmpSave);
             calculateCost();
@@ -258,6 +325,7 @@ $(document).ready(async function () {
                 icon: "warning",
             });
         }
+        isSelectedEdited = true;
     });
 
     $("#itemCloseBtn").on("click", function () {
@@ -312,9 +380,21 @@ $(document).ready(async function () {
     });
 
     $(document).on("click", ".itemDeleteIcon", async function () {
-        const row = $(this).closest("tr");
-        const skuCode = row.find("td:first"); // Get the first <td>
-        SOItemsModal.itemTmpDelete(skuCode);
+        Swal.fire({
+            title: "Are you sure?",
+            text: "Do you want to delete this product?",
+            icon: "question",
+            showDenyButton: true,
+            confirmButtonText: "Yes, Delete",
+            denyButtonText: `Cancel`,
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const row = $(this).closest("tr");
+                const skuCode = row.find("td:first"); // Get the first <td>
+                SOItemsModal.itemTmpDelete(skuCode);
+                isSelectedEdited = true;
+            }
+        });
     });
 
     $(document).on("click", ".itemUpdateIcon", async function () {
@@ -373,7 +453,7 @@ const datatables = {
     },
 
     initSODatatable: (response) => {
-        // console.log(response.data);
+        console.log(response.data);
         if (response.success) {
             if (MainTH) {
                 MainTH.clear().draw();
@@ -419,7 +499,7 @@ const datatables = {
                         { data: 'DocumentType',  title: 'Document Type' },
                         { data: 'Customer',  title: 'Customer ID' },
                         { data: 'CustomerName',  title: 'Customer Name' },
-                        { data: 'CustomerPoNumber',  title: 'PO Number' },
+                        { data: 'CustomerPoNumber',  title: 'SO Reference' },
                         { data: 'ReqShipDate',  title: 'Req. Ship Date',
                             render: function (data, type, row) {
                                 return data.split(" ")[0];
@@ -465,83 +545,11 @@ const datatables = {
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
+                        // $('#soTable thead tr td .dt-column-title').css('white-space','nowrap !important');
                     }
                 });
             }
         }
-    },
-
-    initDetailsDatatable: (data) => {
-        detailsDatatable = new DataTable('#SODetails', {
-            data: data,
-            layout: {
-                // topStart: function () {
-                //     return $(dataTableCustomBtn);
-                // }
-            },
-            columns: [
-                { data: 'MStockCode',  title: 'Stock Code' },
-                { data: 'MStockDes',  title: 'Description' },
-                { data: 'MPrice',  title: 'Price' },
-                { data: 'MProductClass',  title: 'Product Class' },
-                { data: 'MOrderQty',  title: 'Order Qty' },
-                { data: 'MPriceCode',  title: 'Price Code' },
-                { data: 'MStockQtyToShp',  title: 'Qty to Ship' },
-                { data: 'MStockUnitMass',  title: 'Unit Mass' },
-                { data: 'MStockUnitVol',  title: 'Unit Volume' },
-            ],
-            columnDefs: [
-                { className: "text-start", targets: [ 0, 1 ] },
-                { className: "text-center", targets: [ 3, 4, 5, 6, 7, 8 ] },
-                { className: "text-end", targets: [ 2 ] },
-                // { className: "text-nowrap", targets: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ] },
-            ],
-            scrollCollapse: true,
-            // scrollY: '100%',
-            // scrollX: '100%',
-            "createdRow": function (row, data) {
-                $(row).attr('id', data.MStockCode);
-            },
-
-            "pageLength": 10,
-            "lengthChange": false,
-
-            initComplete: function () {
-                $(this.api().table().container()).find('#dt-search-1').addClass('p-1 mx-0 dtDetailssearchInput nofocus');
-                $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtDetailssearchLabel');
-                $(this.api().table().container()).find('#ICDetails_info').css({'font-size':'11px'});
-                $(this.api().table().container()).find('.paging_full_numbers').css({'font-size':'10px'});
-            }
-
-        });
-
-        // Make cells editable on click
-        $('#ICDetails tbody').on('click', 'td', function() {
-            if(isEditable){
-                let column = $(this).index();
-                let row = $(this).closest('tr').index();
-                let cell = detailsDatatable.cell(this);
-                let value = cell.data();
-                let displayedValue = cell.render('display');
-
-                // Replace cell content with an input field
-                if(column == 4 || column == 3 || column == 2){
-                    console.log(displayedValue);
-                    if(displayedValue != '-'){
-                        $(this).html(`<input type="text" value="${value}" class="edit-cell text-center ${column} ${row}" style="width: 30px;height: 20px;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">`);
-                        // Focus on the input field
-                        $(this).find('input').focus();
-                    }
-                }
-            }
-        });
-
-        $('#ICDetails tbody').on('blur', '.edit-cell', function() {
-            let newValue = parseInt($(this).val());
-            let cell = detailsDatatable.cell($(this).closest('td'));
-
-            cell.data(newValue).draw();
-        });
     },
 
     loadItems: async (SONumber) => {
@@ -563,11 +571,16 @@ const datatables = {
             datas && ItemsTH.rows.add(datas).draw();
         } else {
             ItemsTH = $('#itemTables').DataTable({
+                dom: "rt<'d-flex justify-content-between' ip>",
                 data: datas,
                 columns: [
                     { data: 'MStockCode' },
                     { data: 'MStockDes' },
-                    { data: 'MOrderQty' },
+                    { data: 'MOrderQty',
+                        render: function (data, type, row){
+                            return parseFloat(data);
+                        }
+                    },
                     { data: 'MOrderUom' },
                     {
                         data: 'MUnitCost',
@@ -613,14 +626,23 @@ const datatables = {
                 responsive: true, // Enable responsive modeoWidth: true, // Enable auto-width calculation
                 // scrollY: '100%',
                 // scrollX: '100%',
+                "pageLength": 5,
                 "createdRow": function (row, data) {
                     $(row).attr('id', data.id);
                 },
                 "lengthChange": false,  // Hides the per page dropdown
-                "info": false,          // Hides the bottom text (like "Showing x to y of z entries")
-                "paging": false,        // Hides the pagination controls (Next, Previous, etc.)
+                initComplete: function () {
+                    $(this.api().table().container()).find('#itemTables_info').css({'font-size':'11px'});
+                    $(this.api().table().container()).find('.paging_full_numbers').css({'font-size':'10px','padding-top':'10px'});
+                }
             });
+            // Move search input to #searchContainer
+            $('#searchBar').html('<input type="text" id="customItemSearchBox" placeholder="Search...">');
 
+            // Custom search event
+            $('#customItemSearchBox').on('keyup', function() {
+                ItemsTH.search(this.value).draw();
+            });
         }
 
         $('#totalItemsLabel').text(datas ? datas.length : 0);
@@ -647,9 +669,14 @@ const initVS = {
         VirtualSelect.init({
             ele: '#filterPOVS',                   // Attach to the element
             options: [
-                // { label: "", value: null },
-                // { label: "", value: 1 },
-                // { label: "", value: "2" },
+                { label: "Open Order", value: "1" },
+                { label: "Open Back Order", value: "2" },
+                { label: "Release Back Order", value: "3" },
+                { label: "In Warehouse", value: "4" },
+                { label: "To Invoice", value: "8" },
+                { label: "Forward Order", value: "F" },
+                { label: "In Suspense", value: "S" },
+                { label: "Complete", value: "9" },
 
             ], 
             multiple: true, 
@@ -661,6 +688,21 @@ const initVS = {
             additionalDropboxContainerClasses: 'rounded',
             additionalToggleButtonClasses: 'rounded',
         });
+
+        $("#filterPOVS").on("change", async function () {
+            if (this.value) {
+                var filteredData = { data:[], success: true };
+                var filterValues = this.value;
+                if(filterValues.length == 0){
+                    filteredData.data = jsonArr;
+                } else{
+                    filteredData.data = jsonArr.filter(item => filterValues.includes(item.OrderStatus));
+                }
+                datatables.initSODatatable(filteredData);
+                
+            }
+        });
+
 
         vendorModal.loadVendorVS();
 
@@ -746,6 +788,12 @@ const initVS = {
 
             });
 
+            $("#shippedToName").on("reset", function () {
+                $("#shippedToContactName").val("");
+                $("#shippedToAddress").val("");
+                $("#shippedToPhone").val("");
+            });
+
             $('#shippedToName').on('afterClose', function () {
                 if (this.value) {
                     var findCustomer = response.data.find(item => item.Customer == this.value);
@@ -757,21 +805,8 @@ const initVS = {
                     var mobileContact = findCustomer.Telephone = /^9\d{9}$/.test(findCustomer.Telephone) ? findCustomer.Telephone.replace(/^9/, "09") : findCustomer.Telephone;
 
                     $('#shippedToPhone').val(mobileContact);
-
-                    // if (this.value && document.querySelector('#vendorName').value) {
-                    //     $('#addItems').prop("disabled", false);
-                    // }
-
                 }
-
             });
-
-            $('#shippedToName').on('reset', function () {
-                $('#shippedToContactName').val('');
-                $('#shippedToAddress').val('');
-                $('#shippedToPhone').val('');
-            });
-
         }, (xhr, status, error) => { // Error callback
             console.error('Error:', error);
         });
@@ -935,7 +970,9 @@ const SOModal = {
         $('#modalFields textarea').prop('disabled', !enable);
         $('#modalFields #OrderStatus').prop('disabled', true);
         $('#modalFields #SalesOrder').prop('disabled', true);
-
+        $('#modalFields #CustomerPONumber').prop('disabled', true);
+        $('#addItems').prop('disabled', !enable);
+        
         if (enable) {
             document.querySelector("#shippedToName").enable();
         } else {
@@ -953,7 +990,6 @@ const SOModal = {
         SOModal.show();
     },
     fill: async (SODetails) => {
-        console.log(SODetails);
         SOModal.clear();
         
         $('#OrderStatus').val(orderStatusSting(SODetails.OrderStatus));
@@ -969,13 +1005,14 @@ const SOModal = {
         $('#OrderDate').val(SODetails.OrderDate.substring(0, 10)); 
         $('#ReqShipDate').val(SODetails.ReqShipDate.substring(0, 10)); 
 
-        const select = document.querySelector("#shippedToName");
-        select.setValue(SODetails.Customer);
-
-        const event = new CustomEvent("afterClose");
-        select.dispatchEvent(event);
-
         datatables.initSOItemsDatatable(SODetails.details);
+        setTimeout(() => {
+            const select = document.querySelector("#shippedToName");
+            select.setValue(SODetails.Customer);
+
+            const event = new CustomEvent("afterClose");
+            select.dispatchEvent(event);
+        }, 200);
     },
     SOSave: async () => {
         const user = localStorage.getItem('user');
@@ -992,8 +1029,7 @@ const SOModal = {
             (response) => {
                 if (response.success) {
                     datatables.loadSOData();
-                    SOModal.hide();
-            
+                    Swal.close();
                     Swal.fire({
                         title: "Success!",
                         text: response.message,
@@ -1025,6 +1061,7 @@ const SOModal = {
             }),
             (response) => {
                 if (response.success) {
+                    Swal.close();
                     datatables.loadSOData();
                     SOModal.hide();
             
@@ -1055,21 +1092,35 @@ const SOModal = {
             SupplierCode: selectedVendor.SupplierCode.trim(),
             SupplierName: selectedVendor.SupplierName.trim(),
             productType: selectedVendor.SupplierType.trim(),
-            FOB: $("#fob").val(),
+            // FOB: $("#fob").val(),
             deliveryAddress: $("#shippedToAddress").val(),
             contactPerson: $("#shippedToContactName").val(),
             contactNumber: $("#shippedToPhone").val(),
-            deliveryMethod: $("#shipVia").val(),
+            shippedToName: $("#shippedToName").val(),
             totalDiscount: 0,
             totalTax: parseMoney($("#taxCost").text()),
             SpecialInstruction: $("#poComment").val(),
-            EncoderID: user.user_id,
-            orderPlacer: $("#requisitioner").val(),
+            // EncoderID: user.user_id,
+            // orderPlacer: $("#requisitioner").val(),
             subTotal: parseMoney($("#subTotal").text()),
-            TermsCode: $("#shippingTerms").val(),
+            // TermsCode: $("#shippingTerms").val(),
             totalCost: parseMoney($("#grandTotal").text()),
             Branch: $('#Branch').val(),
             Warehouse: $('#Warehouse').val()
+        };
+    
+        return data;
+    },
+    checkData: () => {
+        var data = {
+            SalesOrder: $('#SalesOrder').val(),
+            OrderStatus: $('#OrderStatus').val(),
+            CustomerPoNumber: $('#CustomerPONumber').val(),
+            Branch: $('#Branch').val(),
+            Warehouse: $('#Warehouse').val(),
+            OrderDate: $("#OrderDate").val(),
+            ReqShipDate: $("#ReqShipDate").val(),
+            Customer: $("#shippedToName").val(),
         };
     
         return data;
@@ -1101,6 +1152,8 @@ const SOModal = {
                 $('#invoiceSO').show();
             } else if(selectedMain.OrderStatus == "8"){
                 $('#completeSO').show();
+            } else if(selectedMain.OrderStatus == "9"){
+                $('#editSOBtn').hide();
             }
         }
     }
@@ -1745,4 +1798,25 @@ function orderStatusSting(status){
     }
 
     return text;
+}
+
+function hasChanges(original, modified) {
+    const keysToCheck = ["SalesOrder", "CustomerPoNumber", "Branch", "Warehouse", "Customer", "shippedToName", "OrderDate", "ReqShipDate"];  
+
+    for (let key of keysToCheck) {
+        let originalValue = original[key];
+        let modifiedValue = modified[key];
+
+        if (modified.hasOwnProperty(key)) {
+            if (key === "OrderDate" || key === "ReqShipDate") {
+                originalValue = originalValue ? originalValue.split(" ")[0] : "";
+                modifiedValue = modifiedValue ? modifiedValue.split(" ")[0] : "";
+            }
+
+            if (originalValue !== modifiedValue) {
+                return isSelectedEdited = true;
+            }
+        }
+    }
+    return isSelectedEdited = false;
 }

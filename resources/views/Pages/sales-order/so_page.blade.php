@@ -56,6 +56,9 @@
         border-bottom-left-radius: 5px;
     }
 
+    #soTable thead tr td .dt-column-title{
+        white-space: nowrap;
+    }
 </style>
 
 <x-table id="soTable">
@@ -106,28 +109,76 @@
         height: 10px;
     }
 
-    #soTable thead{
-        white-space: nowrap;
+    .sooheaderform .row div div label{
+        font-size: 10px;
+        margin-bottom: 0;
     }
+    
+    .sooheaderform .row div div input{
+        font-size: 13px;
+        margin-bottom: 0;
+    }
+
+    #customItemSearchBox{
+        margin-right: 0.3em;
+        width: auto;
+        background-color: whitesmoke;
+        padding: 5px 10px;
+        border: 1px solid #aaa;
+        border-radius: 5px;
+        font-size: 12px;
+    }
+    
+    .soofooterform {
+        width: 100%;
+        margin-bottom: 1rem;
+        color: #212529;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .soofooterform th,
+    .soofooterform td {
+        padding: 2px 15px;
+        vertical-align: top;
+        border-top: 1px solid #dee2e6;
+        height: 35px;
+        vertical-align: middle !important;
+    }
+
+    .soofooterform thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .soofooterform tbody + tbody {
+        border-top: 2px solid #dee2e6;
+    }
+
+    .soofooterform tbody tr:hover {
+        background-color: transparent !important;
+        /* cursor: pointer; */
+    }
+
 </style>
 
 <x-so_modal>
     <x-slot:form_fields>
-        <div class="row mt-3">
-            <div class="col-6 text-center text-white mt-2">
+        {{-- <div class="row mt-3">
+            <div class="col text-center text-white mt-2">
                 <label for="OrderStatus" class="w-100 border-0 bg-primary py-1">SALES ORDER STATUS</label>
                 <input type="text" disabled id="OrderStatus" name="OrderStatus" class="form-control form-control-sm bg-white py-2 rounded-0" required>
             </div>
-            <div class="col-6 text-center text-white mt-2">
+            <div class="col text-center text-white mt-2">
                 <label for="SalesOrder" class="w-100 border-0 bg-primary py-1">SALES ORDER</label>
                 <input type="text" disabled id="SalesOrder" name="SalesOrder" class="form-control form-control-sm bg-white py-2 rounded-0" required>
             </div>
-        </div>
-        <div class="row mt-2">
             <div class="col text-center text-white mt-2">
                 <label for="CustomerPONumber" class="w-100 border-0 bg-primary py-1">SALES ORDER REFERENCE</label>
                 <input type="text" disabled id="CustomerPONumber" name="CustomerPONumber" class="form-control form-control-sm bg-white py-2 rounded-0" required>
             </div>
+        </div>
+        <div class="row mt-2">
             <div class="col text-center text-white mt-2">
                 <label for="Branch" class="w-100 border-0 bg-primary py-1">BRANCH</label>
                 <input type="text" disabled id="Branch" name="Branch" class="form-control form-control-sm bg-white py-2 rounded-0" required>
@@ -206,41 +257,85 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        {{-- <div class="row d-flex flex-wrap mt-1 fs12">
-            <div class="col pe-0 text-center text-white">
-                <label for="requisitioner" class="w-100 border-0 bg-primary py-1">REQUISITIONER</label>
-                <input type="text" disabled id="requisitioner" name="requisitioner"
-                    class="form-control form-control-sm bg-white py-2 rounded-0" required>
-
-            </div>
-            <div class="col px-0 text-center text-white">
-                <label for="shipVia" class="w-100 border-0 bg-primary py-1">SHIP VIA</label>
-
-
-                <div id="shipVia" name="shipVia" class="form-control bg-white p-0 border-0">
-                    Shipper Name
-                </div>
-
-            </div>
-
-            <div class="col px-0 text-center text-white">
-                <label for="fob" class="w-100 border-0 bg-primary py-1">F.O.B.</label>
-                <input type="text" disabled id="fob" name="fob"
-                    class="form-control form-control-sm bg-white py-2 rounded-0" required>
-            </div>
-
-            <div class="col ps-0 text-center text-white">
-                <label for="shippingTerms" class="w-100 border-0 bg-primary py-1 rounded-0">SHIPPING TERMS</label>
-                <input type="text" disabled id="shippingTerms" name="shippingTerms"
-                    class="form-control form-control-sm bg-white py-2" required>
-            </div>
         </div> --}}
 
+        <div class="sooheaderform">
+            <div class="row">
+                <div class="col-4">
+                    <div class="">
+                        <label for="OrderStatus" class="form-label">SALES ORDER STATUS</label>
+                        <input type="text" class="form-control" id="OrderStatus" name="OrderStatus">
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="">
+                        <label for="SalesOrder" class="form-label">SALES ORDER</label>
+                        <input type="text" class="form-control" id="SalesOrder" name="SalesOrder">
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="">
+                        <label for="CustomerPONumber" class="form-label">SALES ORDER REFERENCE</label>
+                        <input type="text" class="form-control" id="CustomerPONumber" name="CustomerPONumber">
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="">
+                        <label for="Branch" class="form-label">BRANCH</label>
+                        <input type="text" class="form-control" id="Branch" name="Branch">
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="">
+                        <label for="Warehouse" class="form-label">WAREHOUSE</label>
+                        <input type="text" class="form-control" id="Warehouse" name="Warehouse" placeholder="Warehouse">
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="">
+                        <label for="OrderDate" class="form-label">ORDER DATE</label>
+                        <input type="date" disabled id="OrderDate" name="OrderDate" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="">
+                        <label for="ReqShipDate" class="form-label">REQUEST SHIP DATE</label>
+                        <input type="date" disabled id="ReqShipDate" name="ReqShipDate" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="">
+                        <label for="shippedToName" class="form-label">SHIP TO</label>
+                        <div id="shippedToName" name="shippedToName" required class="form-control bg-white p-0 border-0"></div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="">
+                        <label for="shippedToContactName" class="form-label">CONTACT</label>
+                        <input type="text" disabled id="shippedToContactName" name="shippedToContactName" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="">
+                        <label for="shippedToAddress" class="form-label">ADDRESS</label>
+                        <input type="text" disabled id="shippedToAddress" name="shippedToAddress" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-2">
+                    <div class="">
+                        <label for="shippedToPhone" class="form-label">PHONE</label>
+                        <input type="text" disabled id="shippedToPhone" name="shippedToPhone" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row mt-2">
-            <div class="d-flex align-items-center px-2 fs12">
+            <hr style="margin: 15px 0 0 0"/>
+            <span style="font-size: 12px; margin-bottom: 15px;">Items:</span>
+            <div class="d-flex align-items-center justify-content-between px-2 fs12 mb-1">
                 <button type="button" class="btn btn-primary btn-sm text-white mx-1" id="addItems">Add Item</button>
+                <div id="searchBar"></div>
             </div>
             <x-sub_table id="itemTables" class="fs12 table-bordered">
                 <x-slot:td>
@@ -259,7 +354,7 @@
         </div>
 
         <div class="row mt-2 mx-0">
-            <table class="table table-bordered fs12">
+            <table class="soofooterform fs12">
                 <tbody>
                     <tr>
                         <td class="col-9 text-center bg-info"> Comments or Special Instructions</td>
@@ -268,7 +363,7 @@
                     </tr>
                     <tr>
                         <td rowspan="3" class="p-0">
-                            <textarea class="form-control px-2 h-100 w-100" id="poComment" rows="5" style="resize: none;"></textarea>
+                            <textarea class="form-control px-2 h-100 w-100" id="poComment" rows="5" style="resize: none; height: 100px !important;"></textarea>
                         </td>
                         <td>TAX: </td>
                         <td id="taxCost" class="text-end"></td>
@@ -376,7 +471,7 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary btn-sm text-white" id="itemSave">Save Item</button>
-                <button type="button" class="btn btn-info btn-sm text-white" id="itemEdit">Edit Item</button>
+                {{-- <button type="button" class="btn btn-info btn-sm text-white" id="itemEdit">Edit Item</button> --}}
                 <button type="button" class="btn btn-secondary btn-sm" id="itemCloseBtn">Close</button>
             </div>
 

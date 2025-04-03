@@ -90,3 +90,11 @@
     border-radius: 50rem;
     min-width: 80px;
 }
+
+#loadingScreen, #dattableDiv{
+    min-height: 35vh;
+}
+
+/* .opacity-0{
+    display: none;
+} */

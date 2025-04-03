@@ -1,4 +1,4 @@
-<div id="loadingScreen" class="py-5 w-100 h-100 d-flex justify-content-center align-items-center loadingScreen" style="background-color: rgba(0, 0, 0, 0.1);">
+<div id="loadingScreen" class="w-100 h-100 d-flex justify-content-center align-items-center loadingScreen">
     <span class="loader" style="height: 42px; width: 42px"></span>
 </div>
 

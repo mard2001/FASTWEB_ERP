@@ -15,7 +15,7 @@
         @include('Components.nav')
         <div class="main">
             @yield('title_header')
-            <div class="container-xl mainInnerDiv">
+            <div class="container-fluid mainInnerDiv">
                 @yield('table')
             </div>
             @yield('modal')
