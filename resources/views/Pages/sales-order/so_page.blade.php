@@ -201,101 +201,6 @@
 
 <x-so_modal>
     <x-slot:form_fields>
-        {{-- <div class="row mt-3">
-            <div class="col text-center text-white mt-2">
-                <label for="OrderStatus" class="w-100 border-0 bg-primary py-1">SALES ORDER STATUS</label>
-                <input type="text" disabled id="OrderStatus" name="OrderStatus" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-            </div>
-            <div class="col text-center text-white mt-2">
-                <label for="SalesOrder" class="w-100 border-0 bg-primary py-1">SALES ORDER</label>
-                <input type="text" disabled id="SalesOrder" name="SalesOrder" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-            </div>
-            <div class="col text-center text-white mt-2">
-                <label for="CustomerPONumber" class="w-100 border-0 bg-primary py-1">SALES ORDER REFERENCE</label>
-                <input type="text" disabled id="CustomerPONumber" name="CustomerPONumber" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-            </div>
-        </div>
-        <div class="row mt-2">
-            <div class="col text-center text-white mt-2">
-                <label for="Branch" class="w-100 border-0 bg-primary py-1">BRANCH</label>
-                <input type="text" disabled id="Branch" name="Branch" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-            </div>
-            <div class="col text-center text-white mt-2">
-                <label for="Warehouse" class="w-100 border-0 bg-primary py-1">WAREHOUSE</label>
-                <input type="text" disabled id="Warehouse" name="Warehouse" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-            </div>
-        </div>
-
-        <div class="row mt-2">
-            <div class="col-6" style="display: none">
-                <div class="mt-2 fs12">
-                    <div class="my-sm-2 ResMWidth">
-                        <div class="bg-primary p-1 d-flex align-items-center text-white" style="font-size: 14px;">
-                            VENDOR
-                        </div>
-                        <div id="vendorName" name="vendorName" class="form-control bg-white p-0 border-0">
-                            Vendor Name
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white">Contact:</span>
-                            <input type="text" disabled id="VendorContactName" name="VendorContactName" readonly required class="form-control bg-white" placeholder="Contact Name">
-                        </div>
-                        <label id="VendorContactName-error" class="error d-block" for="VendorContactName"></label>
-        
-                        <textarea class="form-control px-2" id="vendorAddress" readonly required placeholder="Vendor Address" rows="2" style="resize: none;"></textarea>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white">Phone:</span>
-                            <input type="text" disabled id="vendorPhone" name="vendorPhone" required readonly class="form-control bg-white" placeholder="Phone">
-                        </div>
-                        <label id="vendorPhone-error" class="error d-block" for="vendorPhone"></label>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-8">
-                <div class=" mt-2 fs12">
-                    <div class="my-sm-2 ResMWidth">
-                        <div class="bg-primary p-1 d-flex align-items-center text-white" style="font-size: 14px;">
-                            SHIP TO
-                        </div>
-        
-                        <div id="shippedToName" name="shippedToName" required class="form-control bg-white p-0 border-0">
-                            Shipper Name
-                        </div>
-        
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white">Contact:</span>
-                            <input type="text" disabled id="shippedToContactName" required name="SupplierContactName" class="form-control bg-white" placeholder="Contact Name">
-                        </div>
-                        <label id="shippedToContactName-error" class="error d-block" for="shippedToContactName"></label>
-        
-                        <textarea class="form-control px-2" id="shippedToAddress" required placeholder="Shipped To Address" rows="2" style="resize: none;"></textarea>
-                        <label id="shippedToAddress-error" class="error d-block" for="shippedToAddress"></label>
-        
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white">Phone:</span>
-                            <input type="text" disabled id="shippedToPhone" required name="shippedToPhone" class="form-control bg-white" placeholder="Phone">
-                        </div>
-                        <label id="shippedToPhone-error" class="error d-block" for="shippedToPhone"></label>
-        
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-4">
-                <div class="mt-2 fs12">
-                    <div class="col pe-0 text-center text-white">
-                        <label for="OrderDate" class="w-100 border-0 bg-primary py-1">ORDER DATE</label>
-                        <input type="date" disabled id="OrderDate" name="OrderDate" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-                    </div>
-                    <div class="col pe-0 text-center text-white mt-5">
-                        <label for="ReqShipDate" class="w-100 border-0 bg-primary py-1">REQUEST SHIP DATE</label>
-                        <input type="date" disabled id="ReqShipDate" name="ReqShipDate" class="form-control form-control-sm bg-white py-2 rounded-0" required>
-                    </div>
-                </div>
-            </div>
-        </div> --}}
-
         <div class="sooheaderform">
             <div class="row">
                 <div class="col-4">
@@ -325,7 +230,7 @@
                 <div class="col-3">
                     <div class="">
                         <label for="Warehouse" class="form-label">WAREHOUSE</label>
-                        <input type="text" class="form-control" id="Warehouse" name="Warehouse" placeholder="Warehouse">
+                        <input type="text" class="form-control" id="Warehouse" name="Warehouse">
                     </div>
                 </div>
                 <div class="col-3">
@@ -624,20 +529,34 @@
 </div>
 
 <div class="modal fade" id="filterSOModal">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Filter Sales Orders</h1>
+                <h5 class="modal-title">Filter Sales Orders</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="reportrange" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
-                    <i class="fa fa-calendar"></i>&nbsp;
-                    <span></span> <i class="fa fa-caret-down"></i>
+                <div class="mb-3 reportrangeDiv">
+                    <label for="reportrange" class="form-label">Date Range</label>
+                    <div id="reportrange" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                        <i class="fa fa-calendar"></i>&nbsp;
+                        <span></span> <i class="fa fa-caret-down"></i>
+                    </div>
+                </div>
+                <div class="mb-3 salesOrderListDiv" >
+                    <label for="salesOrderList" class="form-label">Sales Order</label>
+                    <div id="salesOrderList" name="salesOrderList" class="form-control bg-white p-0 border-0">
+                    </div>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="" id="checkboxDateFiltering">
+                    <label class="form-check-label" for="checkDefault">
+                      Filter by Date
+                    </label>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary px-4">Filter</button>
+                <button type="button" id="getFilteredBtn" class="btn btn-primary px-4">Filter</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

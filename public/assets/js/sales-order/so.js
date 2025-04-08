@@ -16,6 +16,9 @@ var productConFact;
 var isEditing = false;
 var isSelectedEdited = false;
 var tmpUpdatedMain;
+var filteredStartDate;
+var filteredEndDate;
+var options = [];
 
 // FOR THE MEANTIME
 selectedVendor = {
@@ -70,15 +73,22 @@ $(document).ready(async function () {
     const userObject = JSON.parse(user);
 
     await datatables.loadSOData();
+    setTimeout(() => {
+        const select = document.querySelector("#filterPOVS");
+        select.setValue("8");
+    },100);
     await initVS.liteDataVS();
     await initVS.bigDataVS();
     await getProductPriceCodes();
     SOItemsModal.setValidator();
+    initVS.initFilterDataVS();
     setDate();
     datePicker();
     
     
     $('#filterBtn').on("click", function () {
+        $('.reportrangeDiv').hide();
+        $('#checkboxDateFiltering').prop('checked', false);
         $('#filterSOModal').modal('show');
     });
 
@@ -133,6 +143,22 @@ $(document).ready(async function () {
 
     $("#csvUploadShowBtn").on("click", async function () {
         $('#uploadCsv').modal('show');
+    });
+
+    $("#getFilteredBtn").on("click", async function () {
+        getFilteredSO();
+    });
+
+    $('#checkboxDateFiltering').change(function() {
+        if ($(this).is(':checked')) {
+            $('.reportrangeDiv').show();
+            console.log('checked');
+        } else {
+            $('.reportrangeDiv').hide();
+            console.log('unchecked');
+        }
+        options = [];
+        initVS.initFilterDataVS();
     });
 
     $(document).on('click', '#addBtn', async function () {
@@ -461,7 +487,7 @@ const datatables = {
     },
 
     initSODatatable: (response) => {
-        console.log(response.data);
+        // console.log(response.data);
         if (response.success) {
             if (MainTH) {
                 MainTH.clear().draw();
@@ -542,7 +568,7 @@ const datatables = {
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
                         $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-4');
+                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-3');
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
@@ -699,6 +725,7 @@ const initVS = {
 
         $("#filterPOVS").on("change", async function () {
             if (this.value) {
+                // console.log(this.value);
                 var filteredData = { data:[], success: true };
                 var filterValues = this.value;
                 if(filterValues.length == 0){
@@ -942,6 +969,78 @@ const initVS = {
             console.error("Error:", error);
           }
         );
+    },
+
+    initFilterDataVS: () => {
+        if (document.querySelector('#salesOrderList')?.virtualSelect) {
+            document.querySelector('#salesOrderList').destroy();
+        }
+
+        VirtualSelect.init({
+            ele: '#salesOrderList',
+            multiple: true,
+            options: options,
+            markSearchResults: true,
+            maxWidth: '100%',
+            search: true,
+            autofocus: true,
+            allowNewOption: true,
+            hasOptionDescription: true,
+            noOptionsText: 'No sales orders found.'
+        });
+    },
+
+    filterDataVS: () => {
+        var filterDate = {filteredStartDate,filteredEndDate};
+
+        Swal.fire({
+            text: "Please wait... Fetching Sales Orders within the date range...",
+            timerProgressBar: true,
+            allowOutsideClick: false,
+            allowEscapeKey: false,  
+            allowEnterKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+        });
+
+        ajax( "api/sales-order/orderstatus/filtered/", "POST", JSON.stringify({ 
+                data: filterDate
+            }),
+            (response) => {
+                options = [];
+                document.querySelector('#salesOrderList').virtualSelect.reset();
+                if(response.data.length > 0){
+                    options = response.data.map((item) => {
+                        return {
+                            value: item.SalesOrder, 
+                            label: item.SalesOrder + " - " + item.CustomerName, 
+                        };
+                    });
+                }
+
+                // Check if the VirtualSelect instance exists before destroying
+                if (document.querySelector('#salesOrderList')?.virtualSelect) {
+                    document.querySelector('#salesOrderList').destroy();
+                }
+
+                VirtualSelect.init({
+                    ele: '#salesOrderList',
+                    multiple: true,
+                    options: options,
+                    markSearchResults: true,
+                    maxWidth: '100%',
+                    search: true,
+                    autofocus: true,
+                    allowNewOption: true,
+                    hasOptionDescription: true,
+                    noOptionsText: 'No sales orders found for the specified date range.'
+                });
+
+                Swal.close();
+                $('.salesOrderListDiv').show();
+            }
+        )
     },
 }
 
@@ -1832,7 +1931,9 @@ function hasChanges(original, modified) {
 
 function datePicker(){
     var start = moment().subtract(29, 'days');
+    filteredStartDate = start.format('YYYY-MM-DD');
     var end = moment();
+    filteredEndDate = end.format('YYYY-MM-DD')
 
     function cb(start, end) {
         $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
@@ -1841,6 +1942,7 @@ function datePicker(){
     $('#reportrange').daterangepicker({
         startDate: start,
         endDate: end,
+        autoUpdateInput: false,
         ranges: {
            'Today': [moment(), moment()],
            'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
@@ -1851,5 +1953,49 @@ function datePicker(){
         }
     }, cb);
 
+    $('#reportrange').on('apply.daterangepicker', function(ev, picker) {
+        filteredStartDate = picker.startDate.format('YYYY-MM-DD');
+        filteredEndDate = picker.endDate.format('YYYY-MM-DD');
+        $('.salesOrderListDiv').hide();
+        initVS.filterDataVS();
+    });
+
+    $('#daterange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+    });
+
     cb(start, end);
+}
+
+function getFilteredSO(){
+    var salesOrderList = $('#salesOrderList').val();
+
+    ajax( "api/sales-order/filtered-sales-order/", "POST", JSON.stringify({ 
+            salesOrder: salesOrderList,
+        }),
+        (response) => {
+            $('#filterSOModal').modal('hide');
+            if(response.success == 3){
+                Swal.fire({
+                    title: "Warning!",
+                    text: response.message,
+                    icon: "warning",
+                });
+            } else if (response.success) {
+                Swal.fire({
+                    title: "Success!",
+                    text: response.message,
+                    icon: "success",
+                });
+
+                jsonArr = response.data;
+                datatables.initSODatatable(response);
+                if (document.querySelector('#filterPOVS')?.virtualSelect) {
+                    document.querySelector('#filterPOVS').reset();
+                }
+            }
+        }
+    )
+
+
 }

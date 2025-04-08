@@ -37,7 +37,10 @@ Route::get('/inventory', function () {
 
 
 
-
+Route::get('/', function () {
+    // return page_view('login');
+    return redirect()->intended('/login');
+})->name('index');
 
 Route::get('/dbconfig', function () {
     return page_view('dbconfig_page');

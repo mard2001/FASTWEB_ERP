@@ -44,7 +44,7 @@ class SOMasterController extends Controller
                 'ShipAddress3',
                 'ShipToGpsLat',
                 'ShipToGpsLong',
-            )->whereBetween('EntrySystemDate', [$oneMonthAgo, $today])->where('OrderStatus', '8')->get();
+            )->whereBetween('EntrySystemDate', [$oneMonthAgo, $today])->get();
             
             if (count($data) == 0) {
                 return response()->json([
@@ -163,8 +163,39 @@ class SOMasterController extends Controller
     public function Showfiltered(Request $request)
     {
         try {
-            $today = date('Y-m-d'); // Today's date
-            $oneMonthAgo = date('Y-m-d', strtotime('-1 month'));
+            $start = (!$request->data['filteredStartDate'])? date('Y-m-d', strtotime('-1 month')) : $request->data['filteredStartDate'];
+            $end = (!$request->data['filteredEndDate'])? date('Y-m-d') : $request->data['filteredEndDate'];
+
+            $data = SOMaster::select(
+                'SalesOrder',
+                'CustomerName',
+            )->whereBetween('EntrySystemDate', [$start, $end])->get();
+            
+            if (count($data) == 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No Sales Orders Data found',
+                    'data' => [],
+                ], 200);  // HTTP 404 Not Found
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sales Orders Data retrieved successfully',
+                'data' => $data
+            ], 200);  // HTTP 200 OK
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function fetch_SalesOrder_Filtered(Request $request)
+    {
+        try {
+            $salesOrders = $request->salesOrder;
 
             $data = SOMaster::select(
                 'SalesOrder',
@@ -187,11 +218,12 @@ class SOMasterController extends Controller
                 'ShipAddress3',
                 'ShipToGpsLat',
                 'ShipToGpsLong',
-            )->whereBetween('EntrySystemDate', [$oneMonthAgo, $today])->where('OrderStatus', '8')->get();
+                'EntrySystemDate',
+            )->whereIn('SalesOrder', $request->salesOrder)->get();
             
             if (count($data) == 0) {
                 return response()->json([
-                    'success' => true,
+                    'success' => 3,
                     'message' => 'No Sales Orders Data found',
                 ], 200);  // HTTP 404 Not Found
             }

@@ -116,6 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Route::post('/v2/so/upload', [ProdController::class, 'storeBulk']);
         Route::apiResource('/header', SOMasterController::class);
         Route::post('/orderstatus/filtered', [SOMasterController::class, 'Showfiltered']);
+        Route::post('/filtered-sales-order', [SOMasterController::class, 'fetch_SalesOrder_Filtered']);
         Route::post('/orderstatus/delete', [SOMasterController::class, 'SOStatus_Delete']);
         Route::post('/orderstatus/open-back-order', [SOMasterController::class, 'SOStatus_NotAvailable']);
         Route::post('/orderstatus/release-back-order', [SOMasterController::class, 'SOStatus_InAvailable']);
