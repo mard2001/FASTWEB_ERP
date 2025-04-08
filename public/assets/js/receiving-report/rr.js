@@ -13,6 +13,8 @@ const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto
 
 
 $(document).ready(async function () {
+    const user = localStorage.getItem('user');
+    const userObject = JSON.parse(user);
     await datatables.loadRRData();
     await initVS.liteDataVS();
 
@@ -69,6 +71,42 @@ $(document).ready(async function () {
     $('#csvDLBtn').on('click', function () {
         downloadToCSV(jsonArr);
     });
+
+    $('#rrConfirm').on('click', function () {
+        var dataConf = {
+            user: userObject.name,
+            rrNum: selectedMain.RRNo,
+            rrData: selectedMain
+        }
+
+        ajax( "api/report/v2/confirm-rr", "POST", JSON.stringify({ 
+                data: dataConf 
+            }),
+            (response) => {
+                if (response.success) {
+                    // datatables.loadSOData();
+                    Swal.close();
+                    Swal.fire({
+                        title: "Success!",
+                        text: response.message,
+                        icon: "success",
+                    });
+                }
+            },
+            (xhr, status, error) => {
+                // Error callback
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                Swal.fire({
+                    title: "Opppps..",
+                    text: xhr.responseJSON.message,
+                    icon: "error",
+                });
+                }
+            }
+        );
+        
+        console.log(dataConf);
+    }); 
 });
 
 
@@ -144,7 +182,7 @@ const datatables = {
                         { data: 'Reference',  title: 'Reference'},
                         { data: 'Status',  title: 'Status',
                             render: function(data, type, row) {
-                                return data == 1 ? "<span class='statusBadge1'>Active</span>" : "<span class='statusBadge2'>Deleted</span>";
+                                return data == "1" ? "<span class='statusBadge3'>Pending</span>" : data == "0" ? "<span class='statusBadge2'>Deleted</span>" : data == "2" ? "<span class='statusBadge1'>Confirmed</span>" : "";
                             } 
                         },
                         { data: 'preparedby.FULLNAME',  title: 'Prepared By' },
@@ -210,14 +248,20 @@ const RRModal = {
         $('.rrNo').html(RRModalData.RRNo);
         $('.date').html(RRModalData.RRDATE);
         $('.reference').html(RRModalData.Reference);
-        $('.status').html(RRModalData.Status == 1 ? "Active" : "Deleted");
-
-        // <td class="text-center">${parseFloat(item["convertedQuantity"]).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        // <td class="text-center">${item["convertedUOM"]}</td>
+       
+        if(RRModalData.Status == 1){
+            $('#rrConfirm').show();
+            $('.status').html("Pending");
+        } else if(RRModalData.Status == 2){
+            $('#rrConfirm').hide();
+            $('.status').html("Deleted");
+        } else if(RRModalData.Status == 0){
+            $('.status').html("Confirmed");
+            $('#rrConfirm').hide();
+        }
 
         (RRModalData.rrdetails).forEach((item, index) => {
             total += parseFloat(item["Gross"]) || 0;
-            // Feb, 24 = Typo naming in Description Column, tblInvRRDetails table;
             var tr = `
                 <tr>
                     <th scope="row" class="text-center">${index + 1}</th>

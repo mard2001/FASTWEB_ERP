@@ -72,6 +72,21 @@
     background-color: #b3dbf2;
 }
 
+.statusBadge3{
+    display: inline-block;
+    padding: 0.35em 0.85em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+    color: #ff9c07;
+    border: 1px solid #ff9c07;
+    background-color: #f2dbb3;
+}
+
 .userIcon{
     background-color: #eff1f8;
     padding: 8px;

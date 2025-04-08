@@ -18,6 +18,8 @@ class ReceivingRHeader extends Model
 
     public $incrementing = false;
 
+    public $timestamps = false;
+
     protected $fillable = [
         'SupplierCode',
         'SupplierName',

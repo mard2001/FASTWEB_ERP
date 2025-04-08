@@ -6,12 +6,17 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Orders\PO;
 use Illuminate\Http\Request;
-use App\Models\ReceivingReports\ReceivingRHeader;
-use App\Models\ReceivingReports\ReceivingRDetails;
+use Illuminate\Support\Facades\DB;
 use App\Services\ProductCalculator;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Inventory\InvMovements;
+use App\Models\Inventory\InvWarehouse;
 use Illuminate\Support\Facades\Session;
+use App\Events\Inventory\InventoryMovement;
+use App\Events\Inventory\InventoryWarehouse;
+use App\Models\ReceivingReports\ReceivingRHeader;
+use App\Models\ReceivingReports\ReceivingRDetails;
 
 class RRController extends Controller
 {
@@ -260,7 +265,6 @@ class RRController extends Controller
         //
     }
 
-
     public function setRRNum(Request $request) {
         // Session::put('RRNum', $request->RRNum);
         Cache::put('RRNum', $request->RRNum, now()->addMinutes(1)); 
@@ -331,5 +335,54 @@ class RRController extends Controller
 
         
     }
+
+    public function approveRR(Request $request){
+        try {
+            $rrNo = $request->data['rrNum'];
+            $user = $request->data['user'];
+            $details = $request->data['rrData']['rrdetails'];
+            $rrHeaderDetails = $request->data;
+            unset($rrHeaderDetails['rrData']['rrdetails'], $rrHeaderDetails['rrData']['poincluded']);
+
+            $isPresent = ReceivingRHeader::where('RRNo', $rrNo)
+                ->update([
+                    'status' => 2,  // Confirmed
+                    'ApprovedBy' => $user,
+                    'CheckedBy' => $user,
+                    'DATEUPDATED' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                ]);
+
+            if(!$isPresent){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Receiving Report not found',
+                ], 404);
+            }
+
+            
+            foreach ($details as $detail) {
+                $sku = $detail['SKU'];
+                $warehouse = $detail['warehouse'] = 'M1';
+                $qty = $detail['convertedQuantity']['convertedToLargestUnit'];
+                
+
+                event(new InventoryWarehouse($sku, $warehouse, $qty));
+                event(new InventoryMovement($rrHeaderDetails,  $detail, 'I'));
+            }
+
+            return response()->json([
+                'message' => 'Receiving Report confirmed successfully',
+                'success' => true,
+                // 'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
+
 
 }

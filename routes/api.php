@@ -129,6 +129,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::prefix('report')->group(function () {
         Route::apiResource('/v2/rr', RRController::class);
+        Route::post('/v2/confirm-rr', [RRController::class, 'approveRR']);
+
         Route::apiResource('/v2/countsheet', CountController::class);
     });
 

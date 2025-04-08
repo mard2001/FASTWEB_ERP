@@ -14,6 +14,7 @@
             <div class="modal-footer py-1 d-flex justify-content-between" id="delprint">
                 <div>
                     <button type="button" class="btn btn-sm btn-primary" id="rrPrintPage">Print Report</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="rrConfirm">Confirm Report</button>
                 </div>
                 <div>
                     <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>

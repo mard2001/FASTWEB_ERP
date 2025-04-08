@@ -2,10 +2,15 @@
 
 namespace App\Providers;
 
+use App\Listeners\InvMovement;
+use App\Listeners\InvWarehouse;
 use App\Observers\SOItemsObserver;
 use App\Models\SalesOrder\SODetail;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Registered;
+use App\Listeners\InvWarehouseListener;
+use App\Events\Inventory\InventoryMovement;
+use App\Events\Inventory\InventoryWarehouse;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
@@ -19,6 +24,13 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+            
+        ],
+        InventoryWarehouse::class => [
+            InvWarehouseListener::class,
+        ],
+        InventoryMovement::class => [
+            InvMovement::class,
         ],
     ];
 
