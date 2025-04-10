@@ -84,7 +84,8 @@ $(document).ready(async function () {
             }),
             (response) => {
                 if (response.success) {
-                    // datatables.loadSOData();
+                    datatables.loadRRData();
+                    RRModal.hide();
                     Swal.close();
                     Swal.fire({
                         title: "Success!",

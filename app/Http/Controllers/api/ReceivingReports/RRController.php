@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Orders\PO;
 use Illuminate\Http\Request;
+use App\Services\InventoryManager;
 use Illuminate\Support\Facades\DB;
 use App\Services\ProductCalculator;
 use App\Http\Controllers\Controller;
@@ -338,6 +339,8 @@ class RRController extends Controller
 
     public function approveRR(Request $request){
         try {
+            $InventoryManager = new InventoryManager();
+
             $rrNo = $request->data['rrNum'];
             $user = $request->data['user'];
             $details = $request->data['rrData']['rrdetails'];
@@ -364,10 +367,8 @@ class RRController extends Controller
                 $sku = $detail['SKU'];
                 $warehouse = $detail['warehouse'] = 'M1';
                 $qty = $detail['convertedQuantity']['convertedToLargestUnit'];
-                
-
-                event(new InventoryWarehouse($sku, $warehouse, $qty));
-                event(new InventoryMovement($rrHeaderDetails,  $detail, 'I'));
+                $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "IN");
+                $InventoryManager->InvMovement($rrHeaderDetails,  $detail, 'I');
             }
 
             return response()->json([

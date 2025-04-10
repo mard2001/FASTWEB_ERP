@@ -39,7 +39,7 @@ function GlobalUX() {
     const hamBurger = document.querySelector(".btn-toggle");
 
     hamBurger.addEventListener("click", async function () {
-        document.querySelector("#sidebar").classList.toggle("expand");
+      document.querySelector("#sidebar").classList.toggle("expand");
     });
 
     // Get the pathname part of the URL
@@ -47,50 +47,45 @@ function GlobalUX() {
     // Split the path by "/" and get the last segment
     var lastSegment = path.substring(path.lastIndexOf('/') + 1);
     switch (lastSegment.toLocaleLowerCase()) {
-        case 'product':
-            returnSideBarItemBaseOnIndex(0);
-            break;
-        case 'salesman':
-            returnSideBarItemBaseOnIndex(1);
-            break;
-        case 'customer':
-            returnSideBarItemBaseOnIndex(2);
-            break;
-        case 'inventory':
-            returnSideBarItemBaseOnIndex(3);
-            break;
-        case 'picklist':
-            returnSideBarItemBaseOnIndex(4);
-            break;
-        case 'pamasterlist':
-            returnSideBarItemBaseOnIndex(5);
-            break;
+      case 'product':
+        returnSideBarItemBaseOnIndex(0);
+        break;
+      case 'salesman':
+        returnSideBarItemBaseOnIndex(1);
+        break;
+      case 'customer':
+        returnSideBarItemBaseOnIndex(2);
+        break;
+      case 'inventory':
+        returnSideBarItemBaseOnIndex(3);
+        break;
+      case 'picklist':
+        returnSideBarItemBaseOnIndex(4);
+        break;
+      case 'pamasterlist':
+        returnSideBarItemBaseOnIndex(5);
+        break;
+      case 'patarget':
+        returnSideBarItemBaseOnIndex(6);
+        break;
+      case 'invoices':
+        returnSideBarItemBaseOnIndex(7);
+        break;
+      case 'purchase-order':
+        returnSideBarItemBaseOnIndex(8);
+        break;
+      case 'receiving-report':
+        returnSideBarItemBaseOnIndex(9);
+        break;
+      case 'sales-order':
+        returnSideBarItemBaseOnIndex(10);
+        break;
 
-        case 'patarget':
-            returnSideBarItemBaseOnIndex(6);
-            break;
-
-        case 'invoices':
-            returnSideBarItemBaseOnIndex(7);
-            break;
-
-        case 'purchase-order':
-            returnSideBarItemBaseOnIndex(8);
-            break;
-
-        case 'receiving-report':
-            returnSideBarItemBaseOnIndex(9);
-            break;
-
-        case 'sales-order':
-            returnSideBarItemBaseOnIndex(10);
-            break;
-
-        function returnSideBarItemBaseOnIndex(i) {
-            var sidebar = $('.sidebar-item').eq(i);
-            sidebar.addClass('selectedlink');
-            sidebar.find('span').addClass('selectedlinkSpan');
-        }
+      function returnSideBarItemBaseOnIndex(i) {
+        var sidebar = $('.sidebar-item').eq(i);
+        sidebar.addClass('selectedlink');
+        sidebar.find('span').addClass('selectedlinkSpan');
+      }
     }
 }
 

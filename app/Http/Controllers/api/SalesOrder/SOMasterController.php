@@ -4,11 +4,15 @@ namespace App\Http\Controllers\api\SalesOrder;
 
 use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
+use App\Models\Customer\Customer;
+use App\Services\InventoryManager;
 use Illuminate\Support\Facades\DB;
 use App\Models\SalesOrder\SODetail;
 use App\Models\SalesOrder\SOMaster;
 use App\Http\Controllers\Controller;
-use App\Models\Customer\Customer;
+use Illuminate\Support\Facades\Event;
+use App\Events\Inventory\InventoryMovement;
+use App\Events\Inventory\InventoryWarehouse;
 
 class SOMasterController extends Controller
 {
@@ -445,10 +449,40 @@ class SOMasterController extends Controller
     public function SOStatus_Complete(Request $request)
     {   
         try{
-            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
-                'OrderStatus' => '9',
-                'LastOperator' => $request->lastOperator
-            ]);
+            $InventoryManager = new InventoryManager();
+
+            $details = $request->sodata['details'];
+            $soHeaderDetails = $request->sodata;
+            unset($soHeaderDetails['details']);
+
+            $checkProdArr = array_map(function ($item) {
+                return [
+                    'stockCode' => $item['MStockCode'],
+                    'qty' => (float)$item['MOrderQty'],
+                    'warehouse'=> $item['MWarehouse'],
+                ];
+            }, $details);
+
+            $isEnough = $InventoryManager->isInvEnough($checkProdArr);
+            if($isEnough){
+                $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                    'OrderStatus' => '9',
+                    'LastOperator' => $request->lastOperator
+                ]);
+
+                foreach ($details as $detail) {
+                    $sku = $detail['MStockCode'];
+                    $warehouse = $detail['MWarehouse'];
+                    $qty = $detail['MOrderQty'];
+                    $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "OUT");
+                    $InventoryManager->InvMovement($soHeaderDetails,  $detail, 'S');
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sales Order cannot be invoiced due to insufficient stock.',
+                ], 200);  // HTTP 200 OK
+            }
 
             return response()->json([
                 'success' => true,

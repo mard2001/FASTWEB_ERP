@@ -202,7 +202,7 @@ $(document).ready(async function () {
     });
 
     $('#completeSO').on('click', function () {
-        SOStatus.ChangeSOStatus('complete', selectedMain.SalesOrder,userObject.name);
+        SOStatus.ChangeSOStatus('complete', selectedMain.SalesOrder,userObject.name, selectedMain);
     });
 
     $("#editSOBtn").on("click", function () {
@@ -1858,21 +1858,26 @@ function setDate(){
 
 
 const SOStatus = {
-    ChangeSOStatus: async (status, salesOrder, lastOperator) => {
-        await ajax("api/sales-order/orderstatus/"+status, "POST", JSON.stringify({ salesOrder, lastOperator }),
+    ChangeSOStatus: async (status, salesOrder, lastOperator, sodata = null) => {
+        await ajax("api/sales-order/orderstatus/"+status, "POST", JSON.stringify({ salesOrder, lastOperator, sodata }),
             (response) => {
             // Success callback
-            if (response.success) {
-    
-                Swal.fire({
-                    title: "Success!",
-                    text: response.message,
-                    icon: "success",
-                });
+                if (response.success) {
+                    Swal.fire({
+                        title: "Success!",
+                        text: response.message,
+                        icon: "success",
+                    });
 
-                SOModal.hide();
-                datatables.loadSOData();
-            }
+                    SOModal.hide();
+                    datatables.loadSOData();
+                } else{
+                    Swal.fire({
+                        title: "Warning!",
+                        text: response.message,
+                        icon: "warning",
+                    });
+                }
             },
             (xhr, status, error) => {
             // Error callback

@@ -30,10 +30,7 @@ Route::get('/pamasterlist', function () {
 
 
 
-Route::get('/inventory', function () {
-    // return page_view('inventory_page');
-    return page_view('inventory-maintenance/invCount_page');
-})->name('inventory');
+
 
 
 
@@ -77,13 +74,18 @@ Route::get('/layout', function () {
 
 
 // CUSTOMER MAINTENANCE MODULE
-Route::get('/customer', function () {
+Route::get('/maintenance/customer', function () {
     // return page_view('customer_page');
     return page_view('customer-maintenance/cust_page');
 })->name('customer');
 
 
 // INVENTORY MAINTENANCE MODULE
+Route::get('/maintenance/inventory', function () {
+    // return page_view('inventory_page');
+    return page_view('inventory-maintenance/invCount_page');
+})->name('inventory');
+
 Route::get('/countsheet', function () {
     return page_view('invCount_page');
 })->name('countsheet');
@@ -120,7 +122,7 @@ Route::get('/print/countsheet/testing', function () {
 
 
 // PRODUCT MAINTENANCE MODULE
-Route::get('/product', function () {
+Route::get('/maintenance/product', function () {
     return page_view('product-maintenance/product_page');
 })->name('product');
 
@@ -181,7 +183,7 @@ Route::get('/print/rr/testing', function () {
 
 
 // SALESMAN MAINTENANCE MODULE
-Route::get('/salesman', function () {
+Route::get('/maintenance/salesman', function () {
     // return page_view('salesman_page');
     return page_view('salesman/salesperson_page');
 })->name('salesman');
