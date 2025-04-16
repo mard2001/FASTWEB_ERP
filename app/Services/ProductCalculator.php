@@ -194,19 +194,14 @@ class ProductCalculator
     public function originalDynamicConv(string $sku, int $quantity)
     {
         try {
+            $product = Product::where('StockCode', $sku)->firstOrFail();
+            $originalQty = $quantity;
+            $ConvFactAltUom = $product->ConvFactAltUom;
+            $ConvFactOthUom = $product->ConvFactOthUom;
+            $itemUoms = [$product->StockUom, $product->AlternateUom, $product->OtherUom];
+            $result = [ "inCS" => 0, "inIB" => 0, "inPC" => 0 ];
+
             if ($quantity > 0) {
-                $product = Product::where('StockCode', $sku)->firstOrFail();
-                $originalQty = $quantity;
-                $ConvFactAltUom = $product->ConvFactAltUom;
-                $ConvFactOthUom = $product->ConvFactOthUom;
-                $itemUoms = [$product->StockUom, $product->AlternateUom, $product->OtherUom];
-
-                $result = [
-                    "inCS" => 0,
-                    "inIB" => 0,
-                    "inPC" => 0,
-                ];
-
                 if (in_array("CS", $itemUoms)) {
                     $result["inCS"] = intdiv($originalQty, $ConvFactAltUom);
                     $quantity = $originalQty % $ConvFactAltUom;
@@ -228,13 +223,12 @@ class ProductCalculator
                         $result["inPC"] = $originalQty % $ConvFactOthUom;
                     }
                 }
-
-                return [
-                    "success" => true,
-                    "result" => $result,
-                ];
-            } else {
             }
+            
+            return [
+                "success" => true,
+                "result" => $result,
+            ];
         } catch (\Exception $e) {
 
             return [
@@ -355,5 +349,68 @@ class ProductCalculator
                 'result' => $e->getMessage(),
             ];
         }
+    }
+    public function reverseConvertFromLargestUnit($ProductUoms, $qtyInLargestUnit, $ConvFactAltUom, $ConvFactOthUom)
+    {
+        $result = [ 'CS' => 0, 'IB' => 0, 'PC' => 0 ];
+
+        if (in_array('CS', $ProductUoms)) {
+            $result['CS'] = floor($qtyInLargestUnit);
+            $remaining = $qtyInLargestUnit - $result['CS'];
+
+            if (in_array('IB', $ProductUoms)) {
+                $remainingInIB = $remaining * $ConvFactOthUom;
+                $result['IB'] = floor($remainingInIB ); /// $ConvFactOthUom
+                $remaining = ($remainingInIB - $result['IB']) * ($ConvFactAltUom / $ConvFactOthUom); 
+                
+                if (in_array('PC', $ProductUoms)) {
+                    $result['PC'] = round($remaining); // Convert remaining to PC
+                }
+
+            } else if (in_array('PC', $ProductUoms)) {
+                $result['PC'] = round($remaining * $ConvFactOthUom); // Convert remaining IB to PC
+            }
+        }
+
+        // Return only the UOMs that are requested
+        return array_filter($result, function ($key) use ($ProductUoms) {
+            return in_array($key, $ProductUoms);
+        }, ARRAY_FILTER_USE_KEY);
+    }
+
+    public function reverseConvertFromLargestUnit2($ProductUoms, $qtyInLargestUnit, $ConvFactAltUom, $ConvFactOthUom)
+    {
+        $result = [
+            'CS' => 0,
+            'IB' => 0,
+            'PC' => 0,
+        ];
+
+        if (in_array('CS', $ProductUoms)) {
+            // Extract full CS units
+            $result['CS'] = floor($qtyInLargestUnit);
+            $remaining = $qtyInLargestUnit - $result['CS']; // Remaining quantity after extracting CS
+            dd($remaining);
+            // Convert remaining to IB
+            if (in_array('IB', $ProductUoms)) {
+                // Convert the remaining to IB
+                $remainingInIB = $remaining * $ConvFactAltUom;
+                $result['IB'] = floor($remainingInIB / $ConvFactOthUom); 
+                $remaining = $remainingInIB - ($result['IB'] * $ConvFactOthUom); // Remaining after IB
+
+                // Convert remaining to PC
+                if (in_array('PC', $ProductUoms)) {
+                    $result['PC'] = round($remaining); // Convert remaining to PC
+                }
+            } else if (in_array('PC', $ProductUoms)) {
+                // If no IB, directly convert remaining to PC
+                $result['PC'] = round($remaining * $ConvFactOthUom); // Convert remaining IB to PC
+            }
+        }
+
+        // Return only the UOMs that are requested
+        return array_filter($result, function ($key) use ($ProductUoms) {
+            return in_array($key, $ProductUoms);
+        }, ARRAY_FILTER_USE_KEY);
     }
 }

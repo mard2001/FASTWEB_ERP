@@ -94,7 +94,7 @@ class InventoryManager
                 'TrnMonth' => now()->setTimezone('Asia/Manila')->format('n'),
                 'EntryDate' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
                 'MovementType' => 'I',
-                'TrnQty' => $productData['convertedQuantity']['convertedToLargestUnit'],
+                'TrnQty' => $productData['Quantity'],
                 'Reference' => $headerData['Reference'],
                 'UnitCost' => $productData['UnitPrice'],
             ]);
@@ -108,7 +108,7 @@ class InventoryManager
                 'TrnMonth' => now()->setTimezone('Asia/Manila')->format('n'),
                 'EntryDate' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
                 'MovementType' => 'S',
-                'TrnQty' => $productData['MOrderQty'],
+                'TrnQty' => $productData['QTYinPCS'],
                 'SalesOrder' => $productData['SalesOrder'],
                 'Customer' => $headerData['Customer'],
                 'Branch' => $headerData['Branch'],

@@ -1468,6 +1468,7 @@ const SOItemsModal = {
         
     },
     itemCalculateUOM: (getItem) => {
+        console.log("getItem",getItem);
         const uomsAndQty = getItem.UomAndQuantity;
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
@@ -1475,10 +1476,10 @@ const SOItemsModal = {
         const totalInPieces = SOItemsModal.getTotalQuantity(uomsAndQty);
         if (uomsAndQty.CS) {
             getItem.MOrderUom = "CS";
-            getItem.MOrderQty = (totalInPieces / ConvFactAltUom).toFixed(2);
+            getItem.MOrderQty = (totalInPieces / ConvFactAltUom);
         } else if (uomsAndQty.IB) {
             getItem.MOrderUom = "IB";
-            getItem.MOrderQty = ( totalInPieces / (ConvFactAltUom / ConvFactOthUom) ).toFixed(2);
+            getItem.MOrderQty = ( totalInPieces / (ConvFactAltUom / ConvFactOthUom) );
         } else if (uomsAndQty.PC) {
             getItem.MOrderUom = "PC";
             getItem.MOrderQty = totalInPieces;

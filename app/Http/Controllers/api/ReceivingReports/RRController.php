@@ -366,7 +366,7 @@ class RRController extends Controller
             foreach ($details as $detail) {
                 $sku = $detail['SKU'];
                 $warehouse = $detail['warehouse'] = 'M1';
-                $qty = $detail['convertedQuantity']['convertedToLargestUnit'];
+                $qty = $detail['Quantity'];
                 $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "IN");
                 $InventoryManager->InvMovement($rrHeaderDetails,  $detail, 'I');
             }

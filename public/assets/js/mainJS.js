@@ -8780,3 +8780,10 @@ const Municipality = [
     }
 ];
 
+document.querySelectorAll('.dropdown-toggle').forEach(function(toggle) {
+  toggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      let parent = this.closest('.has-dropdown');
+      parent.classList.toggle('open');
+  });
+});

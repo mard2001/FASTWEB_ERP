@@ -82,7 +82,6 @@ Route::get('/maintenance/customer', function () {
 
 // INVENTORY MAINTENANCE MODULE
 Route::get('/maintenance/inventory', function () {
-    // return page_view('inventory_page');
     return page_view('inventory-maintenance/invCount_page');
 })->name('inventory');
 
@@ -119,6 +118,14 @@ Route::get('/print/countsheet/testing', function () {
 
     return view('Pages.Printing.CountSheet_printing', compact('report'));
 })->name('printcountSheet');
+
+// INVENTORY WAREHOUSE MODULE
+Route::get('/inventory', function () {
+    return page_view('inventory/invWarehouse_page');
+})->name('invWarehouse');
+Route::get('/inventory/movement', function () {
+    return page_view('inventory/invMovements_page');
+})->name('invMovements');
 
 
 // PRODUCT MAINTENANCE MODULE

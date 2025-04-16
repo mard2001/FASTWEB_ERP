@@ -15,9 +15,12 @@
         @include('Components.nav')
         <div class="main">
             @yield('title_header')
+            @yield('filtering_options')
+            @yield('mini_dashboard_chart')
             <div class="container-fluid mainInnerDiv">
                 @yield('table')
             </div>
+            
             @yield('modal')
             @include('Components.uploader_modal')
         </div>

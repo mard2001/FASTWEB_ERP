@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\api\Inventory\InvController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -99,8 +100,10 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('prod')->group(function () {
+        Route::get('/v2/available/products', [ProdController::class, 'getAllProducts']);
         Route::post('/v2/product/upload', [ProdController::class, 'storeBulk']);
         Route::apiResource('/v2/product', ProdController::class);
+
     });
 
     Route::prefix('maintenance')->group(function () {
@@ -132,6 +135,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/v2/confirm-rr', [RRController::class, 'approveRR']);
 
         Route::apiResource('/v2/countsheet', CountController::class);
+    });
+
+    Route::prefix('inv')->group(function () {
+        // Route::apiResource('/', InvController::class);
+        Route::get('/latest-movement', [InvController::class, 'latestInvMovement']);
+        Route::get('/', [InvController::class, 'getInventory']);
+        Route::get('/product-movement/{stockCode}/{warehouse}', [InvController::class, 'getSKUMovement']);
+        Route::get('/product-movement-chart/{stockCode}/{warehouse}', [InvController::class, 'StockInOut']); 
+        Route::get('/available/products', [InvController::class, 'getProducts']);
+        Route::get('/available/product-warehouse/{StockCode}', [InvController::class, 'getProdWarehouse']);
+
     });
 
     Route::apiResource('/product', ProductController::class);

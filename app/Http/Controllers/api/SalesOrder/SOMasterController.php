@@ -344,14 +344,22 @@ class SOMasterController extends Controller
     public function SOStatus_Available(Request $request)
     {   
         try{
-            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->where('OrderStatus',1)->first();
+            if(!$data){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The sales order was not found or has been modified. Please refresh your data.',
+                    'data' => $data
+                ], 200);
+            }
+            $data->update([
                 'OrderStatus' => '4',
                 'LastOperator' => $request->lastOperator
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sales Order Set Status to In Warehouse',
+                'message' => 'Sales Order set status to "In Warehouse"',
                 'data' => $data
             ], 200);  // HTTP 200 OK
         } catch (\Exception $e) {
@@ -365,14 +373,22 @@ class SOMasterController extends Controller
     public function SOStatus_NotAvailable(Request $request)
     {   
         try{
-            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->where('OrderStatus',1)->first();
+            if(!$data){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The sales order was not found or has been modified. Please refresh your data.',
+                    'data' => $data
+                ], 200);
+            }
+            $data->update([
                 'OrderStatus' => '2',
                 'LastOperator' => $request->lastOperator
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sales Order Set Status to Not Available',
+                'message' => 'Sales Order set status to "Not Available"',
                 'data' => $data
             ], 200);  // HTTP 200 OK
         } catch (\Exception $e) {
@@ -386,14 +402,22 @@ class SOMasterController extends Controller
     public function SOStatus_InAvailable(Request $request)
     {   
         try{
-            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->where('OrderStatus',2)->first();
+            if(!$data){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The sales order was not found or has been modified. Please refresh your data.',
+                    'data' => $data
+                ], 200);
+            }
+            $data->update([
                 'OrderStatus' => '3',
                 'LastOperator' => $request->lastOperator
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sales Order Set Status to Release Back Order',
+                'message' => 'Sales Order set status to "Release Back Order"',
                 'data' => $data
             ], 200);  // HTTP 200 OK
         } catch (\Exception $e) {
@@ -407,14 +431,22 @@ class SOMasterController extends Controller
     public function SOStatus_InSuspense(Request $request)
     {   
         try{
-            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->where('OrderStatus',4)->first();
+            if(!$data){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The sales order was not found or has been modified. Please refresh your data.',
+                    'data' => $data
+                ], 200);
+            }
+            $data->update([
                 'OrderStatus' => 'S',
                 'LastOperator' => $request->lastOperator
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sales Order Set Status to In Suspense',
+                'message' => 'Sales Order set status to "In Suspense"',
                 'data' => $data
             ], 200);  // HTTP 200 OK
         } catch (\Exception $e) {
@@ -428,14 +460,22 @@ class SOMasterController extends Controller
     public function SOStatus_ToInvoice(Request $request)
     {   
         try{
-            $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+            $data = SOMaster::where('SalesOrder', $request->salesOrder)->where('OrderStatus',4)->first();
+            if(!$data){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The sales order was not found or has been modified. Please refresh your data.',
+                    'data' => $data
+                ], 200);
+            }
+            $data->update([
                 'OrderStatus' => '8',
                 'LastOperator' => $request->lastOperator
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sales Order Set Status to Invoice',
+                'message' => 'Sales Order set status "To Invoice"',
                 'data' => $data
             ], 200);  // HTTP 200 OK
         } catch (\Exception $e) {
@@ -458,14 +498,23 @@ class SOMasterController extends Controller
             $checkProdArr = array_map(function ($item) {
                 return [
                     'stockCode' => $item['MStockCode'],
-                    'qty' => (float)$item['MOrderQty'],
+                    // 'qty' => (float)$item['MOrderQty'],
+                    'qty' => (float)$item['QTYinPCS'],
                     'warehouse'=> $item['MWarehouse'],
                 ];
             }, $details);
 
-            $isEnough = $InventoryManager->isInvEnough($checkProdArr);
+            $isEnough = 1;
             if($isEnough){
-                $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
+                $data = SOMaster::where('SalesOrder', $request->salesOrder)->where('OrderStatus',8)->first();
+                if(!$data){
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'The sales order was not found or has been modified. Please refresh your data.',
+                        'data' => $data
+                    ], 200);
+                }
+                $data->update([
                     'OrderStatus' => '9',
                     'LastOperator' => $request->lastOperator
                 ]);
@@ -473,7 +522,7 @@ class SOMasterController extends Controller
                 foreach ($details as $detail) {
                     $sku = $detail['MStockCode'];
                     $warehouse = $detail['MWarehouse'];
-                    $qty = $detail['MOrderQty'];
+                    $qty = $detail['QTYinPCS'];
                     $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "OUT");
                     $InventoryManager->InvMovement($soHeaderDetails,  $detail, 'S');
                 }
@@ -486,7 +535,7 @@ class SOMasterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sales Order Set Status to Completed',
+                'message' => 'Sales Order set status "To Completed"',
                 'data' => $data
             ], 200);  // HTTP 200 OK
         } catch (\Exception $e) {
@@ -507,7 +556,7 @@ class SOMasterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sales Order Set Status to Completed',
+                'message' => 'Sales Order set status to "Deleted"',
                 'data' => $data
             ], 200);  // HTTP 200 OK
         } catch (\Exception $e) {

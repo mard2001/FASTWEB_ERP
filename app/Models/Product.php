@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\ReceivingRDetails;
+use App\Models\ReceivingReports\ReceivingRDetails;
 use App\Models\ProductPrices;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

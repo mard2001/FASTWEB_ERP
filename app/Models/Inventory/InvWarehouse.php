@@ -2,8 +2,9 @@
 
 namespace App\Models\Inventory;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class InvWarehouse extends Model
 {
@@ -28,4 +29,14 @@ class InvWarehouse extends Model
     protected $casts = [
         'QtyOnHand' => 'float',
     ];
+
+    public function productdetails(){
+        return $this->hasOne(Product::class, 'StockCode', 'StockCode')
+            ->select('StockCode', 'Description', 'LongDesc', 'StockUom', 'AlternateUom', 'OtherUom', 'ConvFactAltUom', 'ConvFactOthUom', 'ProductClass', 'Brand');
+    }
+
+    public function prodname(){
+        return $this->hasOne(Product::class, 'StockCode', 'StockCode')
+            ->select('StockCode','Description');
+    }
 }
