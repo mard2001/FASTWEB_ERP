@@ -40,6 +40,13 @@ function GlobalUX() {
 
     hamBurger.addEventListener("click", async function () {
       document.querySelector("#sidebar").classList.toggle("expand");
+      
+      if (!$('#sidebar').hasClass('expand')) {
+        Array.from($('.showdropdown')).forEach(ul => {
+          ul.classList.remove('showdropdown');
+          ul.previousElementSibling.classList.remove('rotate');
+        })
+      }
     });
 
     // Get the pathname part of the URL
@@ -8780,10 +8787,7 @@ const Municipality = [
     }
 ];
 
-document.querySelectorAll('.dropdown-toggle').forEach(function(toggle) {
-  toggle.addEventListener('click', function(e) {
-      e.preventDefault();
-      let parent = this.closest('.has-dropdown');
-      parent.classList.toggle('open');
-  });
-});
+function toggleSubMenu(button){
+  button.nextElementSibling.classList.toggle('showdropdown');
+  button.classList.toggle('rotate');
+}

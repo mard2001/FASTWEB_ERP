@@ -20,3 +20,5 @@
 
 
 <script src="{{ asset('assets/js/mainJS.js') }}"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-fontpicker/1.4.4/jquery.fontpicker.min.js" integrity="sha512-78prOPndjZEehStvp969ihV+JiHJd3uJYFnqjJlif3Jjg749jyGdnHX/FMzIu6i5HfPbFfpAN3hvkFAnRGQAug==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>

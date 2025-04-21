@@ -39,7 +39,7 @@ Route::get('/', function () {
     return redirect()->intended('/login');
 })->name('index');
 
-Route::get('/dbconfig', function () {
+Route::get('/settings/dbconfig', function () {
     return page_view('dbconfig_page');
 })->name('dbconfig');
 
@@ -49,7 +49,7 @@ Route::get('/picklist', function () {
 
 Route::get('/testpage', function () {
     return page_view('inventory_test');
-})->name('dbconfig');
+})->name('dbconfigtest');
 
 
 Route::get('/patarget', function () {
@@ -74,16 +74,16 @@ Route::get('/layout', function () {
 
 
 // CUSTOMER MAINTENANCE MODULE
-Route::get('/maintenance/customer', function () {
+Route::get('/master-data/customer', function () {
     // return page_view('customer_page');
     return page_view('customer-maintenance/cust_page');
 })->name('customer');
 
 
 // INVENTORY MAINTENANCE MODULE
-Route::get('/maintenance/inventory', function () {
+Route::get('/inventory/stock-take', function () {
     return page_view('inventory-maintenance/invCount_page');
-})->name('inventory');
+})->name('stocktake');
 
 Route::get('/countsheet', function () {
     return page_view('invCount_page');
@@ -120,28 +120,31 @@ Route::get('/print/countsheet/testing', function () {
 })->name('printcountSheet');
 
 // INVENTORY WAREHOUSE MODULE
-Route::get('/inventory', function () {
+Route::get('/inventory/warehouse', function () {
     return page_view('inventory/invWarehouse_page');
 })->name('invWarehouse');
-Route::get('/inventory/movement', function () {
+Route::get('/inventory/movement/product', function () {
     return page_view('inventory/invMovements_page');
 })->name('invMovements');
+Route::get('/inventory/movement/warehouse', function () {
+    return page_view('inventory/invWarehouseMovements_page');
+})->name('invWarehouseMovements');
 
 
 // PRODUCT MAINTENANCE MODULE
-Route::get('/maintenance/product', function () {
+Route::get('/master-data/product', function () {
     return page_view('product-maintenance/product_page');
 })->name('product');
 
 
 // PURCHASE ORDER
-Route::get('/purchase-order', function () {
+Route::get('/transactions/purchase-order', function () {
     return page_view('purchase-order/purchase_order_page');
 })->name('purchase-order');
 
 
 // RECEIVING REPORT MODULE
-Route::get('/receiving-report', function () {
+Route::get('/transactions/receiving-report', function () {
     return page_view('receiving-report/receiving_report_page');
 })->name('receiving-report');
 
@@ -190,14 +193,14 @@ Route::get('/print/rr/testing', function () {
 
 
 // SALESMAN MAINTENANCE MODULE
-Route::get('/maintenance/salesman', function () {
+Route::get('/master-data/salesman', function () {
     // return page_view('salesman_page');
     return page_view('salesman/salesperson_page');
 })->name('salesman');
 
 
 // SALES ORDER MODULE
-Route::get('/sales-order', function () {
+Route::get('/transactions/sales-order', function () {
     return page_view('sales-order/so_page');
 })->name('sales-order');
 
