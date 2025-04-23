@@ -10,6 +10,13 @@ var chartStockInData = [];
 var chartStockOutData = [];
 var prodSKUData = [];
 var prodFlowChart;
+var prodBarGraph = null;
+var filteredStartDate;
+var filteredEndDate;
+var barLabels = [];
+var barValues = [];
+var barColors = [];
+var topProdResArr = [];
 
 const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
                                 <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvDLBtn">
@@ -24,31 +31,19 @@ $(document).ready(async function () {
     dayjs.extend(dayjs_plugin_relativeTime);
     const user = localStorage.getItem('user');
     const userObject = JSON.parse(user);
-    await datatables.loadInvMovementData(); // 12519920 // 12503732
-    await initVS.liteDataVS();
-    // await miniDashboard.loadMovements('12519920','M2'); // 12519920 // 12503732
-    // await miniDashboard.generateSalesmanPieChart();
-    initVS.fetchProductFilterData();
-
-    $("#prodSKU_VS").on("change", async function () {
-        if (this.value) {
-            initVS.fetchWarehouseFilterData(this.value);
-        } else{
-            initVS.warehouseFilterVS([]);
-        }
-    });
-
-    $("#prodSKU_VS").on("reset", function () {
-        initVS.warehouseFilterVS([]);
-    });
+    // await datatables.loadInvMovementData(); // 12519920 // 12503732
+    
+    initVS.fetchWarehouseFilterData();
+    datePicker();
 
     $("#warehouse_VS").on("change", function () {
         if (this.value) {
-            var productCode = $('#prodSKU_VS').val();
             var warehouseCode = this.value;
-            if(productCode){
+            if(filteredStartDate && filteredEndDate){
                 this.close();
-                MainTH.clear().draw();
+                if(MainTH){
+                    MainTH.clear().draw();
+                }
                 Swal.fire({
                     text: "Please wait... Refreshing Data...",
                     timerProgressBar: true,
@@ -61,8 +56,8 @@ $(document).ready(async function () {
                 });
 
                 miniDashboard.isLoadingData();
-                datatables.loadInvMovementData(productCode,warehouseCode);
-                miniDashboard.loadMovements(productCode,warehouseCode);
+                datatables.loadWHMovementData(warehouseCode, filteredStartDate, filteredEndDate);
+                // miniDashboard.loadTopProducts(warehouseCode, filteredStartDate, filteredEndDate);
             }
         }
     });
@@ -91,18 +86,19 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 }
 
 const datatables = {
-    loadInvMovementData: async (stockCode,warehouse) => {
-        await ajax('api/inv/product-movement/'+ stockCode + '/' + warehouse, 'GET', null, (response) => {  
+    loadWHMovementData: async (warehouse, start, end) => {
+        await ajax('api/inv/warehouse-movement/'+ warehouse + '/' + start + '/' + end, 'GET', null, (response) => {  
             jsonArr = response.data;
-            datatables.initInvMovementDatatable(response);
-            miniDashboard.updateValues(response.totalStockIn, response.totalStockOut, response.totalStockAvail, response.stockCode, response.description, response.warehouse, response.ttlPrice, response.unitPrice)
+            datatables.initWHMovementDatatable(response);
+            initVS.liteDataVS();
+            miniDashboard.updateValues(response.totalStockIn, response.totalStockOut, response.totalStockAvail)
             
         }, (xhr, status, error) => { 
             console.error('Error:', error);
         });
     },
 
-    initInvMovementDatatable: (response) => {
+    initWHMovementDatatable: (response) => {
         if (response.success) {
             if (MainTH) {
                 MainTH.clear().draw();
@@ -133,26 +129,12 @@ const datatables = {
                                 return (data.trim() != "" && row.MovementType == "S")? `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>` : `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
                             }
                         },
-                        { data: 'runningBal.inCS',  title: 'Bal. in CS',
-                            render: function (data, type, row){
-                                return (data)? data : "0";
-                            }
-                        },
-                        { data: 'runningBal.inIB',  title: 'Bal. in IB',
-                            render: function (data, type, row){
-                                return (data)? data : "0";
-                            }
-                        },
-                        { data: 'runningBal.inPC',  title: 'Bal. in PC',
-                            render: function (data, type, row){
-                                return (data)? data : "0";
-                            }
-                        },
+                        { data: 'StockCode',  title: 'StockCode'},
+                        { data: 'productdetails.Description',  title: 'Description'},
                         { data: 'Reference',  title: 'Reference',
                             render: function (data, type, row){
                                 // return (data.trim() !== "" && row.MovementType == "I")? data : "<span style='font-size:10px;color:#808080;'>n/a</span>";
                                 return (data.trim() !== "" && row.MovementType == "I")? data : '<span style="font-size:10px; color:#808080;">---</span>';
-
                             }
                         },
                         { data: 'SalesOrder',  title: 'SO Number',
@@ -160,7 +142,11 @@ const datatables = {
                                 return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:#808080">---</span>';
                             }
                         },
-                        { data: 'CustomerPoNumber',  title: 'PO Number'},
+                        { data: 'CustomerPoNumber',  title: 'PO Number',
+                            render: function (data, type, row){
+                                return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:#808080">---</span>';
+                            }
+                        },
                         { data: 'Customer',  title: 'Customer',
                             render: function (data, type, row){
                                 return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:#808080">---</span>';
@@ -174,8 +160,8 @@ const datatables = {
                         
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 6, 7, 8, 9, 10  ] },
-                        { className: "text-center", targets: [ 1, 2, 3, 4, 5 ] },
+                        // { className: "text-start", targets: [ 0, 6, 7, 8, 9, 10  ] },
+                        // { className: "text-center", targets: [ 1, 2, 3, 4, 5 ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' } // This targets all columns
                     ],
@@ -186,7 +172,7 @@ const datatables = {
                         $(row).attr('id', data.StockCode);
                     },
 
-                    "pageLength": 5,
+                    "pageLength": 10,
                     "lengthChange": false,
                     order: [],
                     initComplete: function () {
@@ -203,7 +189,7 @@ const datatables = {
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         // $('#chartloadingScreen').remove();
-                        $('#myChart, .canvasDiv, .canvasTitle').show();
+                        $('#lineChart, .canvasDiv, .canvasTitle').show();
                         $('#dattableDiv').removeClass('opacity-0');
                         // $('.dt-layout-table').addClass('mt-4');
 
@@ -270,7 +256,7 @@ const initVS = {
         $('.prodSKU_VS_Div').show();
     },
     fetchWarehouseFilterData: (StockCode) => {
-        ajax('api/inv/available/product-warehouse/'+ StockCode, 'GET', null, (response) => { 
+        ajax('api/inv/available/warehouse', 'GET', null, (response) => { 
             var uniqueWarehouses = response.response;
 
             var data = uniqueWarehouses.map((item) => {
@@ -309,36 +295,13 @@ const initVS = {
 const miniDashboard = {
     isLoadingData: () => {
         // MINIDASHBOARD
-        var loadingCont1 = `<div id="chartloadingScreen" class="w-100 h-100 d-flex justify-content-center align-items-center loadingScreen">
-                                <span class="loader" ></span>
-                            </div>`;
-
-        $('.canvasTitle').hide();
-        $('.canvasDiv').hide();         
-        $('#chartCanvasMainDiv').prepend(loadingCont1);
-
-        $('#totalStockInVal').slideUp(200, function() {
-            $(this).html("---" + " PCS.").slideDown(200);
-        });
-        $('#totalStockOutVal').slideUp(200, function() {
-            $(this).html("---" + " PCS.").slideDown(200);
-        });
-        $('#totalSalesProfVal').slideUp(200, function() {
-            $(this).html("PHP " + "---").slideDown(200);
-        });
-        $('#totalAvailStockVal').slideUp(200, function() {
-            $(this).html("---" + " PCS.").slideDown(200);
-        });
-        $('#stockCodeVal').slideUp(200, function() {
+        $('#inboundVal').slideUp(200, function() {
             $(this).html("---").slideDown(200);
         });
-        $('#descriptionVal').slideUp(200, function() {
+        $('#outboundVal').slideUp(200, function() {
             $(this).html("---").slideDown(200);
         });
-        $('#warehouseVal').slideUp(200, function() {
-            $(this).html("---").slideDown(200);
-        });
-        $('#unitPriceVal').slideUp(200, function() {
+        $('#availSkuVal').slideUp(200, function() {
             $(this).html("---").slideDown(200);
         });
     },
@@ -347,42 +310,35 @@ const miniDashboard = {
         $('.canvasDiv').show();         
         $('#chartloadingScreen').remove();
     },
-    loadMovements: async (stockCode,warehouse) => {
-        await ajax('api/inv/product-movement-chart/'+ stockCode + '/' + warehouse, 'GET', null, (response) => {  
+    loadMovements: async (warehouse, start, end) => {
+        await ajax('api/inv/warehouse-movement-chart/'+ warehouse + '/' + start + '/' + end, 'GET', null, (response) => {  
             stockInOutResArr = response;
-            miniDashboard.setChartData(stockInOutResArr);
+            miniDashboard.setLineChartData(stockInOutResArr);
         }, (xhr, status, error) => { 
             console.error('Error:', error);
         });
     },
-    updateValues: async (totalStockIn, totalStockOut, totalStockAvail, stockCode, description, warehouse, ttlPrice, unitPrice) => {
-        $('#totalStockInVal').slideUp(200, function() {
-            $(this).html(totalStockIn.toLocaleString('en-US') + " PCS.").slideDown(200);
-        });
-        $('#totalStockOutVal').slideUp(200, function() {
-            $(this).html(totalStockOut.toLocaleString('en-US') + " PCS.").slideDown(200);
-        });
-        $('#totalSalesProfVal').slideUp(200, function() {
-            $(this).html("PHP " + ttlPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2 })).slideDown(200);
-        });
-        $('#totalAvailStockVal').slideUp(200, function() {
-            $(this).html(totalStockAvail.toLocaleString('en-US') + " PCS.").slideDown(200);
-        });
-        $('#stockCodeVal').slideUp(200, function() {
-            $(this).html(stockCode).slideDown(200);
-        });
-        $('#descriptionVal').slideUp(200, function() {
-            $(this).html(description).slideDown(200);
-        });
-        $('#warehouseVal').slideUp(200, function() {
-            $(this).html(warehouse).slideDown(200);
-        });
-        $('#unitPriceVal').slideUp(200, function() {
-            $(this).html("PHP " + unitPrice.toLocaleString('en-US')).slideDown(200);
+    loadTopProducts: async (warehouse, start, end) => {
+        await ajax('api/inv/warehouse-top-products/'+ warehouse + '/' + start + '/' + end, 'GET', null, (response) => {  
+            topProdResArr = response.response;
+            miniDashboard.setBarChartData(topProdResArr);
+        }, (xhr, status, error) => { 
+            console.error('Error:', error);
         });
     },
-    generateSalesmanPieChart: async () => {
-        const ctx = document.getElementById('myChart');
+    updateValues: async (totalStockIn, totalStockOut, totalStockAvail) => {
+        $('#inboundVal').slideUp(200, function() {
+            $(this).html(totalStockIn.toLocaleString('en-US')).slideDown(200);
+        });
+        $('#outboundVal').slideUp(200, function() {
+            $(this).html(totalStockOut.toLocaleString('en-US')).slideDown(200);
+        });
+        $('#availSkuVal').slideUp(200, function() {
+            $(this).html(totalStockAvail.toLocaleString('en-US')).slideDown(200);
+        });
+    },
+    generateLineChart: async () => {
+        const ctx = document.getElementById('lineChart');
     
         var newData = {
             labels: chartLabels,
@@ -431,7 +387,7 @@ const miniDashboard = {
             });
         }
     },
-    setChartData: (resData) =>{
+    setLineChartData: (resData) =>{
         var summaryMap = {};
         chartLabels = [];
         chartStockInData = [];
@@ -453,9 +409,96 @@ const miniDashboard = {
             chartStockOutData.push(item.out);
         });
 
-        miniDashboard.generateSalesmanPieChart();
-        miniDashboard.isFinishLoadingData();
+        miniDashboard.generateLineChart();
+        // miniDashboard.isFinishLoadingData();
+    },
+    generateBarGraph: async () => {
+        const ctx2 = document.getElementById('barGraph');
+    
+        var newData = {
+            labels: barLabels,
+            datasets: [
+                {
+                    label: 'StockCodes',
+                    data: barValues,
+                    borderColor: barColors,
+                    backgroundColor: barColors,
+                    borderWidth: 1
+                },
+            ]
+        };
+    
+        if (prodBarGraph) {
+            prodBarGraph.data = newData;
+            prodBarGraph.update(); 
+        } else {
+            prodBarGraph = new Chart(ctx2, {
+                type: 'bar',
+                data: newData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                    }
+                }
+            });
+        }
+    },
+    setBarChartData: (resData) =>{
+        barLabels = [];
+        barValues = [];
+        barColors = [];
+    
+        resData.forEach(item => {
+            var hex = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+
+            barLabels.push(item.StockCode);
+            barValues.push(parseFloat(item.TotalMoved));
+            barColors.push(hex);
+        });
+
+        miniDashboard.generateBarGraph();
+        // miniDashboard.isFinishLoadingData();
     }
 }
 
+function datePicker(){
+    var start = moment().subtract(29, 'days');
+    filteredStartDate = start.format('YYYY-MM-DD');
+    var end = moment();
+    filteredEndDate = end.format('YYYY-MM-DD')
 
+    function cb(start, end) {
+        $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+    }
+
+    $('#reportrange').daterangepicker({
+        startDate: start,
+        endDate: end,
+        autoUpdateInput: false,
+        ranges: {
+           'Today': [moment(), moment()],
+           'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+           'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+           'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+           'This Month': [moment().startOf('month'), moment().endOf('month')],
+           'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+        }
+    }, cb);
+
+    $('#reportrange').on('apply.daterangepicker', function(ev, picker) {
+        filteredStartDate = picker.startDate.format('YYYY-MM-DD');
+        filteredEndDate = picker.endDate.format('YYYY-MM-DD');
+        $('.salesOrderListDiv').hide();
+        initVS.filterDataVS();
+    });
+
+    $('#daterange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+    });
+
+    cb(start, end);
+}

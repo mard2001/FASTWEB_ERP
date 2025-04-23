@@ -90,8 +90,8 @@ class InvController extends Controller
             $availstock = 0;
             $unitPrice = '';
 
-            $data = InvMovements::select('StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate','MovementType','Reference', 'SalesOrder', 'Customer', 'SalesPerson','CustomerPoNumber', 'TrnQty', 'UnitCost')
-                                ->with(['productdetails', 'salesmanetails'])->where('StockCode', $StockCode)
+            $data = InvMovements::select('StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate','MovementType','Reference', 'SalesOrder', 'Customer', 'Salesperson','CustomerPoNumber', 'TrnQty', 'UnitCost')
+                                ->with(['productdetails', 'salesmandetails'])->where('StockCode', $StockCode)
                                 ->orderBy('EntryDate', 'ASC')->get();
 
 
@@ -147,8 +147,8 @@ class InvController extends Controller
             $unitPrice = 0;
 
             // Fetch only necessary data with eager loading
-            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'Reference', 'SalesOrder', 'Customer', 'SalesPerson', 'CustomerPoNumber', 'TrnQty', 'UnitCost')
-                ->with(['productdetails', 'salesmanetails'])
+            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'Reference', 'SalesOrder', 'Customer', 'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost')
+                ->with(['productdetails', 'salesmandetails'])
                 ->where('StockCode', $StockCode)
                 ->where('Warehouse', $Warehouse)
                 ->orderBy('EntryDate', 'ASC')
@@ -283,6 +283,190 @@ class InvController extends Controller
             }
         } catch (\Exception $e) {
 
+            return response()->json([
+                'response' => $e->getMessage(),
+                'status_response' => 0
+            ]);
+        }
+    }
+
+    public function getAllWarehouse(){
+        try {
+            $data = InvWarehouse::select('Warehouse')
+                    ->distinct()
+                    ->get();
+            // dd($data);
+            if (!$data) {
+                return response()->json([
+                    'response' => 'Product warehouse not found',
+                    'status_response' => 0
+                ]);
+            } else {
+                return response()->json([
+                    'response' => $data,
+                    'status_response' => 1
+                ]);
+            }
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'response' => $e->getMessage(),
+                'status_response' => 0
+            ]);
+        }
+    }
+
+    public function getAllSKUMovementPerWarehouse(string $Warehouse, string $StartDate, string $EndDate)
+    {   
+        try {
+            $StartDate = $StartDate . ' 00:00:00';
+            $EndDate = $EndDate . ' 23:59:59';
+            $productCalculator = new ProductCalculator();
+
+            $runningBal = 0;
+            $totalStockIn = 0;
+            $totalStockOut = 0;
+            $StockRecord = [];
+
+            // Fetch only necessary data with eager loading
+            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'Reference', 'SalesOrder', 'Customer', 'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost')
+                ->with(['productdetails', 'salesmandetails'])
+                ->where('Warehouse', $Warehouse)
+                ->whereBetween('EntryDate', [$StartDate, $EndDate])
+                ->orderBy('EntryDate', 'ASC')
+                ->get()->toArray();
+
+            // dd($movements);
+
+
+            foreach ($movements as &$item) {
+                $stockCode = $item['StockCode'];
+                $qty = (float)$item['TrnQty'];
+                $movementType = $item['MovementType'];
+
+                if (!isset($StockRecord[$stockCode])) {
+                    $StockRecord[$stockCode] = [
+                        'StockCode' => $stockCode,
+                        'Qty' => 0
+                    ];
+                }
+
+                // Adjust quantity based on movement type
+                if ($movementType === 'I') {
+                    $StockRecord[$stockCode]['Qty'] += $qty;
+                    $totalStockIn++;
+
+                } elseif ($movementType === 'S') {
+                    $StockRecord[$stockCode]['Qty'] -= $qty;
+                    $totalStockOut++;
+                }
+
+                $item['CurrentQty'] = $StockRecord[$stockCode]['Qty'];
+                $conversion = $productCalculator->originalDynamicConv($item['StockCode'], $item['CurrentQty']);
+                // dd($conversion);
+
+                $item['conversion'] = $conversion['result'];
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product movement retrieved successfully',
+                'data' => $movements,
+                'totalStockIn' => $totalStockIn,
+                'totalStockOut' => $totalStockOut,
+                'totalStockAvail' => count($StockRecord)
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }   
+    public function getWarehouseMovements(string $Warehouse){
+        try {
+            $data = InvMovements::select('StockCode', 'MovementType', InvMovements::raw('COUNT(*) as MovementCount'))
+                        ->where('Warehouse', $Warehouse)
+                        ->whereIn('MovementType', ['I', 'S'])
+                        ->groupBy('StockCode', 'MovementType')
+                        ->orderBy('StockCode')
+                        ->orderBy('MovementType')
+                        ->get();
+            // dd($data);
+            if (!$data) {
+                return response()->json([
+                    'response' => 'No Movement of Products In Warehouse',
+                    'status_response' => 0
+                ]);
+            } else {
+                return response()->json([
+                    'response' => $data,
+                    'status_response' => 1
+                ]);
+            }
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'response' => $e->getMessage(),
+                'status_response' => 0
+            ]);
+        }
+    }
+
+    public function WarehouseStockInOut(string $Warehouse, string $Startdate, string $Enddate){
+        try {
+            $results = InvMovements::select(
+                    'trnYear',
+                    'trnMonth',
+                    'MovementType',
+                    InvMovements::raw('COUNT(*) as TotalTrn')
+                )
+                ->where('Warehouse', $Warehouse)
+                ->whereIn('MovementType', ['I', 'S'])
+                ->whereRaw("
+                    DATEFROMPARTS(trnYear, trnMonth, 1) >= 
+                    DATEADD(MONTH, -11, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1))
+                ")
+                ->groupBy('trnYear', 'trnMonth', 'MovementType')
+                ->orderBy('trnYear')
+                ->orderBy('trnMonth')
+                ->orderBy('MovementType')
+                ->get();
+
+            return $results;
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
+    public function getTopMovingProducts(string $Warehouse, string $Startdate, string $Enddate){
+        try {
+            $topMovers = InvMovements::select('StockCode', InvMovements::raw('SUM(TrnQty) as TotalMoved'))
+                            ->where('MovementType', 'S')
+                            ->where('Warehouse', $Warehouse)
+                            ->whereBetween('EntryDate', [$Startdate, $Enddate])
+                            ->groupBy('StockCode')
+                            ->orderBy('TotalMoved', 'desc') 
+                            ->limit(10) 
+                            ->get();
+
+            // dd($topMovers);
+            if (!$topMovers) {
+                return response()->json([
+                    'response' => 'No Movement of Products In Warehouse',
+                    'status_response' => 0
+                ]);
+            } else {
+                return response()->json([
+                    'response' => $topMovers,
+                    'status_response' => 1
+                ]);
+            }
+        } catch (\Exception $e) {
             return response()->json([
                 'response' => $e->getMessage(),
                 'status_response' => 0

@@ -86,7 +86,7 @@ class InventoryManager
         $productData = $detail;
 
         if($movementType == 'I'){
-            $headerData =$headerDetails['rrData'];
+            $headerData = $headerDetails['rrData'];
             InvMovements::create([
                 'StockCode' => $productData['SKU'],
                 'Warehouse' => $productData['warehouse'],
@@ -95,8 +95,9 @@ class InventoryManager
                 'EntryDate' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
                 'MovementType' => 'I',
                 'TrnQty' => $productData['Quantity'],
-                'Reference' => $headerData['Reference'],
+                'Reference' => $headerData['RRNo'],
                 'UnitCost' => $productData['UnitPrice'],
+                'CustomerPoNumber' => $headerData['PO_NUMBER'],
             ]);
         } else if($movementType == 'S'){
             $headerData = $headerDetails;
@@ -116,7 +117,7 @@ class InventoryManager
                 'CustomerPoNumber' => $headerData['CustomerPoNumber'],
                 'OrderType' => $headerData['DocumentType'],
                 'ProductClass' => $productData['MProductClass'],
-                'DetailLine' => $productData['SalesOrderLine']
+                'DetailLine' => $productData['SalesOrderLine'],
             ]);
         }
     }

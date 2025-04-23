@@ -145,6 +145,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/product-movement-chart/{stockCode}/{warehouse}', [InvController::class, 'StockInOut']); 
         Route::get('/available/products', [InvController::class, 'getProducts']);
         Route::get('/available/product-warehouse/{StockCode}', [InvController::class, 'getProdWarehouse']);
+        Route::get('/warehouse-movement/{warehouse}/{startdate}/{enddate}', [InvController::class, 'getAllSKUMovementPerWarehouse']);
+        Route::get('/warehouse-movement-chart/{warehouse}/{startdate}/{enddate}', [InvController::class, 'WarehouseStockInOut']);
+        Route::get('/warehouse-top-products/{warehouse}/{startdate}/{enddate}', [InvController::class, 'getTopMovingProducts']);
+        Route::get('/available/warehouse', [InvController::class, 'getAllWarehouse']);
 
     });
 

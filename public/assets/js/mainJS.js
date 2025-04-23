@@ -1,17 +1,29 @@
 var globalApi = "http://127.0.0.1:8000/";
 
 $(document).ready(function() {
-    const user = localStorage.getItem('user');
+  const user = localStorage.getItem('user');
 
-    if (user) {
-        const userObject = JSON.parse(user);
-        $('#userName').text(userObject.name);
-        $('#userEmail').text(userObject.email);
+  if (user) {
+    const userObject = JSON.parse(user);
+    $('#userName').text(userObject.name);
+    $('#userEmail').text(userObject.email);
+  }
+
+  isTokenExist();
+  GlobalUX();
+
+  $(document).on('click', function (e) {
+    const sidebar = $('#sidebar');
+
+    if (sidebar.hasClass('expand')) {
+      // Check if the click was outside the sidebar
+      if (!$(e.target).closest('#sidebar').length) {
+        sidebar.removeClass('expand');
+      }
     }
-
-    isTokenExist();
-    GlobalUX();
+  });
 });
+
 
 // Set up CSRF token for AJAX
 $.ajaxSetup({
@@ -8788,6 +8800,9 @@ const Municipality = [
 ];
 
 function toggleSubMenu(button){
+  if (!$('#sidebar').hasClass('expand')) {
+    $('#sidebar').addClass('expand')
+  }
   button.nextElementSibling.classList.toggle('showdropdown');
   button.classList.toggle('rotate');
 }

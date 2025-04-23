@@ -42,8 +42,9 @@ class InvMovements extends Model
                     ->select('StockCode', 'Description', 'StockUom', 'AlternateUom', 'OtherUom', 'ConvFactAltUom', 'ConvFactOthUom', 'ProductClass', 'Brand');
     }
 
-    public function salesmanetails(){
-        return $this->hasOne(Salesperson::class, 'Salesperson', 'Salesperson');
+    public function salesmandetails(){
+        return $this->hasOne(Salesperson::class, 'Salesperson', 'Salesperson')
+                    ->select('EmployeeID','Name','Salesperson');
     }
 
     public function prodname(){

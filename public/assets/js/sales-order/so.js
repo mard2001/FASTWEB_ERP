@@ -93,6 +93,7 @@ $(document).ready(async function () {
     });
 
     $("#soTable").on("click", "tbody tr", async function () {
+        $("#soTable tbody").css('pointer-events', 'none');
         Swal.fire({
             text: "Please wait... Preparing data...",
             timerProgressBar: true,
@@ -124,7 +125,7 @@ $(document).ready(async function () {
                 });
 
             }
-
+            $("#soTable tbody").css('pointer-events', 'auto');
         }, (xhr, status, error) => { // Error callback
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 Swal.fire({

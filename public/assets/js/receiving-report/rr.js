@@ -19,6 +19,8 @@ $(document).ready(async function () {
     await initVS.liteDataVS();
 
     $("#rrTable").on("click", "tbody tr", async function () {
+        $("#rrTable tbody").css('pointer-events', 'none');
+
         const selectedRRCode = $(this).attr('id');
         await ajax('api/report/v2/rr/' + selectedRRCode, 'GET', null, (response) => { // Success callback
             if (response.success == 1) {
@@ -34,7 +36,7 @@ $(document).ready(async function () {
                 });
 
             }
-
+            $("#rrTable tbody").css('pointer-events', 'auto');
         }, (xhr, status, error) => { // Error callback
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 Swal.fire({
