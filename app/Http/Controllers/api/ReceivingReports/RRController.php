@@ -367,8 +367,8 @@ class RRController extends Controller
                 $sku = $detail['SKU'];
                 $warehouse = $detail['warehouse'] = 'M1';
                 $qty = $detail['Quantity'];
-                $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "IN");
-                $InventoryManager->InvMovement($rrHeaderDetails,  $detail, 'I');
+                $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "IN", null);
+                $InventoryManager->InvMovement($rrHeaderDetails,  $detail, 'I', 'R');
             }
 
             return response()->json([

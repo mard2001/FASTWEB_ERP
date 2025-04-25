@@ -19,6 +19,11 @@ $(document).ready(function() {
       // Check if the click was outside the sidebar
       if (!$(e.target).closest('#sidebar').length) {
         sidebar.removeClass('expand');
+        
+        Array.from($('.showdropdown')).forEach(ul => {
+          ul.classList.remove('showdropdown');
+          ul.previousElementSibling.classList.remove('rotate');
+        })
       }
     }
   });

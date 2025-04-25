@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\api\Inventory;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
+use App\Services\InventoryManager;
 use App\Services\ProductCalculator;
 use App\Http\Controllers\Controller;
 use App\Models\Inventory\InvMovements;
 use App\Models\Inventory\InvWarehouse;
-use App\Models\Product;
 
 class InvController extends Controller
 {
@@ -59,15 +60,6 @@ class InvController extends Controller
                 $prod->conversion = $productCalculator->originalDynamicConvOptimized($productDetails, $qtyInPcs);
             }
 
-            // foreach($data as $prod){
-            //     $ProductUoms = [$prod['productdetails']['StockUom'],$prod['productdetails']['AlternateUom'],$prod['productdetails']['OtherUom']];
-            //     $qtyInLargestUnit = (float)$prod['QtyOnHand'];
-            //     $ConvFactAltUom = (float)$prod['productdetails']['ConvFactAltUom'];
-            //     $ConvFactOthUom = (float)$prod['productdetails']['ConvFactOthUom'];
-
-            //     $prod->conversion = $productCalculator->reverseConvertFromLargestUnit($ProductUoms, $qtyInLargestUnit, $ConvFactAltUom, $ConvFactOthUom);
-            // }
-            
             return response()->json([
                 'success' => true,
                 'message' => 'Latest inventory movement retrieved successfully',
@@ -147,7 +139,7 @@ class InvController extends Controller
             $unitPrice = 0;
 
             // Fetch only necessary data with eager loading
-            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'Reference', 'SalesOrder', 'Customer', 'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost')
+            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'TrnType', 'Reference', 'SalesOrder', 'Customer', 'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost', 'NewWarehouse')
                 ->with(['productdetails', 'salesmandetails'])
                 ->where('StockCode', $StockCode)
                 ->where('Warehouse', $Warehouse)
@@ -159,8 +151,18 @@ class InvController extends Controller
                 $qty = (int) floor($row->TrnQty);
 
                 if (strtoupper($row->MovementType) == 'I') {
-                    $runningBal += $qty;
-                    $totalStockIn += $qty;
+                    if($row->TrnType == 'T'){
+                        if($row->NewWarehouse != ' '){
+                            $runningBal -= $qty;
+                            $totalStockIn -= $qty;
+                        } else{
+                            $runningBal += $qty;
+                            $totalStockIn += $qty;
+                        }
+                    } else {
+                        $runningBal += $qty;
+                        $totalStockIn += $qty;
+                    }
                 } elseif (strtoupper($row->MovementType) == 'S') {
                     $runningBal -= $qty;
                     $totalStockOut += $qty;
@@ -384,6 +386,7 @@ class InvController extends Controller
             ], 500);
         }
     }   
+
     public function getWarehouseMovements(string $Warehouse){
         try {
             $data = InvMovements::select('StockCode', 'MovementType', InvMovements::raw('COUNT(*) as MovementCount'))
@@ -473,4 +476,66 @@ class InvController extends Controller
             ]);
         }
     }
+
+    public function getAllTransfer(){
+        try {
+            $data = InvMovements::select('StockCode','Warehouse','TrnQty','NewWarehouse','EntryDate')->with('productdetails')->where('MovementType', "I")->where('TrnType', "T")->get();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Latest inventory movement retrieved successfully',
+                'data' => $data,
+            ], 200);  // HTTP 200 OK
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
+    public function getWarehouseInv(string $warehouse){
+        try {
+            $data = InvWarehouse::select('StockCode','Warehouse','QtyOnHand')
+                        ->with('productdetails')->where('Warehouse', $warehouse)->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Warehouse inventory retrieved successfully',
+                'data' => $data,
+            ], 200);  // HTTP 200 OK
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
+    public function InvWarehouseStockTransfer(Request $request){
+        try {
+            $InventoryManager = new InventoryManager();
+            $items = $request->data['Items'];
+            $mainDetails = $request->data;
+            unset($mainDetails['Items']);
+
+            foreach ($items as $item) {
+                $sku = $item['StockCode'];
+                $warehouse = $mainDetails['Warehouse'];
+                $newWarehouse = $mainDetails['NewWarehouse'];
+                $qty = $item['TrnQty'];
+                $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "TRANSFER", $newWarehouse);
+                $InventoryManager->InvMovement($mainDetails,  $item, 'I', 'T');
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
 }

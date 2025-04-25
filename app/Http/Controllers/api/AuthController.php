@@ -53,7 +53,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|max:255|confirmed',
             'mobile' => 'required|string|min:11|max:11'
         ]);
-
+        
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,

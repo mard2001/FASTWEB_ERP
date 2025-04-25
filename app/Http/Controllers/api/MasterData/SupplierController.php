@@ -7,32 +7,31 @@ use App\Models\Supplier;
 
 class SupplierController
 {
-    public function index(Request $request)
+    public function index()
     {
-
         try {
-            $shippedTo = Supplier::all();
+            $data = Supplier::get();
 
-            if ($shippedTo->isEmpty()) {
+            if (count($data) == 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No shipped to details found',
+                    'message' => 'No Supplier details found',
                     'data' => []
-                ], 404);  // HTTP 404 Not Found
+                ], 404);   
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Shipped to details retrieved successfully',
-                'data' => $shippedTo
-            ], 200);  // HTTP 200 OK
+                'message' => 'All supplier details retrieved successfully',
+                'data' => $data
+            ], 200);   
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
                 'data' => []
-            ], 500);  // HTTP 500 Internal Server Error
+            ], 500);   
         }
     }
 
@@ -67,28 +66,22 @@ class SupplierController
      */
     public function store(Request $request)
     {
-        $responseMessage = array();
-        // return $request['data'];
         try {
+            $data = $request->data;
+            $res = Supplier::create($data);
 
-            Supplier::create($request);
-
-            $responseMessage = [
-                'response' => 'Items inserted succesfully!',
-                'status_response' => 1,
-            ];
+            return response()->json( [
+                'message' => 'Supplier inserted succesfully!',
+                'success' => true,
+            ]);
 
            
         } catch (\Exception $e) {
-            $responseMessage = [
-                'response' => $e->getMessage(),
-                'status_response' => 0,
-                'total_inserted' => 0,
-                'tatal_entry' => 0
-            ];
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);  // HTTP 500 Internal Server Error
         }
-
-        return response()->json($responseMessage);
     }
 
     /**
@@ -96,43 +89,61 @@ class SupplierController
      */
     public function show(string $id)
     {
-        //
+        try {
+            $Supplier = Supplier::where('SupplierCode', $id)->first();
+
+            if (is_null($Supplier)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No Supplier details found',
+                    'data' => []
+                ], 404);  // HTTP 404 Not Found
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Supplier details retrieved successfully',
+                'data' => $Supplier
+            ], 200);  // HTTP 200 OK
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => []
+            ], 500);  // HTTP 500 Internal Server Error
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $supplierCode)
     {
-        $response = array();
         try {
-            
             $data = $request['data'];
-            $found = Supplier::find($id);
-
+            $found = Supplier::where('SupplierCode', $supplierCode)->first();
+            // dd($found);
             if (!$found) {
                 $response = [
-                    'response' => 'data not found',
-                    'status_response' => 0
+                    'message' => 'data not found',
+                    'success' => false
                 ];
 
-                //break to reserve server resouces
                 return response()->json($response);
             }
 
-            //return response()->json($data);
-
             $found->update($data);
-
             $response = [
-                'response' => 'Items updated succesfully!',
-                'status_response' => 1,
+                'message' => 'Supplier details updated succesfully!',
+                'success' => true,
+                "data"=> $found
             ];
-        } catch (\Exception $e) {
 
+        } catch (\Exception $e) {
             $response = [
-                'response' => $e->getMessage(),
-                'status_response' => 0
+                'message' => $e->getMessage(),
+                'success' => false
             ];
         }
 
@@ -142,31 +153,30 @@ class SupplierController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, string $id)
+    public function destroy(string $id)
     {
-        $response = array();
         try {
             
-            $data = Supplier::where('id', $id)->delete();
+            $data = Supplier::where('SupplierCode', $id)->delete();
 
             if (!$data) {
                 $response = [
-                    'response' => 'data not found',
-                    'status_response' => 0
+                    'message' => 'Supplier data not found',
+                    'success' => false
                 ];
 
                 //break to reserve server resouces
                 return response()->json($response);
             }
             $response = [
-                'response' => 'Item deleted succesfully!',
-                'status_response' => 1
+                'message' => 'Supplier deleted succesfully!',
+                'success' => true
             ];
         } catch (\Exception $e) {
 
             $response = [
-                'response' => $e->getMessage(),
-                'status_response' => 0
+                'message' => $e->getMessage(),
+                'success' => 0
             ];
         }
 

@@ -27,6 +27,24 @@ class InventoryManager
         }
     }
 
+    public function isInvFound($sku, $warehouse)
+    {
+        try {
+            $res = InvWarehouse::select('QtyOnHand')->where('StockCode', $sku)
+                ->where('Warehouse', $warehouse)
+                ->first();
+;
+            if (!$res) {
+                return false; 
+            }
+
+            return $res; 
+
+        } catch (\Exception $e) {
+            return false;  
+        }
+    }
+
     public function AddProdToInvWarehouse($sku, $warehouse, $qty){
         InvWarehouse::create([
             'StockCode' => $sku,
@@ -37,12 +55,10 @@ class InventoryManager
         ]);
     }
 
-    public function InvWareHouseDirectionHandler($sku, $warehouse, $qty, $direction)
+    public function InvWareHouseDirectionHandler($sku, $warehouse, $qty, $direction, $newWarehouse)
     {
         try {
-            $existing = InvWarehouse::select('QtyOnHand')->where('StockCode', $sku)
-                ->where('Warehouse', $warehouse)
-                ->first();
+            $existing = $this->isInvFound($sku, $warehouse);
 
             if($direction == "IN"){
                 if($existing){
@@ -72,6 +88,33 @@ class InventoryManager
                     'message' => 'Inventory Outbound successfully',
                     'success_status' => 1,
                 ]);
+            } else if($direction == "TRANSFER"){
+                if($existing){
+                    InvWarehouse::where('StockCode', $sku)
+                    ->where('Warehouse', $warehouse)
+                    ->update([
+                        'QtyOnHand' => (float)$existing->QtyOnHand - (float)$qty,
+                        'DateLastStockMove' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                    ]);
+
+                    $existingDestWH = $this->isInvFound($sku, $newWarehouse);
+                    // dd($existingDestWH);
+                    if($existingDestWH){
+                        InvWarehouse::where('StockCode', $sku)
+                        ->where('Warehouse', $newWarehouse)
+                        ->update([
+                            'QtyOnHand' => (float)$existing->QtyOnHand + (float)$qty,
+                            'DateLastStockMove' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                        ]);
+                    } else{
+                        $this->AddProdToInvWarehouse($sku, $newWarehouse, $qty);
+                    }
+    
+                    return response()->json([
+                        'message' => 'Inventory Inbound successfully',
+                        'success_status' => 1,
+                    ]);
+                }
             }
         } catch (\Exception $e) {
             return response()->json([
@@ -81,24 +124,54 @@ class InventoryManager
         }
     }
 
-    public function InvMovement($headerDetails,  $detail, $movementType)
+    public function InvMovement($headerDetails,  $detail, $movementType, $trnType)
     {
         $productData = $detail;
 
         if($movementType == 'I'){
-            $headerData = $headerDetails['rrData'];
-            InvMovements::create([
-                'StockCode' => $productData['SKU'],
-                'Warehouse' => $productData['warehouse'],
-                'TrnYear' => now()->setTimezone('Asia/Manila')->format('Y'),
-                'TrnMonth' => now()->setTimezone('Asia/Manila')->format('n'),
-                'EntryDate' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
-                'MovementType' => 'I',
-                'TrnQty' => $productData['Quantity'],
-                'Reference' => $headerData['RRNo'],
-                'UnitCost' => $productData['UnitPrice'],
-                'CustomerPoNumber' => $headerData['PO_NUMBER'],
-            ]);
+            if($trnType == 'R'){
+                $headerData = $headerDetails['rrData'];
+                InvMovements::create([
+                    'StockCode' => $productData['SKU'],
+                    'Warehouse' => $productData['warehouse'],
+                    'TrnYear' => now()->setTimezone('Asia/Manila')->format('Y'),
+                    'TrnMonth' => now()->setTimezone('Asia/Manila')->format('n'),
+                    'EntryDate' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                    'MovementType' => 'I',
+                    'TrnType' => 'R',
+                    'TrnQty' => $productData['Quantity'],
+                    'Reference' => $headerData['RRNo'],
+                    'UnitCost' => $productData['UnitPrice'],
+                    'CustomerPoNumber' => $headerData['PO_NUMBER'],
+                ]);
+            } else if($trnType == 'T'){
+                $ref = 'T' . $headerDetails['Warehouse'] . $headerDetails['NewWarehouse'] . now()->setTimezone('Asia/Manila')->format('Ymd_H');
+
+                InvMovements::create([
+                    'StockCode' => $productData['StockCode'],
+                    'Warehouse' => $headerDetails['Warehouse'],
+                    'TrnYear' => now()->setTimezone('Asia/Manila')->format('Y'),
+                    'TrnMonth' => now()->setTimezone('Asia/Manila')->format('n'),
+                    'EntryDate' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                    'MovementType' => 'I',
+                    'TrnType' => 'T',
+                    'TrnQty' => $productData['TrnQty'],
+                    'NewWarehouse' => $headerDetails['NewWarehouse'],
+                    'Reference' => $ref,
+                ]);
+
+                InvMovements::create([
+                    'StockCode' => $productData['StockCode'],
+                    'Warehouse' => $headerDetails['NewWarehouse'],
+                    'TrnYear' => now()->setTimezone('Asia/Manila')->format('Y'),
+                    'TrnMonth' => now()->setTimezone('Asia/Manila')->format('n'),
+                    'EntryDate' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                    'MovementType' => 'I',
+                    'TrnType' => 'T',
+                    'TrnQty' => $productData['TrnQty'],
+                    'Reference' => $ref,
+                ]);
+            }
         } else if($movementType == 'S'){
             $headerData = $headerDetails;
 
@@ -120,5 +193,9 @@ class InventoryManager
                 'DetailLine' => $productData['SalesOrderLine'],
             ]);
         }
+    }
+
+    public function InvWarehouseTransfer(){
+
     }
 }

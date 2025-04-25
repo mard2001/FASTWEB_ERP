@@ -12,14 +12,14 @@
 <script>
     $(document).ready(async function() {
         $('#regBtn').on("click", function() {
-            alert('test');
             if ($('#register').valid()) {
 
                 var regData = {
                     "name": $('#fname').val().trim() + ' ' + $('#lname').val().trim(),
                     "email": $('#email').val().trim(),
                     "password": $('#password').val().trim(),
-                    "confirm_password": $('#cpassword').val().trim()
+                    "password_confirmation": $('#password_confirmation').val().trim(),
+                    "mobile": $('#mobile').val().trim(),
                 }
 
                 $.ajax({

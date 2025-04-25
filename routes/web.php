@@ -129,6 +129,9 @@ Route::get('/inventory/movement/product', function () {
 Route::get('/inventory/movement/warehouse', function () {
     return page_view('inventory/invWarehouseMovements_page');
 })->name('invWarehouseMovements');
+Route::get('/inventory/stock-transfer', function () {
+    return page_view('inventory/invTransfer_page');
+})->name('invStockTransfer');
 
 
 // PRODUCT MAINTENANCE MODULE
@@ -203,6 +206,19 @@ Route::get('/master-data/salesman', function () {
 Route::get('/transactions/sales-order', function () {
     return page_view('sales-order/so_page');
 })->name('sales-order');
+
+
+// SUPPLIER MAINTENANCE MODULE
+Route::get('/master-data/supplier', function () {
+    return page_view('supplier-maintenance/supplier_page');
+})->name('supplier');
+
+
+// WAREHOUSE MAINTENANCE MODULE
+Route::get('/master-data/warehouse', function () {
+    return page_view('warehouse/warehouse_page');
+})->name('warehouse');
+
 
 
 Route::get('/register', function () {

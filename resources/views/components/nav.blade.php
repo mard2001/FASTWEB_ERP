@@ -36,7 +36,18 @@
                             <span class="ms-2 px-1">Salesmans</span>
                         </a>
                     </li>
-                    
+                    <li class="">
+                        <a href="{{ route('supplier') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Suppliers</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('warehouse') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Warehouse</span>
+                        </a>
+                    </li>
                 </div>
             </ul>
         </li>
@@ -64,6 +75,12 @@
                         <a href="{{ route('stocktake') }}" class="sidebar-link">
                             <span class="mdi mdi-ray-start-arrow"></span>
                             <span class="ms-2 px-1">Stock Take</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('invStockTransfer') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Stock Transfer</span>
                         </a>
                     </li>
                     <li class="">

@@ -3,7 +3,6 @@ var ItemsTH, selectedItems;
 var ajaxMainData, ajaxItemsData;
 var shippedToData, selectedShippedTo;
 var vendordata, selectedVendor;
-var productConFact;
 var itemTmpSave = [];
 var priceCodes;
 var fileCtrTotal = 0;
@@ -901,7 +900,7 @@ const initVS = {
                                 label: findProduct[item], 
                             };
                         });
-      
+                        
                         uoms = uoms.filter(
                             (item, index, self) =>
                                 index === self.findIndex((other) => other.value === item.value)
@@ -917,6 +916,7 @@ const initVS = {
                         });
       
                         productConFact = response.convertionFactor;
+                        console.log(productConFact);
 
                         $("#PricePerUnit").val(response.response.UNITPRICE);
                         $("#itemSave").prop("disabled", false);
@@ -1415,6 +1415,7 @@ const SOItemsModal = {
         $("#itemSave").text("Update Item");
     },
     reverseItemCalculateUOM: (uoms, totalInPieces) => {
+        console.log(uoms);
     
         let UomAndQuantity = {};
         let moduloResult = totalInPieces % productConFact.ConvFactAltUom;
@@ -1425,16 +1426,11 @@ const SOItemsModal = {
             switch (element.value) {
                 case "CS":
                     UomAndQuantity.CS = Math.floor(totalInPieces / ConvFactAltUom);
-                    console.log(`CS: ${UomAndQuantity.CS}`);
                     break;
     
                 case "IB":
-                    console.log("IB inside", { totalInPieces, ConvFactAltUom, ConvFactOthUom });
-                    
                     const conFact = ConvFactAltUom / ConvFactOthUom;
                     UomAndQuantity.IB = Math.floor((moduloResult === 0 ? totalInPieces : moduloResult) / conFact);
-                    
-                    console.log(`IB: ${UomAndQuantity.IB}`);
                     break;
     
                 case "PC":
@@ -1442,7 +1438,6 @@ const SOItemsModal = {
                     let remainingForPC = hasIB ? moduloResult % (ConvFactAltUom / ConvFactOthUom) : totalInPieces % ConvFactOthUom;
     
                     UomAndQuantity.PC = remainingForPC;
-                    console.log(`PC: ${UomAndQuantity.PC}`);
                     break;
             }
         });

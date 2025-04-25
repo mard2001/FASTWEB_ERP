@@ -523,8 +523,8 @@ class SOMasterController extends Controller
                     $sku = $detail['MStockCode'];
                     $warehouse = $detail['MWarehouse'];
                     $qty = $detail['QTYinPCS'];
-                    $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "OUT");
-                    $InventoryManager->InvMovement($soHeaderDetails,  $detail, 'S');
+                    $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "OUT", null);
+                    $InventoryManager->InvMovement($soHeaderDetails,  $detail, 'S', null);
                 }
             } else {
                 return response()->json([

@@ -15,6 +15,11 @@
         </div>
 
         <div>
+            <label for="mobile" class="block text-sm font-medium text-gray-700">Mobile Number</label>
+            <input type="text" id="mobile" name="mobile" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <div>
             <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
             <input type="email" id="email" name="email" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
         </div>
@@ -25,8 +30,8 @@
         </div>
 
         <div>
-            <label for="password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
-            <input type="password" id="cpassword" name="cpassword" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+            <input type="password" id="password_confirmation" name="password_confirmation" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
         </div>
 
         <div class="flex items-start mb-6">

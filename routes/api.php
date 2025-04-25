@@ -44,6 +44,7 @@ use App\Http\Controllers\api\SalesOrder\SOMasterController;
 use App\Http\Controllers\api\MasterData\InventoryController;
 use App\Http\Controllers\api\Salesman\SalespersonController;
 use App\Http\Controllers\api\MasterData\PAMasterListController;
+use App\Http\Controllers\api\Warehouse\WHTaggingController;
 
 Route::middleware(['auth:sanctum', DynamicDatabase::class])->group(function () {
 
@@ -149,6 +150,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/warehouse-movement-chart/{warehouse}/{startdate}/{enddate}', [InvController::class, 'WarehouseStockInOut']);
         Route::get('/warehouse-top-products/{warehouse}/{startdate}/{enddate}', [InvController::class, 'getTopMovingProducts']);
         Route::get('/available/warehouse', [InvController::class, 'getAllWarehouse']);
+        Route::get('/transfer/stocks', [InvController::class, 'getAllTransfer']);
+        Route::get('/transfer/warehouse/inventory/{warehouse}', [InvController::class, 'getWarehouseInv']);
+        Route::post('/warehouse-movement-transfer', [InvController::class, 'InvWarehouseStockTransfer']);
+        
+    });
+
+    Route::prefix('supp')->group(function(){
+        Route::apiResource('/vendors', SupplierController::class);
+    });
+
+    Route::prefix('wh')->group(function(){
+        Route::apiResource('/warehouse', WHTaggingController::class);
+        Route::get('/all-warehouse', [WHTaggingController::class, 'getAllWarehouse']);
 
     });
 
@@ -165,7 +179,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/testcon', [DynamicSQLHelper::class, 'testConnection']);
     Route::post('/registerConn', [DBConsManager::class, 'saveDbconPassword']);
-
 
 });
 
