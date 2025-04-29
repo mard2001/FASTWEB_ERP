@@ -1,7 +1,7 @@
 @extends('Layout.login')
 
 @section('html_title')
-<title>Data Maintenance Login</title>
+<title>Login</title>
 @endsection
 
 @section('content')

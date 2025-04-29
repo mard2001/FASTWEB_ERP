@@ -1,7 +1,7 @@
 
 
 <?php $__env->startSection('html_title'); ?>
-<title>Data Maintenance Login</title>
+<title>Login</title>
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('content'); ?>

@@ -1,7 +1,7 @@
 @extends('Layout.login')
 
 @section('html_title')
-<title>Login</title>
+<title>Register</title>
 @endsection
 
 @section('content')
