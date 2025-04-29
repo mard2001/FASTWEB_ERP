@@ -16,7 +16,6 @@
     var interval;
     // To Page 2 (Next button click)
     $(document).on('click', '#loginBtn', function() {
-
         $.ajax({
             url: globalApi + 'api/sendOTP',
             type: 'POST',
@@ -25,9 +24,7 @@
                 mobile: '0' + $('#mobileNumber').val()
             }), // Convert the data to JSON format
             success: function(response) {
-
                 if (response.success) {
-
                     $('#mobileField').hide(); // Show Page 2
                     // Slide in Page 2
                     $('#verifyField').show(); // Show Page 2
@@ -54,16 +51,9 @@
                 return xhr, status, error;
             }
         });
-
-
-
-
-
     });
 
     function changeMobile() {
-        // Slide in Page 2
-
         anime({
             targets: '#verifyField',
             translateX: ['0%', '100%'],

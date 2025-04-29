@@ -9,11 +9,6 @@
 
     <style>
     .moving-shadow {
-        width: 200px;
-        height: 200px;
-        background-color: #fff;
-        border-radius: 12px;
-        margin: 50px auto;
         animation: smoothShadowMove 4s infinite ease-in-out;
         box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.15);
     }

@@ -47,7 +47,8 @@ $(document).ajaxError(function (event, jqXHR, ajaxSettings, thrownError) {
 
 function isTokenExist() {
     if (!localStorage.getItem('api_token')) {
-        window.location.href = "/login";
+      localStorage.setItem('api_token', 'null');
+      window.location.href = "/login";
     }
 }
 
@@ -8810,4 +8811,11 @@ function toggleSubMenu(button){
   }
   button.nextElementSibling.classList.toggle('showdropdown');
   button.classList.toggle('rotate');
+}
+
+function logoutDeleteStorageTokens(){
+  // localStorage.removeItem('api_token');
+  // localStorage.removeItem('user');
+
+  window.location.href = globalApi;
 }

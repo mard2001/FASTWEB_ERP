@@ -11,7 +11,7 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><button class="dropdown-item" type="button">Profile</button></li>
-              <li><button class="dropdown-item" type="button">Logout</button></li>
+              <li><button class="dropdown-item" type="button" onclick="logoutDeleteStorageTokens()">Logout</button></li>
             </ul>
         </div>
     </div>
