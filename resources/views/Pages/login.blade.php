@@ -18,7 +18,7 @@
     $(document).on('click', '#loginBtn', function() {
 
         $.ajax({
-            url: globalApi + '/api/sendOTP',
+            url: globalApi + 'api/sendOTP',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
@@ -126,7 +126,7 @@
                 console.log('+63' + $('#mobileNumber').val());
 
                 $.ajax({
-                    url: globalApi + '/api/verifyOTP',
+                    url: globalApi + 'api/verifyOTP',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
