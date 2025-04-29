@@ -9,15 +9,16 @@
 @endsection
 
 @section('scriptjs')
+<script src="{{ asset('assets/js/mainJS.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <script>
-    var otpCountdown = 299; //5 minutees
+    var otpCountdown = 299; //5 minutes
     var interval;
     // To Page 2 (Next button click)
     $(document).on('click', '#loginBtn', function() {
 
         $.ajax({
-            url: 'https://spc.sfa.w-itsolutions.com/api/sendOTP',
+            url: globalApi + '/api/sendOTP',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
@@ -125,7 +126,7 @@
                 console.log('+63' + $('#mobileNumber').val());
 
                 $.ajax({
-                    url: 'https://spc.sfa.w-itsolutions.com/api/verifyOTP',
+                    url: globalApi + '/api/verifyOTP',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -140,7 +141,8 @@
 
                             localStorage.setItem('user', JSON.stringify(response.user));
 
-                            window.location.href = 'https://spc.sfa.w-itsolutions.com/dbconfig';
+                            // window.location.href = 'https://spc.sfa.w-itsolutions.com/dbconfig';
+                            window.location.href = globalApi + 'settings/dbconfig';
 
                         }
                     },
