@@ -145,7 +145,8 @@ class InventoryManager
                     'CustomerPoNumber' => $headerData['PO_NUMBER'],
                 ]);
             } else if($trnType == 'T'){
-                $ref = 'T' . $headerDetails['Warehouse'] . $headerDetails['NewWarehouse'] . now()->setTimezone('Asia/Manila')->format('Ymd_H');
+                $timestamp = now()->setTimezone('Asia/Manila')->format('Ymd_His');
+                $ref = 'T' . $headerDetails['Warehouse'] . $headerDetails['NewWarehouse'] . $timestamp;
 
                 InvMovements::create([
                     'StockCode' => $productData['StockCode'],

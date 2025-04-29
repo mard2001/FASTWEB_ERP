@@ -198,8 +198,12 @@ class ProductCalculator
             $originalQty = $quantity;
             $ConvFactAltUom = $product->ConvFactAltUom;
             $ConvFactOthUom = $product->ConvFactOthUom;
-            $itemUoms = [$product->StockUom, $product->AlternateUom, $product->OtherUom];
-            $result = [ "inCS" => 0, "inIB" => 0, "inPC" => 0 ];
+            // $itemUoms = [$product->StockUom, $product->AlternateUom, $product->OtherUom];
+            $itemUoms = array_unique([$product->StockUom, $product->AlternateUom, $product->OtherUom]); // Gather UOMs and make sure they are unique
+
+            $result['inCS'] = (in_array('CS', $itemUoms))?  0 : null;
+            $result['inIB'] = (in_array('IB', $itemUoms))?  0 : null;
+            $result['inPC'] = (in_array('PC', $itemUoms))?  0 : null;
 
             if ($quantity > 0) {
                 if (in_array("CS", $itemUoms)) {

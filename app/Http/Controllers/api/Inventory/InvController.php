@@ -331,7 +331,7 @@ class InvController extends Controller
             $StockRecord = [];
 
             // Fetch only necessary data with eager loading
-            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'Reference', 'SalesOrder', 'Customer', 'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost')
+            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'Reference', 'SalesOrder', 'Customer', 'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost', 'TrnType', 'NewWarehouse')
                 ->with(['productdetails', 'salesmandetails'])
                 ->where('Warehouse', $Warehouse)
                 ->whereBetween('EntryDate', [$StartDate, $EndDate])
@@ -479,8 +479,19 @@ class InvController extends Controller
 
     public function getAllTransfer(){
         try {
-            $data = InvMovements::select('StockCode','Warehouse','TrnQty','NewWarehouse','EntryDate')->with('productdetails')->where('MovementType', "I")->where('TrnType', "T")->get();
+            $productCalculator = new ProductCalculator();
+            $data = InvMovements::select('StockCode','Warehouse','TrnQty','NewWarehouse','EntryDate','Reference')->with('productdetails')->where('MovementType', "I")->where('TrnType', "T")->orderBy('EntryDate','DESC')->get();
             
+            $data->transform(function ($row) use ($productCalculator) {
+                $qty = (int) floor($row->TrnQty);
+
+                $conversion = $productCalculator->originalDynamicConv($row->StockCode, $qty);
+
+                $row->runningBal = $conversion['result'];
+
+                return $row;
+            });
+
             return response()->json([
                 'success' => true,
                 'message' => 'Latest inventory movement retrieved successfully',
@@ -529,6 +540,11 @@ class InvController extends Controller
                 $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "TRANSFER", $newWarehouse);
                 $InventoryManager->InvMovement($mainDetails,  $item, 'I', 'T');
             }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock transfer successful',
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([

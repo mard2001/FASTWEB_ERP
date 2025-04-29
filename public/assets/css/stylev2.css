@@ -464,3 +464,8 @@ a.sidebar-link * svg {
 .sub-menu .sidebar-link{
     padding: .325rem 1.625rem;
 }
+
+.virtual-select-invalid {
+    border: 1px solid red !important;
+    border-radius: 4px;
+}

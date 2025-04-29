@@ -9,7 +9,7 @@ var warehouseInv = null;
 var itemTmpSave = [];
 var productConFact;
 var userObject;
-
+var previousVSWarehouseValue = null;
 
 
 const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
@@ -131,9 +131,9 @@ $(document).ready(async function () {
         if (STModal.isValid()) {
             if (itemTmpSave.length < 1) {
                 Swal.fire({
-                title: "No items",
-                text: "Please review your order. No items have been added for Sales Order.",
-                icon: "error",
+                    title: "No items",
+                    text: "Please review your order. No items have been added for Sales Order.",
+                    icon: "error",
                 });
             } else {
                 Swal.fire({
@@ -146,17 +146,17 @@ $(document).ready(async function () {
                 }).then(async (result) => {
                     if (result.isConfirmed) {
                         STModal.STSave();
-                        // STModal.hide();
-                        // Swal.fire({
-                        //     text: "Please wait... Transferring Stocks...",
-                        //     timerProgressBar: true,
-                        //     allowOutsideClick: false,
-                        //     allowEscapeKey: false,  
-                        //     allowEnterKey: false,
-                        //     didOpen: () => {
-                        //         Swal.showLoading();
-                        //     },
-                        // });
+                        STModal.hide();
+                        Swal.fire({
+                            text: "Please wait... Transferring Stocks...",
+                            timerProgressBar: true,
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,  
+                            allowEnterKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            },
+                        });
                     }
                 });
             } 
@@ -165,6 +165,72 @@ $(document).ready(async function () {
                 title: "Missing Required Fields!",
                 text: "Please fill in all fields. Some required fields are empty.",
                 icon: "warning",
+            });
+        }
+    });
+    
+    $(document).on("click", ".itemDeleteIcon", async function () {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "Do you want to delete this product?",
+            icon: "question",
+            showDenyButton: true,
+            confirmButtonText: "Yes, Delete",
+            denyButtonText: `Cancel`,
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const row = $(this).closest("tr");
+                const skuCode = row.find("td:first"); // Get the first <td>
+                STItemsModal.itemTmpDelete(skuCode);
+                isSelectedEdited = true;
+            }
+        });
+    });
+
+    $(document).on("click", ".itemUpdateIcon", async function () {
+        console.log('itemupdate');
+        const row = $(this).closest("tr");
+        const itemStockCode = row.find("td:first").text().trim();
+        STItemsModal.enable(true);
+    
+        $("#CSQuantity").val("");
+        $("#IBQuantity").val("");
+        $("#PCQuantity").val("");
+    
+        STItemsModal.show();
+    
+        const select = document.querySelector("#StockCode");
+    
+        // Set value programmatically
+        select.setValue(itemStockCode);
+    
+        // Manually trigger the `afterClose` event
+        const event = new CustomEvent("afterClose");
+        select.dispatchEvent(event);
+    });
+
+    $("#itemCloseBtn").on("click", function () {
+        let valid = false;
+        const data = STItemsModal.getData();
+    
+        for (const key in data) {
+          if (data[key] === "" || data[key] === null || data[key] === undefined) {
+            valid = true;  
+          }
+        }
+    
+        if (valid) {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You want to close? Unsaved data will be erased.",
+                icon: "question",
+                showDenyButton: true,
+                confirmButtonText: "Yes, Close",
+                denyButtonText: `Cancel`,
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    STItemsModal.hide();
+                }
             });
         }
     });
@@ -215,16 +281,47 @@ const datatables = {
                         }
                     },
                     columns: [
-                        { data: 'EntryDate',  title: 'Transfer Date' },
-                        { data: 'Warehouse',  title: 'Origin Warehouse' },
-                        { data: 'NewWarehouse',  title: 'Destination Warehouse' },
+                        { data: 'EntryDate',  title: 'Transfer Date',
+                            render: function(data, type, row){
+                                return data.split(' ')[0];
+                            }
+                        },
+                        { data: 'Reference',  title: 'Transfer Reference' },
+                        { data: null,  title: 'Movement',
+                            render: function(data, type, row) {
+                                var res = '';
+                                if(row.NewWarehouse == ' '){
+                                    res = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                } else{
+                                    res = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT </span></span>";
+                                }
+                                return res;
+                            }
+                        },
+                        { data: 'Warehouse',  title: 'Origin WH' },
+                        { data: 'NewWarehouse',  title: 'Destination WH' },
                         { data: 'StockCode',  title: 'StockCode' },
                         { data: 'productdetails.Description',  title: 'Description' },
-                        { data: 'TrnQty',  title: 'Qty in PCS' },
+                        { data: 'runningBal.inCS',  title: 'CS',
+                            render: function (data, type, row){
+                                return (data != null)? data : "-";
+                            }
+                        },
+                        { data: 'runningBal.inIB',  title: 'IB',
+                            render: function (data, type, row){
+                                return (data != null)? data : "-";
+                            }
+                        },
+                        { data: 'runningBal.inPC',  title: 'PC',
+                            render: function (data, type, row){
+                                return (data != null)? data : "-";
+                            }
+                        },
+                        // { data: 'TrnQty',  title: 'Qty in PCS' },
                     ],
                     columnDefs: [
-                        // { className: "text-start", targets: [ 0, 2, 3, 4, 8 ] },
-                        // { className: "text-center", targets: [ 1, 5, 6, 7 ] },
+                        { className: "text-start", targets: [ 0, 1, 6 ] },
+                        { className: "text-center", targets: [  2, 3, 4, 5, 7, 8, 9 ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' } // This targets all columns
                     ],
@@ -249,7 +346,7 @@ const datatables = {
 
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
-                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend('<div id="filterTransfer" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
@@ -352,12 +449,10 @@ const initVS = {
     liteDataVS: async () => {
         // Initialize VirtualSelect for ship via
         VirtualSelect.init({
-            ele: '#filterPOVS',                   // Attach to the element
+            ele: '#filterTransfer',                   // Attach to the element
             options: [
-                // { label: "", value: null },
-                // { label: "Active", value: 1 },
-                // { label: "Deleted", value: 0 },
-
+                { label: "Transfer - Outbound", value: 0 },
+                { label: "Transfer - Inbound", value: 1 },
             ], 
             multiple: true, 
             hideClearButton: true, 
@@ -367,6 +462,27 @@ const initVS = {
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
             additionalToggleButtonClasses: 'rounded',
+        });
+
+        $("#filterTransfer").on("change", async function () {
+            if (this.value) {
+                var filteredData = { data:[], success: true };
+                var filterValues = this.value;
+                if(filterValues.length == 0){
+                    filteredData.data = jsonArr;
+                } else{
+                    filteredData.data = jsonArr.filter(item => {
+                        if (filterValues.includes("1") && item.NewWarehouse == " ") {
+                            return true;
+                        } else if (filterValues.includes("0") && item.NewWarehouse != " ") {
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+                datatables.initInvTransferDatatable(filteredData);
+                
+            }
         });
     },
     bigDataVS: async () => {
@@ -471,7 +587,6 @@ const initVS = {
     },
     origWHVS: async () => {
         const invData = await ajax('api/wh/all-warehouse', 'GET', null, (response) => {  
-            console.log(response);
             availWH = response.data;
 
             const warehouses = response.data;
@@ -505,16 +620,48 @@ const initVS = {
         });
 
         $("#VSWarehouse").on("afterClose", async function () {
+            $(`#VSWarehouse div .vscomp-toggle-button`).removeClass('virtual-select-invalid');
             if (this.value) {
-                filteredWH = availWH.filter((item) => { return item.Warehouse != this.value});
-                initVS.destWHVS(filteredWH);
-                warehouseInv = null;
-                await initVS.bigDataVS();
+                if(itemTmpSave.length > 0){
+                    Swal.fire({
+                        title: "Are you sure?",
+                        text: "You want to change origin warehouse? Unsaved data will be erased.",
+                        icon: "question",
+                        showDenyButton: true,
+                        confirmButtonText: "Yes, Close",
+                        denyButtonText: `Cancel`,
+                    }).then(async (result) => {
+                        console.log(result);
+                        if (result.isConfirmed) {
+                            previousVSWarehouseValue = this.value;
+                            itemTmpSave = [];
+                            datatables.initSTItemsDatatable(itemTmpSave);
 
+                            filteredWH = availWH.filter((item) => { return item.Warehouse != this.value});
+                            initVS.destWHVS(filteredWH);
+                            warehouseInv = null;
+                            await initVS.bigDataVS();
+                        } else if (result.isDenied) {
+                            if (document.querySelector("#VSWarehouse")?.virtualSelect) {
+                                document.querySelector('#VSWarehouse').setValue(previousVSWarehouseValue);
+                            }
+                        }
+                    });
+                } else{
+                    previousVSWarehouseValue = this.value;
+                    filteredWH = availWH.filter((item) => { return item.Warehouse != this.value});
+                    initVS.destWHVS(filteredWH);
+                    warehouseInv = null;
+                    await initVS.bigDataVS();
+                }
             } else{
                 initVS.destWHVS([]);
                 warehouseInv = null;
             }
+        });
+
+        $("#VSWarehouse").on("focus", function() {
+            previousVSWarehouseValue = this.value;
         });
 
         $("#VSWarehouse").on("reset", function () {
@@ -546,13 +693,23 @@ const initVS = {
             additionalDropboxContainerClasses: 'rounded',
             additionalToggleButtonClasses: 'rounded',
         });
+        $("#VSNewWarehouse").on("afterClose", async function () {
+            $(`#VSNewWarehouse div .vscomp-toggle-button`).removeClass('virtual-select-invalid');
+        });
     },
 }
 
 const STModal = {
     isValid: () => {
-        return $("#modalFields").valid();
-    },
+        var validWarehouse = validateVirtualSelect('VSWarehouse');
+    var validNewWarehouse = validateVirtualSelect('VSNewWarehouse');
+
+    if (validWarehouse && validNewWarehouse) {
+        return true;
+    } else {
+        return false;
+    }
+    }, 
     show: () => {
         $('#stockTransferMainModal').modal('show');
     },
@@ -560,10 +717,13 @@ const STModal = {
         $('#stockTransferMainModal').modal('hide');
     },
     clear: () => {
-        $('#modalFields input[type="text"]').val('');
-        $('#modalFields input[type="number"]').val('');
-        $('#modalFields input[type="date"]').val('');
-        $('#modalFields textarea').val('');
+        if (document.querySelector('#VSWarehouse')?.virtualSelect) {
+            document.querySelector('#VSWarehouse').reset();
+        }
+
+        if (document.querySelector('#VSNewWarehouse')?.virtualSelect) {
+            document.querySelector('#VSNewWarehouse').reset();
+        }
     },
     enable: (enable) => {
         $('#modalFields input[type="text"]').prop('disabled', !enable);
@@ -592,7 +752,8 @@ const STModal = {
         await ajax("api/inv/warehouse-movement-transfer", "POST", JSON.stringify({ data: STData }),
             (response) => {
                 if (response.success) {
-                    datatables.loadSOData();
+                    datatables.loadInvTransferData();
+                    STModal.hide();
                     Swal.close();
                     Swal.fire({
                         title: "Success!",
@@ -797,9 +958,6 @@ const STItemsModal = {
             OrderUom: getUOM,
             UomAndQuantity: getUOM,
             OrderQty: $("#Quantity").val(),
-            ProductClass: 'GROC',
-            StockUnitMass: 0,
-            StockUnitVol: 0,
         };
         
     },
@@ -826,7 +984,7 @@ const STItemsModal = {
     },
     itemTmpDelete: (skuCode) => {
         itemTmpSave = itemTmpSave.filter(
-          (item) => item.MStockCode != skuCode.text()
+          (item) => item.StockCode != skuCode.text()
         );
     
         datatables.initSTItemsDatatable(itemTmpSave);
@@ -847,4 +1005,18 @@ function invStockChecker(item) {
     }
     // if no matching StockCode was found
     return false;
+}
+
+
+function validateVirtualSelect(id) {
+    var value = $('#' + id).val();
+
+    console.log("1");
+    if (value == "") {
+        $(`#${id} div .vscomp-toggle-button`).addClass('virtual-select-invalid');
+        return false;
+    } else {
+        $(`#${id} div .vscomp-toggle-button`).removeClass('virtual-select-invalid');
+        return true;
+    }
 }

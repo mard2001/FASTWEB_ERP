@@ -185,7 +185,7 @@ const datatables = {
                         { data: 'Reference',  title: 'Reference'},
                         { data: 'Status',  title: 'Status',
                             render: function(data, type, row) {
-                                return data == "1" ? "<span class='statusBadge3'>Pending</span>" : data == "0" ? "<span class='statusBadge2'>Deleted</span>" : data == "2" ? "<span class='statusBadge1'>Confirmed</span>" : "";
+                                return data == "1" ? "<span class='statusBadge3' style='width:66.9333px'>Pending</span>" : data == "0" ? "<span class='statusBadge2'>Deleted</span>" : data == "2" ? "<span class='statusBadge1'>Confirmed</span>" : "";
                             } 
                         },
                         { data: 'preparedby.FULLNAME',  title: 'Prepared By' },

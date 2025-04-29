@@ -17,6 +17,7 @@ var barLabels = [];
 var barValues = [];
 var barColors = [];
 var topProdResArr = [];
+var warehouseData = [];
 
 const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
                                 <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvDLBtn">
@@ -120,13 +121,49 @@ const datatables = {
                             }
                         },
                         { data: 'MovementType',  title: 'Type',
+                            // render: function (data, type, row) {
+                            //     return (data == "I") ? "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus' > IN </span></span>" : "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
+                            // }
                             render: function (data, type, row) {
-                                return (data == "I") ? "<span class='statusBadge1 align-middle'><span class='mdi mdi-package-variant-plus'> IN </span></span>" : "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
+                                var result;
+                                if(data == "I" ){
+                                    if(row.TrnType == "T"){
+                                        if(row.NewWarehouse == " "){
+                                            result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                        } else{
+                                            result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
+                                        }
+                                    } 
+                                    else{
+                                        result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                    }
+                                } else{
+                                    result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
+                                }
+                                return result;
                             }
                         },
                         { data: 'TrnQty',  title: 'Transac Qty',
-                            render: function (data, type, row){
-                                return (data.trim() != "" && row.MovementType == "S")? `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>` : `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
+                            // render: function (data, type, row){
+                            //     return (data.trim() != "" && row.MovementType == "S")? `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>` : `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
+                            // }
+                            render: function (data, type, row) {
+                                var result;
+                                if(data.trim() != "" && row.MovementType != "S"){
+                                    if(row.TrnType == "T"){
+                                        if(row.NewWarehouse == " "){
+                                            result = `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
+                                        } else{
+                                            result = `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>`;
+                                        }
+                                    } 
+                                    else{
+                                        result = `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
+                                    }
+                                } else{
+                                    result = `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>`;
+                                }
+                                return result;
                             }
                         },
                         { data: 'StockCode',  title: 'StockCode'},
@@ -265,6 +302,7 @@ const initVS = {
                   label: item.Warehouse, 
                 };
             });
+            warehouseData = data;
             initVS.warehouseFilterVS(data);
         }, (xhr, status, error) => { 
             console.error('Error:', error);
@@ -493,7 +531,8 @@ function datePicker(){
         filteredStartDate = picker.startDate.format('YYYY-MM-DD');
         filteredEndDate = picker.endDate.format('YYYY-MM-DD');
         $('.salesOrderListDiv').hide();
-        initVS.filterDataVS();
+
+        initVS.warehouseFilterVS(warehouseData);
     });
 
     $('#daterange').on('cancel.daterangepicker', function(ev, picker) {

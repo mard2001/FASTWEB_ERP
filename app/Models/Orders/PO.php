@@ -76,7 +76,7 @@ class PO extends Model
 
     public function posupplier()
     {
-        return $this->belongsTo(Supplier::class, 'SupplierCode', 'SupplierCode');
+        return $this->hasOne(Supplier::class, 'SupplierCode', 'SupplierCode');
     }
 
     public function receivingHeader()

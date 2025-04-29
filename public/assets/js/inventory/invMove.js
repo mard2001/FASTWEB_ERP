@@ -32,6 +32,7 @@ $(document).ready(async function () {
 
     $("#prodSKU_VS").on("change", async function () {
         if (this.value) {
+            console.log('asdas')
             initVS.fetchWarehouseFilterData(this.value);
         } else{
             initVS.warehouseFilterVS([]);
@@ -129,13 +130,13 @@ const datatables = {
                                 if(data == "I" ){
                                     if(row.TrnType == "T"){
                                         if(row.NewWarehouse == " "){
-                                            result = "<span class='statusBadge1 align-middle'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                            result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                         } else{
                                             result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
                                         }
                                     } 
                                     else{
-                                        result = "<span class='statusBadge1 align-middle'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                        result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                     }
                                 } else{
                                     result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
@@ -165,17 +166,17 @@ const datatables = {
                         },
                         { data: 'runningBal.inCS',  title: 'Bal. in CS',
                             render: function (data, type, row){
-                                return (data)? data : "0";
+                                return (data != null)? data : "-";
                             }
                         },
                         { data: 'runningBal.inIB',  title: 'Bal. in IB',
                             render: function (data, type, row){
-                                return (data)? data : "0";
+                                return (data != null)? data : "-";
                             }
                         },
                         { data: 'runningBal.inPC',  title: 'Bal. in PC',
                             render: function (data, type, row){
-                                return (data)? data : "0";
+                                return (data != null)? data : "-";
                             }
                         },
                         { data: 'Reference',  title: 'Reference',

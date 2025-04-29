@@ -14,7 +14,7 @@
             <div class="modal-footer py-1 d-flex justify-content-end">
                 <div>
                     <button type="button" class="btn btn-sm btn-primary text-white" id="saveSTBtn">Transfer Stocks</button>
-                    <button type="button" class="btn btn-sm btn-danger text-white" id="cancelEditSTBtn">Cancel Changes</button>
+                    {{-- <button type="button" class="btn btn-sm btn-danger text-white" id="cancelEditSTBtn">Cancel Changes</button> --}}
                     <button type="button" class="btn btn-sm btn-secondary" id="closeSTBtn" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>

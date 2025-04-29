@@ -73,17 +73,17 @@ const datatables = {
                         { data: 'productdetails.Brand',  title: 'Brand' },
                         { data: 'conversion.result.inCS',  title: 'in CS',
                             render: function (data, type, row){
-                                return (data)? data : "-";
+                                return (data != null)? data : "-";
                             }
                         },
                         { data: 'conversion.result.inIB',  title: 'in IB',
                             render: function (data, type, row){
-                                return (data)? data : "-";
+                                return (data != null)? data : "-";
                             }
                         },
                         { data: 'conversion.result.inPC',  title: 'in PC',
                             render: function (data, type, row){
-                                return (data)? data : "-";
+                                return (data != null)? data : "-";
                             }
                         },
                         { data: 'DateLastStockMove',  title: 'Last Stock Move',
