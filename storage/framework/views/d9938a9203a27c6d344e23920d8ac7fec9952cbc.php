@@ -4,9 +4,9 @@
             <i class="fa-solid fa-bars"></i>
         </button>
         <div class="sidebar-logo">
-            <img src="<?php echo e(asset('assets/resources/TempLogoIcon.png')); ?>" alt="FASET ERP" style="height: 50px; width: 50px;">
+            <img src="<?php echo e(asset('assets/resources/ERP_header3t.png')); ?>" alt="FASET ERP" style="height: 65px;">
 
-            <a href="#">FAST ERP </a>
+            
         </div>
     </div>
     <ul class="sidebar-nav">

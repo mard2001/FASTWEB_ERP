@@ -311,16 +311,7 @@
 
 <script>
     $(document).ready(async function() {
-        var sidebar = $('.sidebar-item').last();
-        sidebar.addClass('selectedlink');
-        sidebar.find('span').addClass('selectedlinkSpan');
-
-
         fillcondetails();
-
-        $(".toggle-btn").click(function() {
-            $("#sidebar").toggleClass('expand');
-        });
 
         $(".iconbg").click(function() {
             var childSpan = $(this).find('span');

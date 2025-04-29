@@ -1,10 +1,11 @@
 <div class="p-6 space-y-6 overflow-hidden">
-    <h4>Logo</h4>
+    <img src="{{ asset('assets/resources/ERP_header1t.png') }}" alt="FASET ERP" style="height: 50px; width: auto; margin-left:-10px; margin-top:-15px">
+
 
     <form id="login" class="flex w-full" onsubmit="return false;">
         @csrf
         <div id="mobileField" class="w-full">
-            <h2 class="text-center text-2xl font-bold text-gray-700">Sign in to your account</h2>
+            <h2 class="text-center text-2xl font-bold text-gray-700">WELCOME TO WITS ERP</h2>
             <p class="text-center text-gray-500 !mt-2">Log in to your account</p>
 
             <div class="flex items-stretch !my-6">
