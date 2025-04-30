@@ -45,6 +45,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.1/dist/js.cookie.min.js"></script>
+{{-- SWEET ALERT --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 @yield('scriptjs')
 

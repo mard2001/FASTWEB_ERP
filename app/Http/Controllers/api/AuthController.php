@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -46,35 +47,55 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|string|max:255',
-            'password' => 'required|string|min:8|max:255|confirmed',
-            'mobile' => 'required|string|min:11|max:11'
+            'mobile' => 'required|unique:users|string|min:10|max:10',
+            'email' => 'required|email|string|max:255|unique:users,email',
         ]);
+    
+        if ($validator->fails()) {
+            $errors = $validator->errors()->toArray();
+            $firstField = array_key_first($errors);
         
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'mobile' => $request->mobile,
-            'password' => Hash::make($request->password)
-        ]);
+            return response()->json([
+                'response_stat' => 0,
+                'field' => $firstField,
+                'message' => $errors[$firstField][0], // first error message for that field
+            ], 422);
+        }
 
-        if ($user) {
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'mobile' => $request->mobile,
+                'user_type' => 'user',
+                'password' => Hash::make('admin123')
+            ]);
 
-            $token = $user->createToken($user->token . 'Auth-Token')->plainTextToken;
+            if ($user) {
+                $token = $user->createToken($user->name . 'Auth-Token')->plainTextToken;
+
+                return response()->json([
+                    'response_stat' => 1,
+                    'message' => 'Registration Successful',
+                    'token_type' => 'Bearer',
+                    'token' => $token
+                ]);
+            }
 
             return response()->json([
-                'message' => 'Registration Successful',
-                'token_type' => 'Bearer',
-                'token' => $token
-            ]);
-        } else {
+                'response_stat' => 0,
+                'message' => 'Registration failed. Please try again.',
+            ], status: 500);
 
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error registration',
-            ]);
+                'response_stat' => 0,
+                'message' => 'An error occurred during registration.',
+                'error' => $e->getMessage() // optional, for debugging
+            ], 500);
         }
     }
+
 }

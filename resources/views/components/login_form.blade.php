@@ -8,7 +8,7 @@
             <h2 class="text-center text-2xl font-bold text-gray-700">WELCOME TO WITS ERP</h2>
             <p class="text-center text-gray-500 !mt-2">Log in to your account</p>
 
-            <div class="flex items-stretch !my-6">
+            <div class="flex items-stretch !mt-6">
                 <span class="px-4 py-2 font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-l-lg">+63</span>
                 <input
                     id="mobileNumber"
@@ -20,7 +20,7 @@
                     class="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-blue-500 focus:border-blue-500"
                     oninput="this.value = this.value.replace(/[^0-9]/g, '')"> <!-- JavaScript to allow only numbers -->
             </div>
-
+            <p class="text-sm text-gray-600 !mb-6 ml-1" style="font-size: 11px">Do not have an account yet? <a href="/register" class="text-blue-500 hover:underline">Register now!</a></p>
             <div class="text-right">
                 <button
                     id="loginBtn"
