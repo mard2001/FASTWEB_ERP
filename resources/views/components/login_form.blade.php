@@ -89,7 +89,7 @@
             <div class="flex flex-wrap justify-center my-4">
 
                 <p class="text-sm text-gray-600">No One-Time-Password received?
-                    <a href="/register" class="text-blue-500 hover:underline">Request again.</a>
+                    <span href="" id="resendCodeBtn" class="text-blue-500 hover:underline">Request again.</span>
                 </p>
             </div>
 

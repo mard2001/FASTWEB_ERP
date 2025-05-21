@@ -16,6 +16,15 @@
     var interval;
     // To Page 2 (Next button click)
     $(document).on('click', '#loginBtn', function() {
+        sendOTPtoLogin();
+    });
+
+    $(document).on('click', '#resendCodeBtn', function() {
+        sendOTPtoLogin();
+    });
+
+
+    function sendOTPtoLogin(){
         $.ajax({
             url: globalApi + 'api/sendOTP',
             type: 'POST',
@@ -51,8 +60,7 @@
                 return xhr, status, error;
             }
         });
-    });
-
+    }
     function changeMobile() {
         anime({
             targets: '#verifyField',

@@ -15,6 +15,10 @@
         box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.15);
     }
 
+    #resendCodeBtn:hover{
+        cursor: pointer;
+    }
+
     @keyframes smoothShadowMove {
         0% {
             box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2);
