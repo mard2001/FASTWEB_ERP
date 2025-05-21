@@ -1,4 +1,6 @@
-var globalApi = "https://spc.sfa2.w-itsolutions.com/";
+// var globalApi = "https://spc.sfa2.w-itsolutions.com/";
+var globalApi = "http://127.0.0.1:8000/";
+
 
 $(document).ready(function() {
   const user = localStorage.getItem('user');
