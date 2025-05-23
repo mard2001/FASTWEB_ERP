@@ -133,8 +133,9 @@ const datatables = {
                                         } else{
                                             result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
                                         }
-                                    } 
-                                    else{
+                                    } else if(row.TrnType == "A"){
+                                        result = "<span class='statusBadge4 align-middle'><span class='mdi mdi-package-check'> ADJ</span></span>";
+                                    } else{
                                         result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                     }
                                 } else{
@@ -156,8 +157,9 @@ const datatables = {
                                         } else{
                                             result = `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>`;
                                         }
-                                    } 
-                                    else{
+                                    } else if(row.TrnType == "A"){
+                                        result = `<span style="color:#076aff">${Math.floor(data)} pcs.</span>`;
+                                    } else{
                                         result = `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
                                     }
                                 } else{

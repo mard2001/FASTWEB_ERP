@@ -153,6 +153,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/transfer/stocks', [InvController::class, 'getAllTransfer']);
         Route::get('/transfer/warehouse/inventory/{warehouse}', [InvController::class, 'getWarehouseInv']);
         Route::post('/warehouse-movement-transfer', [InvController::class, 'InvWarehouseStockTransfer']);
+        Route::get('/adjust/stocks', [InvController::class, 'getAllAdjustments']);
+        Route::post('/warehouse-movement-adjust', [InvController::class, 'InvWarehouseStockAdjustment']);
         
     });
 

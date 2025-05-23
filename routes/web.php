@@ -81,9 +81,9 @@ Route::get('/master-data/customer', function () {
 
 
 // INVENTORY MAINTENANCE MODULE
-Route::get('/inventory/stock-take', function () {
+Route::get('/inventory/stock-count', function () {
     return page_view('inventory-maintenance/invCount_page');
-})->name('stocktake');
+})->name('stockcount');
 
 Route::get('/countsheet', function () {
     return page_view('invCount_page');
@@ -132,6 +132,11 @@ Route::get('/inventory/movement/warehouse', function () {
 Route::get('/inventory/stock-transfer', function () {
     return page_view('inventory/invTransfer_page');
 })->name('invStockTransfer');
+Route::get('/inventory/stock-adjustment', function () {
+    return page_view('inventory/invAdj_page');
+})->name('stockadjustment');
+
+
 
 
 // PRODUCT MAINTENANCE MODULE

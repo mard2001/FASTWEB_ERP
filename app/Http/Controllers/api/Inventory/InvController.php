@@ -7,8 +7,10 @@ use Illuminate\Http\Request;
 use App\Services\InventoryManager;
 use App\Services\ProductCalculator;
 use App\Http\Controllers\Controller;
+use App\Models\Inventory\InvAdjustmentLogs;
 use App\Models\Inventory\InvMovements;
 use App\Models\Inventory\InvWarehouse;
+use App\Models\Orders\PO;
 
 class InvController extends Controller
 {
@@ -321,63 +323,87 @@ class InvController extends Controller
     public function getAllSKUMovementPerWarehouse(string $Warehouse, string $StartDate, string $EndDate)
     {   
         try {
-            $StartDate = $StartDate . ' 00:00:00';
-            $EndDate = $EndDate . ' 23:59:59';
-            $productCalculator = new ProductCalculator();
+                $StartDate = $StartDate . ' 00:00:00';
+                $EndDate = $EndDate . ' 23:59:59';
 
-            $runningBal = 0;
-            $totalStockIn = 0;
-            $totalStockOut = 0;
-            $StockRecord = [];
+                $productCalculator = new ProductCalculator();
 
-            // Fetch only necessary data with eager loading
-            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'Reference', 'SalesOrder', 'Customer', 'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost', 'TrnType', 'NewWarehouse')
-                ->with(['productdetails', 'salesmandetails'])
-                ->where('Warehouse', $Warehouse)
-                ->whereBetween('EntryDate', [$StartDate, $EndDate])
-                ->orderBy('EntryDate', 'ASC')
-                ->get()->toArray();
+                $runningBal = 0;
+                $totalStockIn = 0;
+                $totalStockOut = 0;
+                $totalStockAdj = 0;
+                $StockRecord = [];
 
-            // dd($movements);
+                $movements = InvMovements::select(
+                        'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate',
+                        'MovementType', 'Reference', 'SalesOrder', 'Customer',
+                        'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost',
+                        'TrnType', 'NewWarehouse'
+                    )
+                    ->with(['productdetails', 'salesmandetails'])
+                    ->where('Warehouse', $Warehouse)
+                    ->whereBetween('EntryDate', [$StartDate, $EndDate])
+                    ->orderBy('EntryDate', 'ASC')
+                    ->get()
+                    ->toArray();
 
+                foreach ($movements as &$item) {
+                    $stockCode = $item['StockCode'];
+                    $qty = (float) $item['TrnQty'];
+                    $movementType = $item['MovementType'];
+                    $trnType = $item['TrnType'];
+                    $newWarehouse = $item['NewWarehouse'];
 
-            foreach ($movements as &$item) {
-                $stockCode = $item['StockCode'];
-                $qty = (float)$item['TrnQty'];
-                $movementType = $item['MovementType'];
+                    if (!isset($StockRecord[$stockCode])) {
+                        $StockRecord[$stockCode] = [
+                            'StockCode' => $stockCode,
+                            'Qty' => 0
+                        ];
+                    }
 
-                if (!isset($StockRecord[$stockCode])) {
-                    $StockRecord[$stockCode] = [
-                        'StockCode' => $stockCode,
-                        'Qty' => 0
-                    ];
+                    // Adjust quantity
+                    if ($movementType === 'I') {
+                        if ($trnType === 'A') {
+                            // Adjustment: calculate diff from current to new qty
+                            $diff = $qty - $StockRecord[$stockCode]['Qty'];
+                            $StockRecord[$stockCode]['Qty'] += $diff;
+                            $totalStockAdj++;
+                        } elseif ($trnType === 'T') {
+                            // Transfer: Increase if from another warehouse, decrease if leaving
+                            if ($newWarehouse === '') {
+                                $StockRecord[$stockCode]['Qty'] += $qty;
+                                $totalStockIn++;
+                            } else {
+                                $StockRecord[$stockCode]['Qty'] -= $qty;
+                                $totalStockOut++;
+                            }
+                        } else {
+                            // Standard Stock In
+                            $StockRecord[$stockCode]['Qty'] += $qty;
+                            $totalStockIn++;
+                        }
+                    } elseif ($movementType === 'S') {
+                        // Stock Out
+                        $StockRecord[$stockCode]['Qty'] -= $qty;
+                        $totalStockOut++;
+                    }
+
+                    // Add current qty and converted values
+                    $item['CurrentQty'] = $StockRecord[$stockCode]['Qty'];
+                    $conversion = $productCalculator->originalDynamicConv($stockCode, $item['CurrentQty']);
+                    $item['conversion'] = $conversion['result'];
                 }
 
-                // Adjust quantity based on movement type
-                if ($movementType === 'I') {
-                    $StockRecord[$stockCode]['Qty'] += $qty;
-                    $totalStockIn++;
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product movement retrieved successfully',
+                    'data' => $movements,
+                    'totalStockIn' => $totalStockIn,
+                    'totalStockOut' => $totalStockOut,
+                    'totalStockAdj' => $totalStockAdj,
+                    'totalStockAvail' => count($StockRecord),
+                ], 200);
 
-                } elseif ($movementType === 'S') {
-                    $StockRecord[$stockCode]['Qty'] -= $qty;
-                    $totalStockOut++;
-                }
-
-                $item['CurrentQty'] = $StockRecord[$stockCode]['Qty'];
-                $conversion = $productCalculator->originalDynamicConv($item['StockCode'], $item['CurrentQty']);
-                // dd($conversion);
-
-                $item['conversion'] = $conversion['result'];
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Product movement retrieved successfully',
-                'data' => $movements,
-                'totalStockIn' => $totalStockIn,
-                'totalStockOut' => $totalStockOut,
-                'totalStockAvail' => count($StockRecord)
-            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -480,7 +506,7 @@ class InvController extends Controller
     public function getAllTransfer(){
         try {
             $productCalculator = new ProductCalculator();
-            $data = InvMovements::select('StockCode','Warehouse','TrnQty','NewWarehouse','EntryDate','Reference')->with('productdetails')->where('MovementType', "I")->where('TrnType', "T")->orderBy('EntryDate','DESC')->get();
+            $data = InvMovements::select('StockCode','Warehouse','TrnQty','NewWarehouse','EntryDate','Reference')->with('productdetails')->where('MovementType', "I")->where('TrnType', "T")->orderBy('EntryDate','DESC')->orderBy('NewWarehouse', 'ASC')->get();
             
             $data->transform(function ($row) use ($productCalculator) {
                 $qty = (int) floor($row->TrnQty);
@@ -508,8 +534,19 @@ class InvController extends Controller
 
     public function getWarehouseInv(string $warehouse){
         try {
+            $productCalculator = new ProductCalculator();
             $data = InvWarehouse::select('StockCode','Warehouse','QtyOnHand')
                         ->with('productdetails')->where('Warehouse', $warehouse)->get();
+
+            $data->transform(function ($row) use ($productCalculator) {
+                $qty = (int) floor($row->QtyOnHand);
+
+                $conversion = $productCalculator->originalDynamicConv($row->StockCode, $qty);
+
+                $row->runningBal = $conversion['result'];
+
+                return $row;
+            });
 
             return response()->json([
                 'success' => true,
@@ -539,6 +576,59 @@ class InvController extends Controller
                 $qty = $item['TrnQty'];
                 $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "TRANSFER", $newWarehouse);
                 $InventoryManager->InvMovement($mainDetails,  $item, 'I', 'T');
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock transfer successful',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
+    public function getAllAdjustments(){
+        try {
+            $data = InvAdjustmentLogs::select('REFERENCE','STOCKCODE','WAREHOUSE','ENTRY_DATE','PREV_QTY','NEW_QTY','ADJUSTED_QTY','ADJUSTMENT_TYPE','REASON','HANDLED_BY')->orderBy('ENTRY_DATE','DESC')->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Latest inventory adjustment retrieved successfully',
+                'data' => $data,
+            ], 200);  // HTTP 200 OK
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
+    public function InvWarehouseStockAdjustment(Request $request){
+
+        try {
+            $InventoryManager = new InventoryManager();
+            $items = $request->data['Items'];
+            $mainDetails = $request->data;
+            unset($mainDetails['Items']);
+            
+            $timestamp = now()->setTimezone('Asia/Manila')->format('Ymd_His');
+            $ref = 'ADJ' . $mainDetails['Warehouse'] . $timestamp;
+            $mainDetails["adjustmentRef"] = $ref;
+
+            // dd($mainDetails);
+
+            foreach ($items as $item) {
+                $sku = $item['StockCode'];
+                $warehouse = $mainDetails['Warehouse'];
+                $qty = $item['TrnQty'];
+                $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "ADJUST", null);
+                $InventoryManager->InvMovement($mainDetails,  $item, 'I', 'A');
             }
 
             return response()->json([

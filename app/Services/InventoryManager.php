@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Inventory\InvMovements;
 use App\Models\Inventory\InvWarehouse;
+use App\Models\Inventory\InvAdjustmentLogs;
 
 class InventoryManager
 {
@@ -111,7 +112,20 @@ class InventoryManager
                     }
     
                     return response()->json([
-                        'message' => 'Inventory Inbound successfully',
+                        'message' => 'Inventory Transfer successfully',
+                        'success_status' => 1,
+                    ]);
+                }
+            } else if($direction == "ADJUST"){
+                if($existing){
+                    InvWarehouse::where('StockCode', $sku)
+                    ->where('Warehouse', $warehouse)
+                    ->update([
+                        'QtyOnHand' => (float)$qty,
+                        'DateLastStockMove' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                    ]);
+                    return response()->json([
+                        'message' => 'Inventory Adjustment successfully',
                         'success_status' => 1,
                     ]);
                 }
@@ -161,6 +175,8 @@ class InventoryManager
                     'Reference' => $ref,
                 ]);
 
+                sleep(2);
+
                 InvMovements::create([
                     'StockCode' => $productData['StockCode'],
                     'Warehouse' => $headerDetails['NewWarehouse'],
@@ -171,6 +187,31 @@ class InventoryManager
                     'TrnType' => 'T',
                     'TrnQty' => $productData['TrnQty'],
                     'Reference' => $ref,
+                ]);
+            } else if($trnType == 'A'){
+                InvMovements::create([
+                    'StockCode' => $productData['StockCode'],
+                    'Warehouse' => $headerDetails['Warehouse'],
+                    'TrnYear' => now()->setTimezone('Asia/Manila')->format('Y'),
+                    'TrnMonth' => now()->setTimezone('Asia/Manila')->format('n'),
+                    'EntryDate' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                    'MovementType' => 'I',
+                    'TrnType' => 'A',
+                    'TrnQty' => $productData['TrnQty'],
+                    'Reference' => $headerDetails['adjustmentRef'],
+                ]);
+
+                InvAdjustmentLogs::create([
+                    'REFERENCE' => $headerDetails['adjustmentRef'],
+                    'STOCKCODE' => $productData['StockCode'],
+                    'WAREHOUSE' => $headerDetails['Warehouse'],
+                    'ENTRY_DATE' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                    'PREV_QTY' => $productData['ActualQty'],
+                    'NEW_QTY' => $productData['TrnQty'],
+                    'ADJUSTED_QTY' => (float)$productData['ActualQty'] - (float)$productData['TrnQty'],
+                    'ADJUSTMENT_TYPE' => $headerDetails['Type'],
+                    'REASON' => '',
+                    'HANDLED_BY' => $headerDetails['LastOperator']
                 ]);
             }
         } else if($movementType == 'S'){

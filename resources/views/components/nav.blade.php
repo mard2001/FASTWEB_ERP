@@ -72,9 +72,15 @@
                         </a>
                     </li>
                     <li class="">
-                        <a href="{{ route('stocktake') }}" class="sidebar-link">
+                        <a href="{{ route('stockadjustment') }}" class="sidebar-link">
                             <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Stock Take</span>
+                            <span class="ms-2 px-1">Stock Adjustment</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('stockcount') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Stock Count</span>
                         </a>
                     </li>
                     <li class="">

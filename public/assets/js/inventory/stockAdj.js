@@ -11,7 +11,6 @@ var productConFact;
 var userObject;
 var previousVSWarehouseValue = null;
 
-
 const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
                                 <div class="btn d-flex justify-content-around px-2 align-items-center me-1" id="addBtn">
                                     <div class="btnImg me-2" id="addImg">
@@ -25,37 +24,38 @@ const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto
                                 </div>
                             </div>`;
 
+
 $(document).ready(async function () {
     dayjs.extend(dayjs_plugin_relativeTime);
     const user = localStorage.getItem('user');
     userObject = JSON.parse(user);
-    await datatables.loadInvTransferData();
+    await datatables.loadInvAdjData();
     await initVS.liteDataVS();
     await initVS.origWHVS();
-    await initVS.destWHVS([]);
-    STItemsModal.setValidator();
+    await initVS.adjTypeVS();
+    SAdjitemsModal.setValidator();
 
     $(document).on('click', '#addBtn', async function () {
-        STModal.clear();
-        STModal.enable(true);
+        SAdjModal.clear();
+        SAdjModal.enable(true);
 
-        $('#EntryDate').val(new Date().toISOString().slice(0,10));
-        $('#saveSTBtn').show();
+        $('#ENTRY_DATE').val(new Date().toISOString().slice(0,10));
+        $('#saveSAdjBtn').show();
         itemTmpSave = [];
         // selectedMain = null;
-        datatables.initSTItemsDatatable(null);
-        STModal.show();
+        datatables.initSAdjItemsDatatable(null);
+        SAdjModal.show();
     });
 
     $("#addItems").on("click", function () {
         if($('#VSWarehouse').val()){
             if(warehouseInv != null){
-                STItemsModal.clear();
-                STItemsModal.enable(true);
+                SAdjitemsModal.clear();
+                SAdjitemsModal.enable(true);
     
                 $(".UOMField").addClass("d-none");
                 $("#itemSave").text("Save Item");
-                STItemsModal.show();
+                SAdjitemsModal.show();
     
                 $("#itemEdit").hide();
                 $("#itemSave").show();
@@ -77,47 +77,39 @@ $(document).ready(async function () {
     });
 
     $("#itemSave").on("click", function () {
-        if ( STItemsModal.isValid() ) {
-            const getItem = STItemsModal.getData();
-            var checkCurrentItem = STItemsModal.itemCalculateUOM(getItem);
-            var isEnough = invStockChecker(checkCurrentItem);
-            if(isEnough){
-                if ($(this).text().toLowerCase() == "update item") {
-                    Swal.fire({
-                        title: "Are you sure?",
-                        text: "Do you want to update the item?",
-                        icon: "question",
-                        showDenyButton: true,
-                        confirmButtonText: "Yes, Update",
-                        denyButtonText: `Cancel`,
-                    }).then(async (result) => {
-                        if(result.isConfirmed){
-                            STItemsModal.itemTmpUpdate(getItem);
-                        }
-                    });
-                } else {
-                    Swal.fire({
-                        title: "Are you sure?",
-                        text: "Do you want to save the item?",
-                        icon: "question",
-                        showDenyButton: true,
-                        confirmButtonText: "Yes, Save",
-                        denyButtonText: `Cancel`,
-                    }).then(async (result) => {
-                        if(result.isConfirmed){
-                            getItem.PRD_INDEX = itemTmpSave ? itemTmpSave.length + 1 : 1;
-                            STItemsModal.itemTmpSave(getItem);
-                        }
-                    });
-                }
-                datatables.initSTItemsDatatable(itemTmpSave);
-            } else{
+        if ( SAdjitemsModal.isValid() ) {
+            const getItem = SAdjitemsModal.getData();
+            var checkCurrentItem = SAdjitemsModal.itemCalculateUOM(getItem);
+
+            if ($(this).text().toLowerCase() == "update item") {
                 Swal.fire({
-                    title: "Stock Not Enough!",
-                    text: "The quantity you entered exceeds the quantity on hand in the warehouse.",
-                    icon: "warning",
+                    title: "Are you sure?",
+                    text: "Do you want to update the item?",
+                    icon: "question",
+                    showDenyButton: true,
+                    confirmButtonText: "Yes, Update",
+                    denyButtonText: `Cancel`,
+                }).then(async (result) => {
+                    if(result.isConfirmed){
+                        SAdjitemsModal.itemTmpUpdate(getItem);
+                    }
+                });
+            } else {
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "Do you want to save the item?",
+                    icon: "question",
+                    showDenyButton: true,
+                    confirmButtonText: "Yes, Save",
+                    denyButtonText: `Cancel`,
+                }).then(async (result) => {
+                    if(result.isConfirmed){
+                        getItem.PRD_INDEX = itemTmpSave ? itemTmpSave.length + 1 : 1;
+                        SAdjitemsModal.itemTmpSave(getItem);
+                    }
                 });
             }
+            datatables.initSAdjItemsDatatable(itemTmpSave);
         } else {
             Swal.fire({
                 title: "Missing Required Fields!",
@@ -128,77 +120,17 @@ $(document).ready(async function () {
         isSelectedEdited = true;
     });
 
-    $("#saveSTBtn").on("click", function () {
-        if (STModal.isValid()) {
-            if (itemTmpSave.length < 1) {
-                Swal.fire({
-                    title: "No items",
-                    text: "Please review your order. No items have been added for Stock Transfer.",
-                    icon: "error",
-                });
-            } else {
-                Swal.fire({
-                    title: "Are you sure?",
-                    text: "Do you want to transfer this stocks?",
-                    icon: "question",
-                    showDenyButton: true,
-                    confirmButtonText: "Yes, Transfer",
-                    denyButtonText: `Cancel`,
-                }).then(async (result) => {
-                    if (result.isConfirmed) {
-                        STModal.STSave();
-                        STModal.hide();
-                        Swal.fire({
-                            text: "Please wait... Transferring Stocks...",
-                            timerProgressBar: true,
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,  
-                            allowEnterKey: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            },
-                        });
-                    }
-                });
-            } 
-        } else {
-            Swal.fire({
-                title: "Missing Required Fields!",
-                text: "Please fill in all fields. Some required fields are empty.",
-                icon: "warning",
-            });
-        }
-    });
-    
-    $(document).on("click", ".itemDeleteIcon", async function () {
-        Swal.fire({
-            title: "Are you sure?",
-            text: "Do you want to delete this product?",
-            icon: "question",
-            showDenyButton: true,
-            confirmButtonText: "Yes, Delete",
-            denyButtonText: `Cancel`,
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                const row = $(this).closest("tr");
-                const skuCode = row.find("td:first"); // Get the first <td>
-                STItemsModal.itemTmpDelete(skuCode);
-                isSelectedEdited = true;
-            }
-        });
-    });
-
     $(document).on("click", ".itemUpdateIcon", async function () {
         console.log('itemupdate');
         const row = $(this).closest("tr");
         const itemStockCode = row.find("td:first").text().trim();
-        STItemsModal.enable(true);
+        SAdjitemsModal.enable(true);
     
         $("#CSQuantity").val("");
         $("#IBQuantity").val("");
         $("#PCQuantity").val("");
     
-        STItemsModal.show();
+        SAdjitemsModal.show();
     
         const select = document.querySelector("#StockCode");
     
@@ -212,7 +144,7 @@ $(document).ready(async function () {
 
     $("#itemCloseBtn").on("click", function () {
         let valid = false;
-        const data = STItemsModal.getData();
+        const data = SAdjitemsModal.getData();
     
         for (const key in data) {
           if (data[key] === "" || data[key] === null || data[key] === undefined) {
@@ -230,8 +162,50 @@ $(document).ready(async function () {
                 denyButtonText: `Cancel`,
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    STItemsModal.hide();
+                    SAdjitemsModal.hide();
                 }
+            });
+        }
+    });
+
+    $("#saveSAdjBtn").on("click", function () {
+        if (SAdjModal.isValid()) {
+            if (itemTmpSave.length < 1) {
+                Swal.fire({
+                    title: "No items",
+                    text: "Please review your order. No items have been added for Stock Adjustment.",
+                    icon: "error",
+                });
+            } else {
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "Do you want to adjust this stocks?",
+                    icon: "question",
+                    showDenyButton: true,
+                    confirmButtonText: "Yes, adjust",
+                    denyButtonText: `Cancel`,
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        SAdjModal.SAdjSave();
+                        SAdjModal.hide();
+                        Swal.fire({
+                            text: "Please wait... Adjusting Stocks...",
+                            timerProgressBar: true,
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,  
+                            allowEnterKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            },
+                        });
+                    }
+                });
+            } 
+        } else {
+            Swal.fire({
+                title: "Missing Required Fields!",
+                text: "Please fill in all fields. Some required fields are empty.",
+                icon: "warning",
             });
         }
     });
@@ -259,22 +233,22 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 }
 
 const datatables = {
-    loadInvTransferData: async () => {
-        const invData = await ajax('api/inv/transfer/stocks', 'GET', null, (response) => {  
+    loadInvAdjData: async () => {
+        const invData = await ajax('api/inv/adjust/stocks', 'GET', null, (response) => {  
             jsonArr = response.data;
-            datatables.initInvTransferDatatable(response);
+            datatables.initInvAdjDatatable(response);
         }, (xhr, status, error) => { 
             console.error('Error:', error);
         });
     },
 
-    initInvTransferDatatable: (response) => {
+    initInvAdjDatatable: (response) => {
         if (response.success) {
             if (MainTH) {
                 MainTH.clear().draw();
                 MainTH.rows.add(response.data).draw();
             } else {
-                MainTH = $('#transferTable').DataTable({
+                MainTH = $('#adjTable').DataTable({
                     data: response.data,
                     layout: {
                         topStart: function () {
@@ -282,47 +256,24 @@ const datatables = {
                         }
                     },
                     columns: [
-                        { data: 'EntryDate',  title: 'Transfer Date',
+                        { data: 'ENTRY_DATE',  title: 'Adjustment Date',
                             render: function(data, type, row){
                                 return data.split(' ')[0];
                             }
                         },
-                        { data: 'Reference',  title: 'Transfer Reference' },
-                        { data: null,  title: 'Movement',
-                            render: function(data, type, row) {
-                                var res = '';
-                                if(row.NewWarehouse == ' '){
-                                    res = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
-                                } else{
-                                    res = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT </span></span>";
-                                }
-                                return res;
-                            }
-                        },
-                        { data: 'Warehouse',  title: 'Origin WH' },
-                        { data: 'NewWarehouse',  title: 'Destination WH' },
-                        { data: 'StockCode',  title: 'StockCode' },
-                        { data: 'productdetails.Description',  title: 'Description' },
-                        { data: 'runningBal.inCS',  title: 'CS',
-                            render: function (data, type, row){
-                                return (data != null)? data : "-";
-                            }
-                        },
-                        { data: 'runningBal.inIB',  title: 'IB',
-                            render: function (data, type, row){
-                                return (data != null)? data : "-";
-                            }
-                        },
-                        { data: 'runningBal.inPC',  title: 'PC',
-                            render: function (data, type, row){
-                                return (data != null)? data : "-";
-                            }
-                        },
+                        { data: 'REFERENCE',  title: 'Adjustment Reference' },
+                        { data: 'STOCKCODE',  title: 'StockCode' },
+                        { data: 'WAREHOUSE',  title: 'Warehouse' },
+                        { data: 'PREV_QTY',  title: 'Previous Qty' },
+                        { data: 'NEW_QTY',  title: 'New Qty' },
+                        { data: 'ADJUSTED_QTY',  title: 'Adjusted Qty' },
+                        { data: 'ADJUSTMENT_TYPE',  title: 'Adjustment Type' },
+                        { data: 'HANDLED_BY',  title: 'Adjusted By' },
                         // { data: 'TrnQty',  title: 'Qty in PCS' },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 1, 6 ] },
-                        { className: "text-center", targets: [  2, 3, 4, 5, 7, 8, 9 ] },
+                        { className: "text-start", targets: [ 0, 1, 7, 8 ] },
+                        { className: "text-center", targets: [  2, 3, 4, 5, 6 ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' } // This targets all columns
                     ],
@@ -330,7 +281,7 @@ const datatables = {
                     scrollY: '100%',
                     scrollX: '100%',
                     "createdRow": function (row, data) {
-                        $(row).attr('id', data.StockCode);
+                        $(row).attr('id', data.REFERENCE+'-'+data.STOCKCODE);
                         // $(row).css('cursor', 'pointer');
                     },
 
@@ -362,10 +313,9 @@ const datatables = {
     },
 
     loadItems: async (SONumber) => {
-
         const stItems = await ajax('api/orders/po-items/search-items/' + SONumber, 'GET', null, (response) => { // Success callback
             ajaxItemsData = response.data;
-            datatables.initSTItemsDatatable(ajaxItemsData);
+            datatables.initSAdjItemsDatatable(ajaxItemsData);
 
         }, (xhr, status, error) => { // Error callback
             console.error('Error:', error);
@@ -374,7 +324,7 @@ const datatables = {
 
     },
 
-    initSTItemsDatatable: (datas) => {
+    initSAdjItemsDatatable: (datas) => {
         if (ItemsTH) {
             ItemsTH.clear().draw();
             datas && ItemsTH.rows.add(datas).draw();
@@ -452,8 +402,7 @@ const initVS = {
         VirtualSelect.init({
             ele: '#filterTransfer',                   // Attach to the element
             options: [
-                { label: "Transfer - Outbound", value: 0 },
-                { label: "Transfer - Inbound", value: 1 },
+                // { label: "Adjustment", value: 0 },
             ], 
             multiple: true, 
             hideClearButton: true, 
@@ -522,6 +471,8 @@ const initVS = {
                             (item) => item.StockCode == stockCode
                         );
                         $("#Decription").val(findProduct.productdetails.Description);
+                        var qtyExtension = (findProduct.QtyOnHand > 1)? " pcs." : " pc.";
+                        $("#actualStock").val(findProduct.QtyOnHand + qtyExtension);
 
                         var uomColumn = ["StockUom", "AlternateUom", "OtherUom"];
         
@@ -537,14 +488,26 @@ const initVS = {
                                 index === self.findIndex((other) => other.value === item.value)
                         );
 
-        
                         if (!$(".UOMField").hasClass("d-none")) {
                             $(".UOMField").addClass("d-none");
                             $("#itemModalFields").validate().resetForm();
                         }
         
+                        const uomMap = {
+                            CS: 'inCS',
+                            IB: 'inIB',
+                            PC: 'inPC'
+                        };
+
                         uoms.forEach((item) => {
-                            $(`#${item.value}Div`).removeClass("d-none");
+                            const uomKey = uomMap[item.value];
+                            if (!uomKey) return; // skip if not mapped
+
+                            const $div = $(`#${item.value}Div`);
+                            const $qty = $(`#${item.value}Quantity`);
+
+                            $div.removeClass('d-none');
+                            $qty.attr('placeholder', findProduct.runningBal[uomKey]);
                         });
         
                         productConFact = {
@@ -560,7 +523,7 @@ const initVS = {
 
                         if (isAlreadyExist) {
                             selectedItem = isAlreadyExist;
-                            STItemsModal.itemEditMode(uoms, isAlreadyExist);
+                            SAdjitemsModal.itemEditMode(uoms, isAlreadyExist);
                         } else {
                             if ($("#itemSave").text().toLowerCase() == "update item") {
                                 $("#itemSave").text("Save Item");
@@ -636,27 +599,20 @@ const initVS = {
                         if (result.isConfirmed) {
                             previousVSWarehouseValue = this.value;
                             itemTmpSave = [];
-                            datatables.initSTItemsDatatable(itemTmpSave);
+                            datatables.initSAdjItemsDatatable(itemTmpSave);
 
                             filteredWH = availWH.filter((item) => { return item.Warehouse != this.value});
-                            initVS.destWHVS(filteredWH);
                             warehouseInv = null;
                             await initVS.bigDataVS();
-                        } else if (result.isDenied) {
-                            if (document.querySelector("#VSWarehouse")?.virtualSelect) {
-                                document.querySelector('#VSWarehouse').setValue(previousVSWarehouseValue);
-                            }
                         }
                     });
                 } else{
                     previousVSWarehouseValue = this.value;
                     filteredWH = availWH.filter((item) => { return item.Warehouse != this.value});
-                    initVS.destWHVS(filteredWH);
                     warehouseInv = null;
                     await initVS.bigDataVS();
                 }
             } else{
-                initVS.destWHVS([]);
                 warehouseInv = null;
             }
         });
@@ -666,64 +622,57 @@ const initVS = {
         });
 
         $("#VSWarehouse").on("reset", function () {
-            initVS.destWHVS([]);
             warehouseInv = null;
         });
     },
-    destWHVS: async (destData) => {
-        const destwhData = destData.map((wh) => {
-            return {
-                value: wh.Warehouse, 
-                label: wh.Warehouse, 
-            };
-        });
-    
-        if (document.querySelector("#VSNewWarehouse")?.virtualSelect) {
-            document.querySelector("#VSNewWarehouse").destroy();
-        }
-
+    adjTypeVS: async () => {
         VirtualSelect.init({
-            ele: '#VSNewWarehouse',   
-            options: destwhData, 
+            ele: '#VSAdjType',                   // Attach to the element
+            options: [
+                { label: "Cycle Count", value: "Cycle Count" },
+                { label: "Damage", value: "Damage" },
+                { label: "Loss/Theft", value: "Loss/Theft" },
+                { label: "Manual", value: "Manual" },
+                { label: "Reclassification", value: "Reclassification" },
+                { label: "Return to Stock", value: "Return to Stock" },
+                { label: "Stock Take", value: "Stock Take" },
+                { label: "Write-Off", value: "Write-Off" },
+            ], 
             multiple: false, 
-            hideClearButton: false, 
-            search: true,
+            hideClearButton: true, 
+            search: false,
             maxWidth: '100%', 
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
             additionalToggleButtonClasses: 'rounded',
         });
-        $("#VSNewWarehouse").on("afterClose", async function () {
-            $(`#VSNewWarehouse div .vscomp-toggle-button`).removeClass('virtual-select-invalid');
-        });
     },
 }
 
-const STModal = {
+const SAdjModal = {
     isValid: () => {
-        var validWarehouse = validateVirtualSelect('VSWarehouse');
-        var validNewWarehouse = validateVirtualSelect('VSNewWarehouse');
+        var validVSWarehouse = validateVirtualSelect('VSWarehouse');
+        var validVSAdjType = validateVirtualSelect('VSAdjType');
 
-        if (validWarehouse && validNewWarehouse) {
+        if (validVSWarehouse && validVSAdjType) {
             return true;
         } else {
             return false;
         }
     }, 
     show: () => {
-        $('#stockTransferMainModal').modal('show');
+        $('#stockAdjMainModal').modal('show');
     },
     hide: () => {
-        $('#stockTransferMainModal').modal('hide');
+        $('#stockAdjMainModal').modal('hide');
     },
     clear: () => {
         if (document.querySelector('#VSWarehouse')?.virtualSelect) {
             document.querySelector('#VSWarehouse').reset();
         }
-
-        if (document.querySelector('#VSNewWarehouse')?.virtualSelect) {
-            document.querySelector('#VSNewWarehouse').reset();
+        if (document.querySelector('#VSAdjType')?.virtualSelect) {
+            document.querySelector('#VSAdjType').reset();
         }
     },
     enable: (enable) => {
@@ -731,30 +680,30 @@ const STModal = {
         $('#modalFields input[type="number"]').prop('disabled', !enable);
         $('#modalFields input[type="date"]').prop('disabled', !enable);
         $('#modalFields textarea').prop('disabled', !enable);
-        $('#modalFields #Reference').prop('disabled', true);
-        $('#modalFields #EntryDate').prop('disabled', true);
+        $('#modalFields #REFERENCE').prop('disabled', true);
+        $('#modalFields #ENTRY_DATE').prop('disabled', true);
         $('#addItems').prop('disabled', !enable);
     },
     getData: () => {
         return {
             Warehouse: $("#VSWarehouse").val().trim(),
-            NewWarehouse: $("#VSNewWarehouse").val(),
+            Type: $("#VSAdjType").val().trim(),
         };
     },
-    STSave: async () => {
-        let STData = STModal.getData();
-        STData.Items = itemTmpSave.map((item, index) => ({
+    SAdjSave: async () => {
+        let SAdjData = SAdjModal.getData();
+        SAdjData.Items = itemTmpSave.map((item, index) => ({
           ...item,  
           PRD_INDEX: index + 1, 
         }));
     
-        STData.LastOperator = userObject.name;
-        console.log("STData:", STData);
-        await ajax("api/inv/warehouse-movement-transfer", "POST", JSON.stringify({ data: STData }),
+        SAdjData.LastOperator = userObject.name;
+        console.log("SAdjData:", SAdjData);
+        await ajax("api/inv/warehouse-movement-adjust", "POST", JSON.stringify({ data: SAdjData }),
             (response) => {
                 if (response.success) {
-                    datatables.loadInvTransferData();
-                    STModal.hide();
+                    datatables.loadInvAdjData();
+                    SAdjModal.hide();
                     Swal.close();
                     Swal.fire({
                         title: "Success!",
@@ -777,7 +726,7 @@ const STModal = {
     },
 }
 
-const STItemsModal = {
+const SAdjitemsModal = {
     setValidator: () => {
         $.validator.addMethod( "atLeastOneFilled",
           function (value, element) {
@@ -857,22 +806,22 @@ const STItemsModal = {
         $('#itemModalFields textarea').prop('disabled', !enable);
     },
     itemTmpSave: (getItem) => {
-        getItem = STItemsModal.itemCalculateUOM(getItem);
+        getItem = SAdjitemsModal.itemCalculateUOM(getItem);
         itemTmpSave.unshift(getItem);
-        datatables.initSTItemsDatatable(itemTmpSave);
-        STItemsModal.hide();
+        datatables.initSAdjItemsDatatable(itemTmpSave);
+        SAdjitemsModal.hide();
     },
     itemTmpUpdate: (editedItem) => {
         // Optionally, if you want to reflect the change in currentItems
-        editedItem = STItemsModal.itemCalculateUOM(editedItem);
+        editedItem = SAdjitemsModal.itemCalculateUOM(editedItem);
         itemTmpSave = itemTmpSave.map((item) =>
             item.StockCode === selectedItem.StockCode
             ? { ...item, ...editedItem }
             : item
         );
 
-        datatables.initSTItemsDatatable(itemTmpSave);
-        STItemsModal.hide();
+        datatables.initSAdjItemsDatatable(itemTmpSave);
+        SAdjitemsModal.hide();
     },
     getUOM: () => {
         let UomAndQuantity = {
@@ -908,7 +857,7 @@ const STItemsModal = {
         
         if (!isAlreadyExist.UomAndQuantity) {
             // console.log(isAlreadyExist.TrnQty);
-            isAlreadyExist.UomAndQuantity = STItemsModal.reverseItemCalculateUOM(
+            isAlreadyExist.UomAndQuantity = SAdjitemsModal.reverseItemCalculateUOM(
                 uoms,
                 isAlreadyExist.TrnQty
             );
@@ -951,7 +900,8 @@ const STItemsModal = {
         return UomAndQuantity;
     },
     getData: () => {
-        const getUOM = STItemsModal.getUOM();
+        const getUOM = SAdjitemsModal.getUOM();
+        var actualStockQty = ($("#actualStock").val()).split(" ")[0];
 
         return {
             StockCode: $("#StockCode").val().trim(),
@@ -959,6 +909,7 @@ const STItemsModal = {
             OrderUom: getUOM,
             UomAndQuantity: getUOM,
             OrderQty: $("#Quantity").val(),
+            ActualQty: parseInt(actualStockQty)
         };
         
     },
@@ -967,7 +918,7 @@ const STItemsModal = {
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
     
-        const totalInPieces = STItemsModal.getTotalQuantity(uomsAndQty);
+        const totalInPieces = SAdjitemsModal.getTotalQuantity(uomsAndQty);
         if (uomsAndQty.CS) {
             getItem.OrderUom = "CS";
             getItem.OrderQty = (totalInPieces / ConvFactAltUom);
@@ -988,7 +939,7 @@ const STItemsModal = {
           (item) => item.StockCode != skuCode.text()
         );
     
-        datatables.initSTItemsDatatable(itemTmpSave);
+        datatables.initSAdjItemsDatatable(itemTmpSave);
     },
 }
 
@@ -998,21 +949,19 @@ function invStockChecker(item) {
     for (const value of invStockList) {
         if (value.StockCode === item.StockCode) {
             if (parseInt(value.QtyOnHand) >= parseInt(item.TrnQty)) {
-                return true; // enough stocks
+                return true; 
             } else {
-                return false; // not enough stocks
+                return false; 
             }
         }
     }
-    // if no matching StockCode was found
+ 
     return false;
 }
-
 
 function validateVirtualSelect(id) {
     var value = $('#' + id).val();
 
-    console.log("1");
     if (value == "") {
         $(`#${id} div .vscomp-toggle-button`).addClass('virtual-select-invalid');
         return false;
