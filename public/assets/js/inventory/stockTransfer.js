@@ -284,7 +284,11 @@ const datatables = {
                     columns: [
                         { data: 'EntryDate',  title: 'Transfer Date',
                             render: function(data, type, row){
-                                return data.split(' ')[0];
+                                if (!data) return '';
+ 
+                                const dateObj = new Date(data);
+                                return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short',   year: 'numeric'});
+                            
                             }
                         },
                         { data: 'Reference',  title: 'Transfer Reference' },
@@ -292,17 +296,34 @@ const datatables = {
                             render: function(data, type, row) {
                                 var res = '';
                                 if(row.NewWarehouse == ' '){
-                                    res = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                    res = "<span class='statusBadge1 align-middle' style='width:38.3167px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                 } else{
                                     res = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT </span></span>";
                                 }
                                 return res;
                             }
                         },
-                        { data: 'Warehouse',  title: 'Origin WH' },
-                        { data: 'NewWarehouse',  title: 'Destination WH' },
-                        { data: 'StockCode',  title: 'StockCode' },
-                        { data: 'productdetails.Description',  title: 'Description' },
+                        { 
+                            data: null,  
+                            title: 'Warehouse', 
+                            render: function(data, type, row){
+                                if (!data) return '';
+                                if(row.NewWarehouse == " "){
+                                    return row.Warehouse;
+                                } else{
+                                    return `${row.Warehouse} <span class="mdi mdi-arrow-right-thick"></span> ${row.NewWarehouse}`
+                                }
+                            }
+                        },
+                        { 
+                            data: null,
+                            title: 'StockCode',
+                            render: function(data,type,row){
+                                if (!data) return '';
+                                
+                                return `<strong>${row.StockCode}</strong><br><small>${data.productdetails.Description}</small>`;
+                            }
+                        },
                         { data: 'runningBal.inCS',  title: 'CS',
                             render: function (data, type, row){
                                 return (data != null)? data : "-";
@@ -321,8 +342,8 @@ const datatables = {
                         // { data: 'TrnQty',  title: 'Qty in PCS' },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 1, 6 ] },
-                        { className: "text-center", targets: [  2, 3, 4, 5, 7, 8, 9 ] },
+                        { className: "text-start", targets: [ 0, 1, 3, 4 ] },
+                        { className: "text-center", targets: [  2, 5, 6, 7 ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' } // This targets all columns
                     ],
@@ -339,19 +360,18 @@ const datatables = {
                     order: [],
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-4');
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
-
+                        
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
                         dtlayoutTE.prepend('<div id="filterTransfer" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
-                        // $('.dt-layout-table').addClass('mt-4');
                     }
 
                 });

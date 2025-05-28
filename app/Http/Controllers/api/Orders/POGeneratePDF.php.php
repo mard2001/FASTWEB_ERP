@@ -280,18 +280,18 @@ class POController
         }
     }
 
-    public function generatePDF(string $poid)
-    {
-        try {
-            $data = PO::with('POItems')->findOrFail($poid);
-            return view('Pages.PurchaseOrder-PDF', ['po' => $data]); // Pass the user to the view
+    // public function generatePDF(string $poid)
+    // {
+    //     try {
+    //         $data = PO::with('POItems')->findOrFail($poid);
+    //         return view('Pages.PurchaseOrder-PDF', ['po' => $data]); // Pass the user to the view
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);  // HTTP 400 BAD REQ.
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => $e->getMessage(),
+    //         ], 400);  // HTTP 400 BAD REQ.
 
-        }
-    }
+    //     }
+    // }
 }

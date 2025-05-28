@@ -8,13 +8,13 @@
     padding: 20px 5px;
     margin-bottom: 20px;
     border-radius: 5px;
-    box-shadow: 10px 10px 10px #d3d5de;
+    box-shadow: 10px 10px 10px #dcdee5;
 }
 
 .pageHeaderOuterDiv{
     background-color: #FDFDFF !important;
-    box-shadow: 10px 10px 10px #d3d5de;
-    color: #636363;
+    box-shadow: 10px 10px 10px #dcdee5;
+    color: #6C757D;
     padding: 10px 0;
     margin: 10px auto;
     border-radius: 5px;
@@ -24,11 +24,12 @@
     border: 1px solid transparent;
     border-radius: 5px;
     background-color: transparent;
-    color: #636363;
+    color: #6C757D;
+    font-size: 0.75rem;
 }
 
 .headerUserDiv:hover{
-    border: 1px solid #636363;
+    border: 1px solid #6C757D;
     
 }
 
@@ -108,7 +109,6 @@
     white-space: nowrap;
     vertical-align: baseline;
     border-radius: 50rem;
-    min-width: 80px;
 }
 
 #loadingScreen, #dattableDiv{
@@ -120,7 +120,7 @@
 .containerStyle{
     background-color: #FDFDFF !important;
     box-shadow: 10px 10px 10px #d3d5de;
-    color: #636363;
+    color: #212529;
     padding: 10px 0;
     margin: 5px auto 5px auto;
     border-radius: 5px;
@@ -135,7 +135,7 @@
     color: #22bb33;
     background-color: #caf8d2;
     border-radius: 20%;
-    padding: 10px 20px;
+    padding: 5px 10px;
     margin-right: 10px;
     white-space: nowrap;
 }
@@ -145,7 +145,7 @@
     color: #df3639;
     background-color: #efcdc4;
     border-radius: 20%;
-    padding: 10px 20px;
+    padding: 5px 10px;
     margin-right: 10px;
     white-space: nowrap;
 }
@@ -155,7 +155,7 @@
     color: #076aff;
     background-color: #b3dbf2;
     border-radius: 20%;
-    padding: 10px 20px;
+    padding: 5px 10px;
     margin-right: 10px;
     white-space: nowrap;
 }
@@ -165,7 +165,17 @@
     color: #087878;
     background-color: #8acece;
     border-radius: 20%;
-    padding: 10px 20px;
+    padding: 5px 10px;
+    margin-right: 10px;
+    white-space: nowrap;
+}
+
+.totalAdj .iconDiv span{
+    font-size: 1.5rem;
+    color: #076aff;
+    background-color: #a8c3eb;
+    border-radius: 20%;
+    padding: 5px 10px;
     margin-right: 10px;
     white-space: nowrap;
 }
@@ -175,42 +185,41 @@
     color: #eff1f8;
     background-color: #33336F;
     border-radius: 20%;
-    padding: 10px 20px;
+    padding: 5px 10px;
     margin-right: 10px;
     white-space: nowrap;
 }
 
 .stockDetails{
-    height: 180px;
-    overflow: scroll;
+    overflow: auto;
 }
 
 .canvasDiv{
-    height: 150px;
-    overflow: scroll;
+    height: 100px;
+    overflow: auto;
 }
 
 #myChart {
     width: 100%;
-    height: 150px; 
+    height: 100px; 
 }
 
 .contentTitle{
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    font-size: 0.5rem;
+    font-size: 0.4rem;
     white-space: nowrap;
 }
 
 .contentValue{
     font-weight: 900;
-    font-size: 1rem;
+    font-size: 0.7rem;
     margin-bottom: 0;
     white-space: nowrap;
 }
 
 .contentProdDets tbody tr{
-    font-size: 0.83rem;
+    font-size: 0.6rem;
 }
 
 .contentProdDets tbody tr td,
@@ -264,7 +273,15 @@
 }
 
 .rmvBorder table tbody tr{
-    border-bottom: 0.1px solid #eceff6;
+    border-bottom: 0.1px solid #eff4ff;
+}
+
+.customVS-height{ 
+    height: 35px;
+}
+
+#filterPOVS .vscomp-option {
+  font-size: 12px !important;
 }
 
 @media screen and (min-width: 768px) and (max-width: 1200px){

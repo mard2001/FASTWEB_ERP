@@ -50,28 +50,35 @@ class InvController extends Controller
     }
 
     public function getInventory(){
-        try{
+        try {
             $productCalculator = new ProductCalculator();
-            $data = InvWarehouse::select('StockCode','Warehouse','QtyOnHand','DateLastStockMove')
-                ->with('productdetails')->orderBy('DateLastStockMove', 'desc')->get();
+            $results = [];
 
-            foreach($data as $prod){
-                $qtyInPcs = (float)$prod['QtyOnHand'];
-                $productDetails = Product::where('StockCode', $prod['StockCode'])->first();
+            InvWarehouse::select('StockCode', 'Warehouse', 'QtyOnHand', 'DateLastStockMove')
+                ->with('productdetails')
+                ->orderBy('DateLastStockMove', 'desc')
+                ->chunk(500, function ($products) use (&$results, $productCalculator) {
+                    // foreach ($products as $prod) {
+                    //     $qtyInPcs = (float) $prod['QtyOnHand'];
+                    //     $productDetails = $prod->productdetails;
 
-                $prod->conversion = $productCalculator->originalDynamicConvOptimized($productDetails, $qtyInPcs);
-            }
+                    //     $prod->conversion = $productCalculator->originalDynamicConvOptimized($productDetails, $qtyInPcs);
+
+                    //     $results[] = $prod;
+                    // }
+                });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Latest inventory movement retrieved successfully',
-                'data' => $data,
-            ], 200);  // HTTP 200 OK
+                'data' => $results,
+            ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage(),
-            ], 500);  // HTTP 500 Internal Server Error
+            ], 500);
         }
     }
 
@@ -320,7 +327,7 @@ class InvController extends Controller
         }
     }
 
-    public function getAllSKUMovementPerWarehouse(string $Warehouse, string $StartDate, string $EndDate)
+    public function getAllSKUMovementPerWarehouse1(string $Warehouse, string $StartDate, string $EndDate)
     {   
         try {
                 $StartDate = $StartDate . ' 00:00:00';
@@ -412,6 +419,125 @@ class InvController extends Controller
             ], 500);
         }
     }   
+
+    public function getAllSKUMovementPerWarehouse(string $Warehouse, string $StartDate, string $EndDate)
+    {
+        try {
+
+            $StartDate .= ' 00:00:00';
+            $EndDate .= ' 23:59:59';
+
+            $productCalculator = new ProductCalculator();
+
+            $runningBal = 0;
+            $totalStockIn = 0;
+            $totalStockOut = 0;
+            $totalStockAdj = 0;
+            $StockRecord = [];
+            $results = [];
+            $conversionCache = [];
+
+            InvMovements::select(
+                    'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate',
+                    'MovementType', 'Reference', 'SalesOrder', 'Customer',
+                    'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost',
+                    'TrnType', 'NewWarehouse'
+                )
+                ->with([
+                    'productdetails',
+                    'salesmandetails'
+                ])
+                ->where('Warehouse', $Warehouse)
+                ->whereBetween('EntryDate', [$StartDate, $EndDate])
+                ->orderBy('EntryDate', 'ASC')
+                ->chunk(50, function ($movements) use (&$StockRecord, &$totalStockIn, &$totalStockOut, &$totalStockAdj, &$results, &$productCalculator, &$conversionCache) {
+                    foreach ($movements as $item) {
+                        $stockCode = $item->StockCode;
+                        $qty = (float) $item->TrnQty;
+                        $movementType = $item->MovementType;
+                        $trnType = $item->TrnType;
+                        $newWarehouse = $item->NewWarehouse;
+
+                        if (!isset($StockRecord[$stockCode])) {
+                            $StockRecord[$stockCode] = [
+                                'StockCode' => $stockCode,
+                                'Qty' => 0
+                            ];
+                        }
+
+                        // Adjust quantity
+                        if ($movementType === 'I') {
+                            if ($trnType === 'A') {
+                                $diff = $qty - $StockRecord[$stockCode]['Qty'];
+                                $StockRecord[$stockCode]['Qty'] += $diff;
+                                $totalStockAdj++;
+                            } elseif ($trnType === 'T') {
+                                if (trim($newWarehouse) === '') {
+                                    $StockRecord[$stockCode]['Qty'] += $qty;
+                                    $totalStockIn++;
+                                } else {
+                                    $StockRecord[$stockCode]['Qty'] -= $qty;
+                                    $totalStockOut++;
+                                }
+                            } else {
+                                $StockRecord[$stockCode]['Qty'] += $qty;
+                                $totalStockIn++;
+                            }
+                        } elseif ($movementType === 'S') {
+                            $StockRecord[$stockCode]['Qty'] -= $qty;
+                            $totalStockOut++;
+                        }
+
+                        // Store current quantity
+                        $currentQty = $StockRecord[$stockCode]['Qty'];
+                        $conversionKey = $stockCode . '_' . $currentQty;
+
+                        // Cache conversion result
+                        if (!isset($conversionCache[$conversionKey])) {
+                            $conversionCache[$conversionKey] = $productCalculator->originalDynamicConv($stockCode, $currentQty);
+                        }
+
+                        $results[] = [
+                            'StockCode' => $item->StockCode,
+                            'Warehouse' => $item->Warehouse,
+                            'TrnYear' => $item->TrnYear,
+                            'TrnMonth' => $item->TrnMonth,
+                            'EntryDate' => $item->EntryDate,
+                            'MovementType' => $item->MovementType,
+                            'Reference' => $item->Reference,
+                            'SalesOrder' => $item->SalesOrder,
+                            'Customer' => $item->Customer,
+                            'Salesperson' => $item->Salesperson,
+                            'CustomerPoNumber' => $item->CustomerPoNumber,
+                            'TrnQty' => $item->TrnQty,
+                            'UnitCost' => $item->UnitCost,
+                            'TrnType' => $item->TrnType,
+                            'NewWarehouse' => $item->NewWarehouse,
+                            'productdetails' => $item->productdetails,
+                            'salesmandetails' => $item->salesmandetails,
+                            'CurrentQty' => $currentQty,
+                            'conversion' => $conversionCache[$conversionKey]['result']
+                        ];
+                    }
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product movement retrieved successfully',
+                'data' => $results,
+                'totalStockIn' => $totalStockIn,
+                'totalStockOut' => $totalStockOut,
+                'totalStockAdj' => $totalStockAdj,
+                'totalStockAvail' => count($StockRecord),
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 
     public function getWarehouseMovements(string $Warehouse){
         try {
@@ -593,7 +719,7 @@ class InvController extends Controller
 
     public function getAllAdjustments(){
         try {
-            $data = InvAdjustmentLogs::select('REFERENCE','STOCKCODE','WAREHOUSE','ENTRY_DATE','PREV_QTY','NEW_QTY','ADJUSTED_QTY','ADJUSTMENT_TYPE','REASON','HANDLED_BY')->orderBy('ENTRY_DATE','DESC')->get();
+            $data = InvAdjustmentLogs::select('REFERENCE','STOCKCODE','WAREHOUSE','ENTRY_DATE','PREV_QTY','NEW_QTY','ADJUSTED_QTY','ADJUSTMENT_TYPE','REASON','HANDLED_BY')->with('productdetails')->orderBy('ENTRY_DATE','DESC')->get();
 
             return response()->json([
                 'success' => true,

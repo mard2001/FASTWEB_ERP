@@ -332,21 +332,34 @@ const datatables = {
                         }
                     },
                     columns: [
-                        { data: 'Customer',  title: 'Customer ID' },
-                        { data: 'Name',  title: 'Customer Name' },
-                        { data: 'salesman.Name',  title: 'Salesperson' },
+                        { 
+                            data: null,  
+                            title: 'Customer ID', 
+                            render: function(data, type, row){
+                                if (!data) return '';
+                                
+                                return `<strong>${row.Customer}</strong><br><small>${row.Name}</small>`;
+                            }
+                        },
+                        { 
+                            data: null,  
+                            title: 'Contact Person', 
+                            render: function(data, type, row){
+                                if (!data) return '';
+                                
+                                return `<strong>${row.Contact}</strong><br><small>${row.Telephone}</small>`;
+                            }
+                        },
                         { data: 'PriceCode',  title: 'PriceCode' },
                         { data: 'CustomerClass',  title: 'Customer Class' },
-                        { data: 'Telephone',  title: 'Contact Number' },
-                        { data: 'Contact',  title: 'Contact Person' },
                         { data: 'SoldToAddr1',  title: 'Location' },
                         { data: 'SoldToAddr2',  title: 'Municipality' },
                         { data: 'SoldToAddr3',  title: 'Province' },
+                        { data: 'salesman.Name',  title: 'Salesperson' },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 1, 2, 5, 6, 7, 8, 9 ] },
-                        { className: "text-center", targets: [ 3, 4 ] },
-                        // { className: "text-end", targets: [ 4 ] },
+                        { className: "text-start", targets: [ 0, 1, 4, 5, 6 ] },
+                        { className: "text-center", targets: [ 2, 3 ] },
                         { className: "text-nowrap", targets: '_all' },
                     ],
                     scrollCollapse: true,
@@ -361,8 +374,8 @@ const datatables = {
 
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-4');
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
@@ -373,7 +386,6 @@ const datatables = {
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
-                        $('.dt-layout-table').addClass('mt-4');
                     }
                 });
             }

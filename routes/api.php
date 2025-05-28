@@ -94,10 +94,14 @@ Route::get('/remCNTHeader', [CountController::class, 'remCNTHeader']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('orders')->group(function () {
         Route::apiResource('/po', POController::class);
+        Route::post('/po-filter', [POController::class, 'filterPOByStatus']);
         Route::post('/po-confirm/{poid}', [POController::class, 'POConfirm']);
 
         Route::apiResource('/po-items', POItemsController::class);
         Route::get('/po-items/search-items/{po}', [POItemsController::class, 'searchByPO']);
+        Route::get('/print/po/{poid}', [POController::class, 'generatePDF']);
+        // Route::get('/print/po/{po}', [POController::class, 'generatePDF']);
+
     });
 
     Route::prefix('prod')->group(function () {
@@ -184,7 +188,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-Route::get('/print/po/{po}', [POController::class, 'generatePDF']);
 
 
 
@@ -192,3 +195,4 @@ Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/sendOTP', [OtpController::class, 'generateAndSend']);
 Route::post('/verifyOTP', [OtpController::class, 'verifyOtp']);
+Route::get('transactions/api/print/po/{poid}', [POController::class, 'generatePDF']);

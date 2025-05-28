@@ -2,9 +2,9 @@
     <span class="loader" style="height: 42px; width: 42px"></span>
 </div>
 
-<div class="w-100 overflow-auto opacity-0" id="dattableDiv" style="font-size: 14px;">
+<div class="w-100 opacity-0" id="dattableDiv" style="font-size: 0.68rem; color: #33363d !important">
     <table class="mdl-data-table w-100 rmvBorder {{$class ?? ""}}" id="{{ $id ?? "getXmlData" }}">
-        <thead class="text-white" style="background-color: #33336F;">
+        <thead style="background: linear-gradient(to right, #1E3C72, #33336F ); color: #FFF;">
             <tr>
                 {{ $td }}
             </tr>

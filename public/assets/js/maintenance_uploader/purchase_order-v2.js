@@ -1,6 +1,6 @@
 var MainTH, selectedMain;
 var ItemsTH, selectedItem;
-var ajaxMainData, ajaxItemsData;
+var ajaxMainData, ajaxItemsData, initData;
 var shippedToData, selecteddShippedTo;
 var vendordata, selectedVendor;
 var productConFact;
@@ -687,15 +687,12 @@ const initVS = {
     });
 
     $("#filterPOVS").on("change", async function () {
-      if (this.value) {
+      if (this.value.length > 0) {
         let filterValue = this.value;
 
         filterValue = filterValue.map((item) => (item === "" ? null : item));
 
-        await ajax(
-          "api/orders/po-filter",
-          "POST",
-          JSON.stringify(filterValue),
+        await ajax( "api/orders/po-filter", "POST", JSON.stringify(filterValue),
           (response) => {
             // Success callback
             ajaxMainData = response.data ?? null;
@@ -707,6 +704,8 @@ const initVS = {
             console.error("Error:", error);
           }
         );
+      } else{
+        datatables.initPODatatable(initData);
       }
     });
 
@@ -1457,6 +1456,7 @@ const datatables = {
         // Success callback
         if (response.success) {
           ajaxMainData = response.data;
+          initData = response.data;
           datatables.initPODatatable(ajaxMainData);
         }
       },
@@ -1534,24 +1534,12 @@ const datatables = {
         lengthChange: false,
 
         initComplete: function () {
-          $(this.api().table().container())
-            .find("#dt-search-0")
-            .addClass("p-1 mx-0 dtsearchInput nofocus");
-          $(this.api().table().container())
-            .find(".dt-search label")
-            .addClass("py-1 px-3 mx-0 dtsearchLabel");
-          $(this.api().table().container())
-            .find(".dt-layout-row")
-            .addClass("px-4");
-          $(this.api().table().container())
-            .find(".dt-layout-table")
-            .removeClass("px-4");
-          $(this.api().table().container())
-            .find(".dt-scroll-body")
-            .addClass("rmvBorder");
-          $(this.api().table().container())
-            .find(".dt-layout-table")
-            .addClass("btmdtborder");
+          $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
+          $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+          $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
+          $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
+          $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
+          $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
           // Select the label element and replace it with a div
           $(".dt-search label").replaceWith(function () {

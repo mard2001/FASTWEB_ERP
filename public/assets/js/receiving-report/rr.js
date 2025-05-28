@@ -161,38 +161,48 @@ const datatables = {
                         }
                     },
                     columns: [
-                        { data: 'RRDATE',  title: 'Date',
-                            render: function(data, type, row) {
-                                if (!data) return ''; 
-                
-                                let date = new Date(data);
-                                return date.toLocaleDateString('en-US', {
-                                    year: 'numeric', month: '2-digit', day: '2-digit'
-                                });
-                            } 
+                        {
+                            data: 'RRDATE',
+                            title: 'Date',
+                            render: function (data, type, row) {
+                                if (!data) return '';
+
+                                const dateObj = new Date(data);
+                                return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short',   year: 'numeric'});
+                            }
                         },
-                        { data: 'poincluded.posupplier.SupplierCode',  title: 'Supplier Code' },
-                        { data: 'poincluded.posupplier.SupplierName',  title: 'Supplier Name' },
-                        // { data: 'SupplierTIN',  title: 'Supplier TIN' },
-                        { data: 'poincluded.posupplier.CompleteAddress',  title: 'Supplier Address' },
+                        {
+                            data: 'poincluded.posupplier', 
+                            title: 'Supplier',
+                            render: function (data, type, row) {
+                                if (!data) return '';
+
+                                return `
+                                    <div style="line-height: 1.4;">
+                                        <strong>${data.SupplierCode} </strong><span> ${data.SupplierName}</span><br>
+                                        <small style="color: #555;">${data.CompleteAddress}</small>
+                                    </div>
+                                `;
+                            }
+                        },
                         { data: 'RRNo',  title: 'RR No.' },
+                        { data: 'Reference',  title: 'Reference'},
                         { data: 'Total', title: 'Total',  
                             render: function(data, type, row) {
                                 if (!data || isNaN(data)) return '0';
                                 return parseFloat(data) !== 0 ? parseFloat(data).toLocaleString('en-US') : '0';
                             }
                         },
-                        { data: 'Reference',  title: 'Reference'},
                         { data: 'Status',  title: 'Status',
                             render: function(data, type, row) {
-                                return data == "1" ? "<span class='statusBadge3' style='width:66.9333px'>Pending</span>" : data == "0" ? "<span class='statusBadge2'>Deleted</span>" : data == "2" ? "<span class='statusBadge1'>Confirmed</span>" : "";
+                                return data == "1" ? "<span class='statusBadge3' style='width:50.8334px'>Pending</span>" : data == "0" ? "<span class='statusBadge2'>Deleted</span>" : data == "2" ? "<span class='statusBadge1'>Confirmed</span>" : "";
                             } 
                         },
                         { data: 'preparedby.FULLNAME',  title: 'Prepared By' },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 1, 2, 3, 6 ] },
-                        { className: "text-center", targets: [ 7 ] },
+                        { className: "text-start", targets: [ 0, 1, 2, 3 ] },
+                        { className: "text-center", targets: [ 6 ] },
                         { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' } // This targets all columns
                     ],
@@ -209,8 +219,8 @@ const datatables = {
 
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-4');
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
@@ -221,13 +231,9 @@ const datatables = {
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
-                        $('.dt-layout-table').addClass('mt-4');
                     }
-
                 });
-
             }
-
         }
     },
 }

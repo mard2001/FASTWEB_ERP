@@ -14,11 +14,8 @@
 <x-table id="supplierTable">
     <x-slot:td>
         <td class="col">Supplier Code</td>
-        <td class="col">Supplier Name</td>
-        <td class="col">Supplier Type</td>
         <td class="col">Terms Code</td>
         <td class="col">Contact Person</td>
-        <td class="col">Contact No.</td>
         <td class="col">Complete Address</td>
         <td class="col">Region</td>
         <td class="col">Province</td>

@@ -84,12 +84,12 @@
     }
 
     .stheaderform .row div div label{
-        font-size: 10px;
+        font-size: 0.5em;
         margin-bottom: 0;
     }
     
     .stheaderform .row div div input{
-        font-size: 13px;
+        font-size: 0.65em;
         margin-bottom: 0;
     }
 

@@ -256,13 +256,26 @@ const datatables = {
                         }
                     },
                     columns: [
-                        { data: 'ENTRY_DATE',  title: 'Adjustment Date',
+                        { 
+                            data: 'ENTRY_DATE',  
+                            title: 'Adjustment Date',
                             render: function(data, type, row){
-                                return data.split(' ')[0];
+                                if (!data) return '';
+
+                                const dateObj = new Date(data);
+                                return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short',   year: 'numeric'});
                             }
                         },
                         { data: 'REFERENCE',  title: 'Adjustment Reference' },
-                        { data: 'STOCKCODE',  title: 'StockCode' },
+                        { 
+                            data: null,  
+                            title: 'StockCode',
+                            render: function(data, type, row){
+                                if (!data) return '';
+
+                                return `<strong>${row.STOCKCODE}</strong><br><small>${data.productdetails.Description}</small>`;
+                            }
+                        },
                         { data: 'WAREHOUSE',  title: 'Warehouse' },
                         { data: 'PREV_QTY',  title: 'Previous Qty' },
                         { data: 'NEW_QTY',  title: 'New Qty' },
@@ -272,8 +285,8 @@ const datatables = {
                         // { data: 'TrnQty',  title: 'Qty in PCS' },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 1, 7, 8 ] },
-                        { className: "text-center", targets: [  2, 3, 4, 5, 6 ] },
+                        { className: "text-start", targets: [ 0, 1, 2, 7, 8 ] },
+                        { className: "text-center", targets: [ 3, 4, 5, 6 ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' } // This targets all columns
                     ],
@@ -290,8 +303,8 @@ const datatables = {
                     order: [],
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-4');
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
@@ -302,13 +315,9 @@ const datatables = {
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
-                        // $('.dt-layout-table').addClass('mt-4');
                     }
-
                 });
-
             }
-
         }
     },
 

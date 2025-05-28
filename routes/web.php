@@ -238,7 +238,7 @@ Route::get('/login', function () {
     return page_view('login');
 })->name('login');
 
-Route::get('/print', function () {
+Route::get('/transactions/print', function () {
     return page_view('PurchaseOrder-PDF');
 })->name('print');
 

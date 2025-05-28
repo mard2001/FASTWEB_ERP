@@ -45,12 +45,13 @@ class POController
     public function filterPOByStatus(Request $status)
     {
         try {
+            // $status = $status->json()->all();
             // return response()->json(gettype($status));
             // $status =  $request->input('status');
 
             $query = PO::orderBy('DateUploaded', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus')->whereIn('POStatus', $status);
 
-            if (in_array(null, $status->all(), true)) {
+            if (in_array(null, $status->json()->all(), true)) {
                 $query->orWhereNull('POStatus');
             }
 
@@ -258,7 +259,7 @@ class POController
 
     public function generatePDF(string $poid)
     {
-
+        dd("HELLOW");
         $data = PO::with('POItems')->where('PONumber', $poid)->firstOrFail();
         $data->SupplierCode = trim($data->SupplierCode);
         $data->posupplier = $data->posupplier->toArray();

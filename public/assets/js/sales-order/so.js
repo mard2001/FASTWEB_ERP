@@ -61,9 +61,9 @@ const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto
                                     <span>Upload Template</span>
                                 </div>
                             </div>`;
-const dataTableFilter = `<div class="FilterBtnDiv ">
-                            <button type="button" id="filterBtn" class="btn FilterRES">
-                                Filter Sales Orders <i class="fa-solid fa-filter"></i>
+const dataTableFilter = `<div class="FilterBtnDiv">
+                            <button type="button" id="filterBtn" class="btn FilterRES" style="font-size: 0.9em">
+                                <i class="fa-solid fa-filter"></i> Filter Sales Orders 
                             </button>
                         </div>`;
 
@@ -501,21 +501,25 @@ const datatables = {
                         }
                     },
                     columns: [
-                        { data: 'OrderDate',  title: 'Order Date',
-                            render: function (data, type, row) {
-                                return data.split(" ")[0];
-                            },
-                        },
-                        { data: 'SalesOrder',  title: 'Sales Order' },
                         {
-                            data: 'OrderStatus',
-                            title: 'Status',
-                            createdCell: function(td, cellData) {
+                            data: 'OrderDate',
+                            title: 'Order Date',
+                            render: function (data, type, row) {
+                                if (!data) return '';
+
+                                const dateObj = new Date(data);
+                                return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short',   year: 'numeric'});
+                            }
+                        },
+                        {
+                            data: 'null',
+                            title: 'Sales Order',
+                            render: function (data, type, row) {
                                 let color = '';
                                 let backgroundColor = '';
                                 let text = '';
                         
-                                switch (cellData) {
+                                switch (row.OrderStatus	) {
                                     case '1': color = '#f39c12'; backgroundColor = '#fde3a7'; text = 'Open Order'; break;
                                     case '2': color = '#f39c12'; backgroundColor = '#fde3a7'; text = 'Open Back Order'; break;
                                     case '3': color = '#f1c40f'; backgroundColor = '#fdf5c7'; text = 'Released Back Order'; break;
@@ -527,12 +531,19 @@ const datatables = {
                                     default: color = '#808080'; backgroundColor = '#f0f0f0'; text = 'Unknown';
                                 }
                         
-                                $(td).html(`<span class="statusbadge" style="color: ${color}; background-color: ${backgroundColor};" border: 1px solid ${color}">${text}</span>`);
+                                var bardgeStatus = `<span class="statusbadge" style="color: ${color}; background-color: ${backgroundColor};" border: 1px solid ${color}">${text}</span>`;
+                                return `<strong>${row.SalesOrder}</strong><br><small>${bardgeStatus}</small>`;
+
                             }
                         },
                         { data: 'DocumentType',  title: 'Document Type' },
-                        { data: 'Customer',  title: 'Customer ID' },
-                        { data: 'CustomerName',  title: 'Customer Name' },
+                        {
+                            data: null,
+                            title: 'Customer',
+                            render: function (data, type, row) {
+                                return `<strong>${row.Customer}</strong><br><small>${row.CustomerName}</small>`;
+                            }
+                        },
                         { data: 'CustomerPoNumber',  title: 'SO Reference' },
                         { data: 'ReqShipDate',  title: 'Req. Ship Date',
                             render: function (data, type, row) {
@@ -550,8 +561,8 @@ const datatables = {
                         { data: 'ShipToGpsLong',  title: 'Longitude' },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 1, 4, 5, 6, 7, 10] },
-                        { className: "text-center", targets: [ 2, 3, 8, 9,  ] },
+                        { className: "text-start", targets: [ 0, 1, 3, 4, 5, 8,] },
+                        { className: "text-center", targets: [ 2, 6, 7, 9, 10  ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' },
                     ],
@@ -567,15 +578,15 @@ const datatables = {
 
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-3');
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
-                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 200px;" class="form-control bg-white p-0 mx-1">Filter</div>');
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
@@ -720,7 +731,7 @@ const initVS = {
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded customVS-height',
         });
 
         $("#filterPOVS").on("change", async function () {
@@ -1972,7 +1983,7 @@ function datePicker(){
 function getFilteredSO(){
     var salesOrderList = $('#salesOrderList').val();
 
-    ajax( "api/sales-order/filtered-sales-order/", "POST", JSON.stringify({ 
+    ajax( "api/sales-order/filtered-sales-order", "POST", JSON.stringify({ 
             salesOrder: salesOrderList,
         }),
         (response) => {

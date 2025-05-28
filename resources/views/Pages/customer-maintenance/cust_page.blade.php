@@ -14,11 +14,9 @@
 <x-table id="customerTable">
     <x-slot:td>
         <td class="col">Customer</td>
-        <td class="col">Name</td>
         <td class="col">Salesperson</td>
         <td class="col">PriceCode</td>
         <td class="col">CustomerClass</td>
-        <td class="col">Telephone</td>
         <td class="col">Contact</td>
         <td class="col">SoldToAddr1</td>
         <td class="col">SoldToAddr2</td>

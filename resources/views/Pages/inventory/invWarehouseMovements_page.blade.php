@@ -35,7 +35,7 @@
 @section('mini_dashboard_chart')
 <div class="">
     <div class="row gx-2 mb-1">
-        <div class="col-sm-12 col-md-4 ">
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-3 ">
             <div class="containerStyle">
                 <div class="d-flex pb-2 mx-3 stockIn">
                     <div class="iconDiv align-middle">
@@ -48,7 +48,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-12 col-md-4 ">
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-3 ">
             <div class="containerStyle">
                 <div class="d-flex pb-2 mx-3 stockOut">
                     <div class="iconDiv align-middle">
@@ -61,7 +61,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-12 col-md-4 ">
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-3 ">
             <div class="containerStyle">
                 <div class="d-flex pb-2 mx-3 totalProfit">
                     <div class="iconDiv align-middle">
@@ -70,6 +70,19 @@
                     <div class="contentDiv">
                         <span class="contentTitle">Total Avaiable SKUs</span>
                         <p class="contentValue" id="availSkuVal">---</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-3 ">
+            <div class="containerStyle">
+                <div class="d-flex pb-2 mx-3 totalAdj">
+                    <div class="iconDiv align-middle">
+                        <span class='mdi mdi-package-up'>
+                    </div>
+                    <div class="contentDiv">
+                        <span class="contentTitle">Total Ajustment Movements</span>
+                        <p class="contentValue" id="availAdjVal">---</p>
                     </div>
                 </div>
             </div>

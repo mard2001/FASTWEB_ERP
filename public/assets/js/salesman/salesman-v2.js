@@ -317,11 +317,17 @@ const datatables = {
                     },
                     columns: [
                         { data: 'EmployeeID',  title: 'Employee ID' },
-                        { data: 'mdCode',  title: 'MdCode' },
+                        {
+                            data: null,
+                            title: 'Salesman',
+                            render: function(data, type, row){
+                                if (!data) return '';
+
+                                return `<strong>${row.mdCode}</strong><br><small>${row.Name} (<strong> ${row.Salesperson} </strong>)</small>`;
+                            }
+                        },
                         { data: 'Branch',  title: 'Branch' },
                         { data: 'Type',  title: 'Type' },
-                        { data: 'Salesperson',  title: 'Salesperson' },
-                        { data: 'Name',  title: 'Name' },
                         { data: 'Warehouse',  title: 'Warehouse' },
                         { data: 'SourceWarehouse',  title: 'Source Warehouse' },
                         { data: 'ContactNo',  title: 'Contact Number' },
@@ -335,10 +341,10 @@ const datatables = {
                         { data: 'Group3',  title: 'Group3' },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 2, 3, 4, 5, 8, 9 ] },
-                        { className: "text-center", targets: [ 0, 1, 6, 7 ] },
+                        { className: "text-start", targets: [ 1, 6, 8 ] },
+                        { className: "text-center", targets: [ 0, 2, 3, 4, 5, 7 ] },
                         // { className: "text-end", targets: [ 4 ] },
-                        { className: "text-nowrap", targets: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ] },
+                        { className: "text-nowrap", targets: '_all' },
                     ],
                     scrollCollapse: true,
                     scrollY: '100%',
@@ -352,8 +358,8 @@ const datatables = {
 
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-4');
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
@@ -364,7 +370,6 @@ const datatables = {
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
-                        $('.dt-layout-table').addClass('mt-4');
                     }
                 });
 

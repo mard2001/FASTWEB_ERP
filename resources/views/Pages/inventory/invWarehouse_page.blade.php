@@ -47,9 +47,9 @@
 
 <x-table id="invTable">
     <x-slot:td>
-        <td class="col">StockCode</td>
         <td class="col">Warehouse</td>
-        <td class="col">Description</td>
+        <td class="col">StockCode</td>
+        <td class="col">Brand</td>
         <td class="col">ProductClass</td>
         <td class="col">Brand</td>
         <td class="col">Quantity</td>

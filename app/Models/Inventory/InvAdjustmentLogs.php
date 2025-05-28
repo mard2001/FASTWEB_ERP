@@ -2,8 +2,9 @@
 
 namespace App\Models\Inventory;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class InvAdjustmentLogs extends Model
 {
@@ -25,4 +26,10 @@ class InvAdjustmentLogs extends Model
         'REASON',
         'HANDLED_BY'
     ]; 
+
+    public function productdetails()
+    {
+        return $this->hasOne(Product::class, 'StockCode', 'STOCKCODE')
+            ->select(['StockCode', 'Description']); 
+    }
 }

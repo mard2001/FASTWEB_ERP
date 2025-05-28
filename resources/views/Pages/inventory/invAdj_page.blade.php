@@ -91,12 +91,12 @@
     }
 
     .sAdjheaderform .row div div label{
-        font-size: 10px;
+        font-size: 0.5em;
         margin-bottom: 0;
     }
     
     .sAdjheaderform .row div div input{
-        font-size: 13px;
+        font-size: 0.8em;
         margin-bottom: 0;
     }
 

@@ -30,7 +30,7 @@
     <div class="row gx-2 mb-1">
         <div class="col-sm-12 col-md-3 ">
             <div class="containerStyle">
-                <div class="d-flex pb-2 mx-3 stockIn">
+                <div class="d-flex mx-3 stockIn">
                     <div class="iconDiv align-middle">
                         <span class='mdi mdi-package-variant-plus'>
                     </div>
@@ -43,7 +43,7 @@
         </div>
         <div class="col-sm-12 col-md-3 ">
             <div class="containerStyle">
-                <div class="d-flex pb-2 mx-3 stockOut">
+                <div class="d-flex mx-3 stockOut">
                     <div class="iconDiv align-middle">
                         <span class='mdi mdi-package-variant-minus'>
                     </div>
@@ -56,7 +56,7 @@
         </div>
         <div class="col-sm-12 col-md-3 ">
             <div class="containerStyle">
-                <div class="d-flex pb-2 mx-3 totalProfit">
+                <div class="d-flex mx-3 totalProfit">
                     <div class="iconDiv align-middle">
                         <span class='mdi mdi-cash'>
                     </div>
@@ -69,7 +69,7 @@
         </div>
         <div class="col-sm-12 col-md-3 ">
             <div class="containerStyle">
-                <div class="d-flex pb-2 mx-3 availableStock">
+                <div class="d-flex mx-3 availableStock">
                     <div class="iconDiv align-middle">
                         <span class='mdi mdi-warehouse'>
                     </div>
@@ -82,7 +82,7 @@
         </div>
         <div class="col-sm-12 col-md-4 ">
             <div class="containerStyle">
-                <div class="d-flex pb-2 mx-3 stockDetails">
+                <div class="d-flex mx-3 stockDetails">
                     <div class="iconDiv align-middle">
                         <span class='mdi mdi-package-variant'>
                     </div>
@@ -113,7 +113,7 @@
             </div>
         </div>
         <div class="col-sm-12 col-md-8 ">
-            <div class="containerStyle" id="chartCanvasMainDiv" style="height: 200px;">
+            <div class="containerStyle" id="chartCanvasMainDiv" style="height: 95%;">
                 <div id="chartloadingScreen" class="w-100 h-100 d-flex justify-content-center align-items-center loadingScreen">
                     <span class="loader" ></span>
                 </div>

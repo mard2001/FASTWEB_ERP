@@ -92,7 +92,7 @@ const datatables = {
             jsonArr = response.data;
             datatables.initWHMovementDatatable(response);
             initVS.liteDataVS();
-            miniDashboard.updateValues(response.totalStockIn, response.totalStockOut, response.totalStockAvail)
+            miniDashboard.updateValues(response.totalStockIn, response.totalStockOut, response.totalStockAvail, response.totalStockAdj)
             
         }, (xhr, status, error) => { 
             console.error('Error:', error);
@@ -115,28 +115,26 @@ const datatables = {
                     columns: [
                         { data: 'EntryDate',  title: 'Date',
                             render: function(data, type, row){
-                                if (!data) return ''; 
+                                if (!data) return '';
 
-                                return data.split(' ')[0];
+                                const dateObj = new Date(data);
+                                return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short',   year: 'numeric'});
                             }
                         },
                         { data: 'MovementType',  title: 'Type',
-                            // render: function (data, type, row) {
-                            //     return (data == "I") ? "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus' > IN </span></span>" : "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
-                            // }
                             render: function (data, type, row) {
                                 var result;
                                 if(data == "I" ){
                                     if(row.TrnType == "T"){
                                         if(row.NewWarehouse == " "){
-                                            result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                            result = "<span class='statusBadge1 align-middle' style='width:38.3167px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                         } else{
                                             result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
                                         }
                                     } else if(row.TrnType == "A"){
                                         result = "<span class='statusBadge4 align-middle'><span class='mdi mdi-package-check'> ADJ</span></span>";
                                     } else{
-                                        result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                        result = "<span class='statusBadge1 align-middle' style='width:38.3167px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                     }
                                 } else{
                                     result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
@@ -153,23 +151,30 @@ const datatables = {
                                 if(data.trim() != "" && row.MovementType != "S"){
                                     if(row.TrnType == "T"){
                                         if(row.NewWarehouse == " "){
-                                            result = `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
+                                            result = `<span style="color:#22bb33">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                         } else{
-                                            result = `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>`;
+                                            result = `<span style="color:#df3639">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                         }
                                     } else if(row.TrnType == "A"){
-                                        result = `<span style="color:#076aff">${Math.floor(data)} pcs.</span>`;
+                                        result = `<span style="color:#076aff">${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                     } else{
-                                        result = `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
+                                        result = `<span style="color:#22bb33">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                     }
                                 } else{
-                                    result = `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>`;
+                                    result = `<span style="color:#df3639">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                 }
                                 return result;
                             }
                         },
-                        { data: 'StockCode',  title: 'StockCode'},
-                        { data: 'productdetails.Description',  title: 'Description'},
+                        { 
+                            data: null,  
+                            title: 'StockCode',
+                            render: function(data, type, row){
+                                if (!data) return '';
+
+                                return `<strong>${row.StockCode}</strong><br><small>${data.productdetails.Description}</small>`;
+                            }
+                        },
                         { data: 'Reference',  title: 'Reference',
                             render: function (data, type, row){
                                 // return (data.trim() !== "" && row.MovementType == "I")? data : "<span style='font-size:10px;color:#808080;'>n/a</span>";
@@ -216,8 +221,8 @@ const datatables = {
                     order: [],
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-4');
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
@@ -230,9 +235,6 @@ const datatables = {
                         // $('#chartloadingScreen').remove();
                         $('#lineChart, .canvasDiv, .canvasTitle').show();
                         $('#dattableDiv').removeClass('opacity-0');
-                        // $('.dt-layout-table').addClass('mt-4');
-
-                        
                     }
 
                 });
@@ -344,6 +346,9 @@ const miniDashboard = {
         $('#availSkuVal').slideUp(200, function() {
             $(this).html("---").slideDown(200);
         });
+        $('#availAdjVal').slideUp(200, function() {
+            $(this).html("---").slideDown(200);
+        });
     },
     isFinishLoadingData: () => {
         $('.canvasTitle').show();
@@ -366,7 +371,7 @@ const miniDashboard = {
             console.error('Error:', error);
         });
     },
-    updateValues: async (totalStockIn, totalStockOut, totalStockAvail) => {
+    updateValues: async (totalStockIn, totalStockOut, totalStockAvail, totalAdj) => {
         $('#inboundVal').slideUp(200, function() {
             $(this).html(totalStockIn.toLocaleString('en-US')).slideDown(200);
         });
@@ -375,6 +380,9 @@ const miniDashboard = {
         });
         $('#availSkuVal').slideUp(200, function() {
             $(this).html(totalStockAvail.toLocaleString('en-US')).slideDown(200);
+        });
+        $('#availAdjVal').slideUp(200, function() {
+            $(this).html(totalAdj.toLocaleString('en-US')).slideDown(200);
         });
     },
     generateLineChart: async () => {

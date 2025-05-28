@@ -101,10 +101,8 @@
 <x-table id="soTable">
     <x-slot:td>
         <td class="SalesOrder">SalesOrder</td>
-        <td class="OrderStatus">OrderStatus</td>
         <td class="DocumentType">DocumentType</td>
         <td class="Customer">Customer</td>
-        <td class="CustomerName">CustomerName</td>
         <td class="CustomerPoNumber">CustomerPoNumber</td>
         <td class="OrderDate">OrderDate</td>
         <td class="Branch">Branch</td>
@@ -147,12 +145,12 @@
     }
 
     .sooheaderform .row div div label{
-        font-size: 10px;
+        font-size: 0.5em;
         margin-bottom: 0;
     }
     
     .sooheaderform .row div div input{
-        font-size: 13px;
+        font-size: 0.65em;
         margin-bottom: 0;
     }
 

@@ -44,7 +44,7 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 
 const datatables = {
     loadInvWarehouseData: async () => {
-        const invData = await ajax('api/inv/', 'GET', null, (response) => {  
+        const invData = await ajax('api/inv', 'GET', null, (response) => {  
             jsonArr = response.data;
             datatables.initInvWarehouseDatatable(response);
         }, (xhr, status, error) => { 
@@ -66,11 +66,18 @@ const datatables = {
                         }
                     },
                     columns: [
-                        { data: 'StockCode',  title: 'Stock Code' },
                         { data: 'Warehouse',  title: 'Warehouse' },
-                        { data: 'productdetails.Description',  title: 'Description' },
-                        { data: 'productdetails.ProductClass',  title: 'Prodcut Class' },
+                        {  
+                            data: null,  
+                            title: 'Stock Code',
+                            render: function(data, type, row){
+                                if (!data) return '';
+
+                                return `<strong>${row.StockCode}</strong><br><small>${data.productdetails.Description}</small>`;
+                            }
+                        },
                         { data: 'productdetails.Brand',  title: 'Brand' },
+                        { data: 'productdetails.ProductClass',  title: 'Prodcut Class' },
                         { data: 'conversion.result.inCS',  title: 'in CS',
                             render: function (data, type, row){
                                 return (data != null)? data : "-";
@@ -96,9 +103,8 @@ const datatables = {
                         { data: 'QtyOnHand',  title: 'Quantity' },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 2, 3, 4, 8 ] },
-                        { className: "text-center", targets: [ 1, 5, 6, 7 ] },
-                        // { className: "text-end", targets: [ 4 ] },
+                        { className: "text-start", targets: [ 1, 2 ] },
+                        { className: "text-center", targets: [ 0, 3, 4, 5, 6, 7, 8 ] },
                         { className: "text-nowrap", targets: '_all' } // This targets all columns
                     ],
                     scrollCollapse: true,
@@ -114,8 +120,8 @@ const datatables = {
                     order: [],
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel');
-                        $(this.api().table().container()).find('.dt-layout-row').addClass('px-4');
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
@@ -126,7 +132,6 @@ const datatables = {
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
-                        // $('.dt-layout-table').addClass('mt-4');
                     }
 
                 });

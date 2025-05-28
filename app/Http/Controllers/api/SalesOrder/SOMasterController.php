@@ -25,7 +25,7 @@ class SOMasterController extends Controller
     {
         try {
             $today = date('Y-m-d'); // Today's date
-            $oneMonthAgo = date('Y-m-d', strtotime('-1 month'));
+            $oneMonthAgo = date('Y-m-d', strtotime('-2 month'));
 
             $data = SOMaster::select(
                 'SalesOrder',

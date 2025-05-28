@@ -13,11 +13,10 @@
 @section('table')
     <x-table id="ProductTable">
         <x-slot:td>
-            <td class="col">StockCode</td>
             <td class="col">Brand</td>
-            <td class="col">Description</td>
+            <td class="col">StockCode</td>
             <td class="col">LongDesc</td>
-            <td class="col">AlternateKey1</td>
+            <td class="col">Alternate Key</td>
             <td class="col">StockUom</td>
             <td class="col">AlternateUom</td>
             <td class="col">OtherUom</td>
