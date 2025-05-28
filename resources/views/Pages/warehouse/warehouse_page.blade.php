@@ -11,39 +11,40 @@
 @endsection
 
 @section('table')
-<x-table id="whTable">
-    <x-slot:td>
-        <td class="col">Warehouse</td>
-        <td class="col">Warehouse Type</td>
-        <td class="col">Warehouse GroupCode</td>
-        <td class="col">Warehouse GroupDesc</td>
-        <td class="col">Municipality</td>
-        <td class="col">Status</td>
-        <td class="col">Date Updated</td>
-    </x-slot:td>
-</x-table>
+    <x-table id="whTable">
+        <x-slot:td>
+            <td class="col">Warehouse</td>
+            <td class="col">Warehouse Type</td>
+            <td class="col">Warehouse GroupCode</td>
+            <td class="col">Warehouse GroupDesc</td>
+            <td class="col">Municipality</td>
+            <td class="col">Status</td>
+            <td class="col">Date Updated</td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 @section('modal')
-<style>
-    #warehouseMainModal .modal-body label{
-        font-size: 12px;
-    }
-    #whTable thead{
-        white-space: nowrap;
-    }
+    <style>
+        #warehouseMainModal .modal-body label{
+            font-size: 12px;
+        }
+        #whTable thead{
+            white-space: nowrap;
+        }
 
-    .warehouseForm div div label{
-        font-size: 10px;
-        margin-bottom: 0;
-    }
-    
-    .warehouseForm div div input{
-        font-size: 13px;
-        margin-bottom: 0;
-    }
-</style>
-    <x-warehouse_modal>
+        .warehouseForm div div label{
+            font-size: 10px;
+            margin-bottom: 0;
+        }
+        
+        .warehouseForm div div input{
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+    </style>
+
+    <x-mainModal mainModalTitle="warehouseMainModal" modalDialogClass="" modalHeaderTitle="WAREHOUSE DETAILS" modalSubHeaderTitle="Manage warehouse data including codes, addresses, and storage status.">
         <x-slot:form_fields>
             <div class="row h-100 warehouseForm">
                 <div class="col-6">
@@ -99,7 +100,19 @@
                 </div>
             </div>
         </x-slot:form_fields>
-    </x-warehouse_modal>
+        <x-slot:modalFooterBtns>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteWHBtn">Delete Warehouse</button>
+                <button type="button" class="btn btn-sm btn-primary" id="rePrintPage" style="display: none;">Print Details</button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="confirmWH">Confrim Detials</button>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="addWHBtn">Add Warehouse</button>
+                <button type="button" class="btn btn-sm btn-info text-white" id="editWHBtn">Edit Details</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
+    </x-mainModal>
 
     <div class="modal fade modal-lg" id="uploadCsv">
         <div class="modal-dialog">

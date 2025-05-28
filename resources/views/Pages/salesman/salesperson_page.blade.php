@@ -18,7 +18,7 @@
 @endsection
 
 @section('modal')
-    <x-salesperson_modal>
+    <x-mainModal mainModalTitle="salespersonMainModal" modalDialogClass="modal-lg" modalHeaderTitle="SALESMAN DETAILS" modalSubHeaderTitle="Relevant information about this sales agent.">
         <x-slot:form_fields>
             <div class="row h-100">
                 <div class="row">
@@ -97,7 +97,19 @@
                 </div>
             </div>
         </x-slot:form_fields>
-    </x-salesperson_modal>
+        <x-slot:modalFooterBtns>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteSPBtn">Delete Salesman</button>
+                <button type="button" class="btn btn-sm btn-primary" id="rePrintPage" style="display: none;">Print Details</button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="confirmSP">Confrim Detials</button>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="addSPBtn">Add Salesman</button>
+                <button type="button" class="btn btn-sm btn-info text-white" id="editSPBtn">Edit Details</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
+    </x-mainModal>
 
     <div class="modal fade modal-lg" id="uploadCsv">
         <div class="modal-dialog">

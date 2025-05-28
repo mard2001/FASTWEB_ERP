@@ -47,22 +47,9 @@
 
 <x-table id="rrTable">
     <x-slot:td>
-        <td class="col">supCode</td>
-        <td class="col">supName</td>
-        {{-- <td class="col">supTIN</td> --}}
-        <td class="col">supAdd</td>
-        <td class="col">rrNo</td>
-        <td class="col">Total</td>
-        <td class="col">rrDate</td>
-        <td class="col">rrRef</td>
-        <td class="col">rrStat1</td>
-        <td class="col">prepared</td>
     </x-slot:td>
 </x-table>
 @endsection
-
-
-
 
 @section('modal')
 
@@ -80,7 +67,7 @@
     }
 </style>
 
-<x-rr_modal>
+<x-mainModal mainModalTitle="rrMainModal" modalDialogClass="modal-xl" modalHeaderTitle="RECEIVING REPORT" modalSubHeaderTitle="All key details related to this receiving transaction.">
     <x-slot:form_fields>
         {{-- <h2 class="text-center mb-5">Receiving Report</h2> --}}
         
@@ -158,7 +145,17 @@
             </tbody>
         </table>
     </x-slot:form_fields>
-</x-rr_modal>
+
+    <x-slot:modalFooterBtns>
+        <div>
+            <button type="button" class="btn btn-sm btn-primary" id="rrPrintPage">Print Report</button>
+            <button type="button" class="btn btn-sm btn-outline-success" id="rrConfirm">Confirm Report</button>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+    </x-slot:modalFooterBtns>
+</x-mainModal>
 
 @endsection
 

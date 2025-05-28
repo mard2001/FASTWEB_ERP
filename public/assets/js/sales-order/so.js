@@ -176,7 +176,7 @@ $(document).ready(async function () {
         datatables.initSOItemsDatatable(null);
         $('#confirmSO').hide();
         $('#addItems').show();
-        // ItemsTH.column(6).visible(true);
+        // ItemsTH.column(5).visible(true);
         SOModal.buttonsView();
         SOModal.show();
     });
@@ -210,7 +210,7 @@ $(document).ready(async function () {
             isEditing = true;
             $(this).text("Save Changes");
             SOModal.enable(true);
-            ItemsTH.column(6).visible(true);
+            ItemsTH.column(5).visible(true);
             $('.statBtns').hide();
         } else {
             const updatedData = SOModal.checkData();
@@ -243,7 +243,7 @@ $(document).ready(async function () {
                     if($('#editSOBtn').text().toLowerCase() == "save changes"){
                         $(this).text("Edit Order");
                         SOModal.enable(false);
-                        ItemsTH.column(6).visible(false);
+                        ItemsTH.column(5).visible(false);
                         SOModal.buttonsView();
                         isEditing = false;
                         isSelectedEdited = false;
@@ -253,7 +253,7 @@ $(document).ready(async function () {
                 if($('#editSOBtn').text().toLowerCase() == "save changes"){
                     $(this).text("Edit Order");
                     SOModal.enable(false);
-                    ItemsTH.column(6).visible(false);
+                    ItemsTH.column(5).visible(false);
                     SOModal.buttonsView();
                     isEditing = false;
                     isSelectedEdited = false;
@@ -316,7 +316,7 @@ $(document).ready(async function () {
 
         $("#itemEdit").hide();
         $("#itemSave").show();
-        ItemsTH.column(6).visible(true);
+        ItemsTH.column(5).visible(true);
     });
 
     $("#itemSave").on("click", function () {
@@ -619,9 +619,17 @@ const datatables = {
                 dom: "rt<'d-flex justify-content-between' ip>",
                 data: datas,
                 columns: [
-                    { data: 'MStockCode' },
-                    { data: 'MStockDes' },
-                    { data: 'MOrderQty',
+                    { 
+                        data: null,
+                        title: 'Product Item',
+                        render: function (data, type, row){
+                            if (!data) return '';
+
+                            return `<strong>${row.MStockCode}</strong><br><small>${data.MStockDes}</small>`;
+                        }
+                    },
+                    { 
+                        data: 'MOrderQty',
                         render: function (data, type, row){
                             return parseFloat(data);
                         }
@@ -661,9 +669,9 @@ const datatables = {
 
                 ],
                 columnDefs: [
-                    { className: "text-start", targets: [0, 1] },
-                    { className: "text-center", targets: [2, 3] },
-                    { className: "text-end", targets: [4, 5] },
+                    { className: "text-start", targets: [ 0 ] },
+                    { className: "text-center", targets: [ 1, 2, 5 ] },
+                    { className: "text-end", targets: [ 3, 4 ] },
                     { className: "text-nowrap", targets: '_all' },
                 ],
                 searching: true,
@@ -1105,7 +1113,7 @@ const SOModal = {
         $('#rePrintPage').show();
         $('#editSOBtn').text("Edit Order");
         SOItemsModal.enable(false);
-        ItemsTH.column(6).visible(false);
+        ItemsTH.column(5).visible(false);
         SOModal.show();
     },
     fill: async (SODetails) => {

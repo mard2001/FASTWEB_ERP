@@ -10,169 +10,169 @@
 @endsection
 
 @section('table')
-<style>
-    .fa-minus,
-    .fa-plus {
-        font-size: 20px;
-    }
-
-    .fa-minus:hover,
-    .fa-plus:hover {
-        font-size: 30px;
-        cursor: pointer;
-    }
-
-    .secBtns .selected {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-    }
-
-    .secBtns button {
-        border-bottom: 2px solid transparent;
-        border-top: 1px solid transparent;
-        border-left: 1px solid transparent;
-        border-right: 1px solid transparent;
-    }
-
-    .secBtns button:hover {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-        border-top: 0.5px solid #0275d8;
-        border-left: 0.5px solid #0275d8;
-        border-right: 0.5px solid #0275d8;
-    }
-
-    .autocompleteHover:hover {
-        background-color: #3B71CA;
-        cursor: pointer;
-    }
-
-    .ui-autocomplete {
-        z-index: 9999 !important;
-    }
-
-    .fs15 * {
-        font-size: 15px !important;
-    }
-
-    .fs12 * {
-        font-size: 12px !important;
-        border-radius: 0 !important;
-    }
-
-    .fs12 .actIcon * {
-        font-size: 20px !important;
-    }
-
-    .ResMWidth {
-        width: 300px;
-    }
-
-    /* @media (min-width: 768px) {
-        .ResMWidth {
-            width: 30%;
+    <style>
+        .fa-minus,
+        .fa-plus {
+            font-size: 20px;
         }
 
-        .fs12 * {
+        .fa-minus:hover,
+        .fa-plus:hover {
+            font-size: 30px;
+            cursor: pointer;
+        }
+
+        .secBtns .selected {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+        }
+
+        .secBtns button {
+            border-bottom: 2px solid transparent;
+            border-top: 1px solid transparent;
+            border-left: 1px solid transparent;
+            border-right: 1px solid transparent;
+        }
+
+        .secBtns button:hover {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+            border-top: 0.5px solid #0275d8;
+            border-left: 0.5px solid #0275d8;
+            border-right: 0.5px solid #0275d8;
+        }
+
+        .autocompleteHover:hover {
+            background-color: #3B71CA;
+            cursor: pointer;
+        }
+
+        .ui-autocomplete {
+            z-index: 9999 !important;
+        }
+
+        .fs15 * {
             font-size: 15px !important;
-            border-radius: 0 !important;
-        }
-    } */
-
-    /* Extra small devices (phones, 0px - 575px) */
-    @media (max-width: 575px) {
-        .ResMWidth {
-            width: 100%;
         }
 
         .fs12 * {
             font-size: 12px !important;
             border-radius: 0 !important;
         }
-    }
 
-    /* Small devices (phones, 576px - 767px) */
-    @media (min-width: 576px) and (max-width: 767px) {
+        .fs12 .actIcon * {
+            font-size: 20px !important;
+        }
+
         .ResMWidth {
-            width: 45%;
+            width: 300px;
         }
 
-        .fs12 * {
-            font-size: 13px !important;
-            border-radius: 0 !important;
-        }
-    }
+        /* @media (min-width: 768px) {
+            .ResMWidth {
+                width: 30%;
+            }
 
-    /* Medium devices (tablets, 768px - 991px) */
-    @media (min-width: 768px) and (max-width: 991px) {
-        .ResMWidth {
-            width: 40%;
-        }
+            .fs12 * {
+                font-size: 15px !important;
+                border-radius: 0 !important;
+            }
+        } */
 
-        .fs12 * {
-            font-size: 13px !important;
-            border-radius: 0 !important;
-        }
-    }
+        /* Extra small devices (phones, 0px - 575px) */
+        @media (max-width: 575px) {
+            .ResMWidth {
+                width: 100%;
+            }
 
-    /* Large devices (desktops, 992px - 1199px) */
-    @media (min-width: 992px) and (max-width: 1199px) {
-        .ResMWidth {
-            width: 35%;
-        }
-
-        .fs12 * {
-            font-size: 14px !important;
-            border-radius: 0 !important;
-        }
-    }
-
-    /* Extra large devices (large desktops, 1200px and up) */
-    @media (min-width: 1200px) {
-        .ResMWidth {
-            width: 30%;
+            .fs12 * {
+                font-size: 12px !important;
+                border-radius: 0 !important;
+            }
         }
 
-        .fs12 * {
-            font-size: 14px !important;
-            border-radius: 0 !important;
-        }
-    }
+        /* Small devices (phones, 576px - 767px) */
+        @media (min-width: 576px) and (max-width: 767px) {
+            .ResMWidth {
+                width: 45%;
+            }
 
-    @media (max-width: 992px) {
-        .custom-modal-fullscreen {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            max-width: 100%;
+            .fs12 * {
+                font-size: 13px !important;
+                border-radius: 0 !important;
+            }
         }
 
-        .custom-modal-fullscreen .modal-content {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+        /* Medium devices (tablets, 768px - 991px) */
+        @media (min-width: 768px) and (max-width: 991px) {
+            .ResMWidth {
+                width: 40%;
+            }
+
+            .fs12 * {
+                font-size: 13px !important;
+                border-radius: 0 !important;
+            }
         }
-    }
-</style>
 
-<x-table id="POHeaderTable">
-    <x-slot:td>
-        <td class="col">OrderNumber</td>
-        <td class="col">PONumber</td>
-        <td class="col">Status</td>
-        <td class="col">POAccount</td>
-        <td class="col">PODate</td>
-        <td class="col">OrderPlacer</td>
-        <td class="col">Discount</td>
-        <td class="col">TotalCost</td>
+        /* Large devices (desktops, 992px - 1199px) */
+        @media (min-width: 992px) and (max-width: 1199px) {
+            .ResMWidth {
+                width: 35%;
+            }
 
-    </x-slot:td>
-</x-table>
+            .fs12 * {
+                font-size: 14px !important;
+                border-radius: 0 !important;
+            }
+        }
+
+        /* Extra large devices (large desktops, 1200px and up) */
+        @media (min-width: 1200px) {
+            .ResMWidth {
+                width: 30%;
+            }
+
+            .fs12 * {
+                font-size: 14px !important;
+                border-radius: 0 !important;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .custom-modal-fullscreen {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                max-width: 100%;
+            }
+
+            .custom-modal-fullscreen .modal-content {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+        }
+    </style>
+
+    <x-table id="POHeaderTable">
+        <x-slot:td>
+            <td class="col">OrderNumber</td>
+            <td class="col">PONumber</td>
+            <td class="col">Status</td>
+            <td class="col">POAccount</td>
+            <td class="col">PODate</td>
+            <td class="col">OrderPlacer</td>
+            <td class="col">Discount</td>
+            <td class="col">TotalCost</td>
+
+        </x-slot:td>
+    </x-table>
 
 @endsection
 
 @section('modal')
-<x-po_modal>
+<x-mainModal mainModalTitle="editXmlDataModal" modalDialogClass="modal-xl" modalHeaderTitle="PURCHASE ORDER" modalSubHeaderTitle="All key details related to this purchase order.">
     <x-slot:form_fields>
         <div class="row justify-content-between d-none">
 
@@ -399,7 +399,19 @@
         </div>
 
     </x-slot:form_fields>
-</x-po_modal>
+    <x-slot:modalFooterBtns>
+        <div>
+            <button type="button" class="btn btn-sm btn-danger" id="deleteBtn">Delete</button>
+            <button type="button" class="btn btn-sm btn-primary" id="rePrintPage">Print purchase order</button>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm btn-primary text-white" id="confirmPO">Confrim PO</button>
+            <button type="button" class="btn btn-sm btn-primary text-white" id="saveBtn">Save details</button>
+            <button type="button" class="btn btn-sm btn-info text-white" id="editBtn">Edit details</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="poCloseBtn">Close</button>
+        </div>
+    </x-slot:modalFooterBtns>
+</x-mainModal>
 
 <div class="modal fade modal modal-lg text-dark" id="itemModal">
     <div class="modal-dialog modal-dialog-centered">
@@ -800,8 +812,6 @@
             }
         };
 
-
-
         function trNew(fileName, indexId) {
             return `<tr id="fileRow${indexId}">
                         <td class="imgSizeContainer col-1">
@@ -820,8 +830,6 @@
 
                     </tr>`;
         }
-
-
     });
 </script>
 

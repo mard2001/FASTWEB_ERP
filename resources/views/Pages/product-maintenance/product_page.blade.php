@@ -31,7 +31,7 @@
 @endsection
 
 @section('modal')
-    <x-prod_modal>
+    <x-mainModal mainModalTitle="prodMainModal" modalDialogClass="modal-lg" modalHeaderTitle="PRODUCT DETAILS" modalSubHeaderTitle="Complete overview of item details for inventory.">
         <x-slot:form_fields>
             <div class="row h-100">
                 <div class="col-sm-12 col-md-4 mt-1">
@@ -118,7 +118,19 @@
                 </div>
             </div>
         </x-slot:form_fields>
-    </x-prod_modal>
+        <x-slot:modalFooterBtns>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteProdBtn">Delete Product</button>
+                <button type="button" class="btn btn-sm btn-primary" id="rePrintPage" style="display: none;">Print Product</button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="confirmProd">Confrim Product</button>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="addProdBtn">Add Product</button>
+                <button type="button" class="btn btn-sm btn-info text-white" id="editProdBtn">Edit Product</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
+    </x-mainModal>
 
     <div class="modal fade modal-lg" id="uploadCsv">
         <div class="modal-dialog">

@@ -11,30 +11,31 @@
 @endsection
 
 @section('table')
-<x-table id="customerTable">
-    <x-slot:td>
-        <td class="col">Customer</td>
-        <td class="col">Salesperson</td>
-        <td class="col">PriceCode</td>
-        <td class="col">CustomerClass</td>
-        <td class="col">Contact</td>
-        <td class="col">SoldToAddr1</td>
-        <td class="col">SoldToAddr2</td>
-        <td class="col">SoldToAddr3</td>
-    </x-slot:td>
-</x-table>
+    <x-table id="customerTable">
+        <x-slot:td>
+            <td class="col">Customer</td>
+            <td class="col">Salesperson</td>
+            <td class="col">PriceCode</td>
+            <td class="col">CustomerClass</td>
+            <td class="col">Contact</td>
+            <td class="col">SoldToAddr1</td>
+            <td class="col">SoldToAddr2</td>
+            <td class="col">SoldToAddr3</td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 @section('modal')
-<style>
-    #customerMainModal .modal-body label{
-        font-size: 12px;
-    }
-    #customerTable thead{
-        white-space: nowrap;
-    }
-</style>
-    <x-cust_modal>
+    <style>
+        #customerMainModal .modal-body label{
+            font-size: 12px;
+        }
+        #customerTable thead{
+            white-space: nowrap;
+        }
+    </style>
+
+    <x-mainModal mainModalTitle="customerMainModal" modalDialogClass="modal-lg" modalHeaderTitle="CUSTOMER DETAILS" modalSubHeaderTitle="Maintain accurate and up-to-date customer records.">
         <x-slot:form_fields>
             <div class="row h-100">
                 <div class="row">
@@ -127,7 +128,19 @@
                 </div>
             </div>
         </x-slot:form_fields>
-    </x-cust_modal>
+        <x-slot:modalFooterBtns>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteCustBtn">Delete Customer</button>
+                <button type="button" class="btn btn-sm btn-primary" id="rePrintPage" style="display: none;">Print Details</button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="confirmCust">Confrim Detials</button>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="addCustBtn">Add Customer</button>
+                <button type="button" class="btn btn-sm btn-info text-white" id="editCustBtn">Edit Details</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
+    </x-mainModal>
 
     <div class="modal fade modal-lg" id="uploadCsv">
         <div class="modal-dialog">

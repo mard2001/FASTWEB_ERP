@@ -10,63 +10,63 @@
 @endsection
 
 @section('table')
-<style>
-    .secBtns .selected {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-    }
+    <style>
+        .secBtns .selected {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+        }
 
-    .secBtns button {
-        border-bottom: 2px solid transparent;
-        border-top: 1px solid transparent;
-        border-left: 1px solid transparent;
-        border-right: 1px solid transparent;
-    }
+        .secBtns button {
+            border-bottom: 2px solid transparent;
+            border-top: 1px solid transparent;
+            border-left: 1px solid transparent;
+            border-right: 1px solid transparent;
+        }
 
-    .secBtns button:hover {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-        border-top: 0.5px solid #0275d8;
-        border-left: 0.5px solid #0275d8;
-        border-right: 0.5px solid #0275d8;
-    }
+        .secBtns button:hover {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+            border-top: 0.5px solid #0275d8;
+            border-left: 0.5px solid #0275d8;
+            border-right: 0.5px solid #0275d8;
+        }
 
-    .autocompleteHover:hover {
-        background-color: #3B71CA;
-        cursor: pointer;
-    }
+        .autocompleteHover:hover {
+            background-color: #3B71CA;
+            cursor: pointer;
+        }
 
-    .ui-autocomplete {
-        z-index: 9999 !important;
-    }
+        .ui-autocomplete {
+            z-index: 9999 !important;
+        }
 
-    .fs15 * {
-        font-size: 15px;
-    }
+        .fs15 * {
+            font-size: 15px;
+        }
 
-    .dtDetailssearchInput{
-        font-size: 10px;
-    }
+        .dtDetailssearchInput{
+            font-size: 10px;
+        }
 
-    .dtDetailssearchLabel{
-        background-color: #33336F;
-        color: #FFF !important;
-        font-size: 10.5px !important;
-        border-top-left-radius: 5px;
-        border-bottom-left-radius: 5px;
-    }
+        .dtDetailssearchLabel{
+            background-color: #33336F;
+            color: #FFF !important;
+            font-size: 10.5px !important;
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+        }
 
-</style>
+    </style>
 
-<x-table id="icTable">
-    <x-slot:td>
-        <td class="col">id</td>
-        <td class="col">Status</td>
-        <td class="col">User</td>
-        <td class="col">Motation</td>
-        <td class="col">DATECREATED</td>
-    </x-slot:td>
-</x-table>
+    <x-table id="icTable">
+        <x-slot:td>
+            <td class="col">id</td>
+            <td class="col">Status</td>
+            <td class="col">User</td>
+            <td class="col">Motation</td>
+            <td class="col">DATECREATED</td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 
@@ -74,57 +74,70 @@
 
 @section('modal')
 
-<style>
-    #editXmlDataModal .modal-dialog {
-        width: 70vw !important;
-        /* Set width to 90% of viewport width */
-        max-width: none !important;
-        /* Remove any max-width constraints */
-    }
+    <style>
+        #editXmlDataModal .modal-dialog {
+            width: 70vw !important;
+            /* Set width to 90% of viewport width */
+            max-width: none !important;
+            /* Remove any max-width constraints */
+        }
 
-    #editXmlDataModal .modal-content {
-        margin: auto !important;
-        /* Center the modal content */
-    }
+        #editXmlDataModal .modal-content {
+            margin: auto !important;
+            /* Center the modal content */
+        }
 
-    .invCountTableHeader:hover{
-        background: transparent
-    }
-</style>
+        .invCountTableHeader:hover{
+            background: transparent
+        }
+    </style>
 
-<x-invCount_modal>
-    <x-slot:form_fields>
-        <div class="row g-4">
-            <div class="col">
-                <table class="invCountTableHeader" style="font-size: 14px">
-                    <tbody>
-                        <tr>
-                            <td style="white-space: nowrap;">Count ID:</td>
-                            <th class="px-2"><span class="countID" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Placed By:</td>
-                            <th class="px-2"><span class="countUser text-uppercase" style="font-weight: 550"></span></th>
-                        </tr>
-                    </tbody>
-                </table>
+    <x-mainModal mainModalTitle="invCountMainModal" modalDialogClass="modal-lg" modalHeaderTitle="INVENTORY COUNT" modalSubHeaderTitle="Track discrepancies between recorded and actual stock levels.">
+        <x-slot:form_fields>
+            <div class="row g-4">
+                <div class="col">
+                    <table class="invCountTableHeader" style="font-size: 14px">
+                        <tbody>
+                            <tr>
+                                <td style="white-space: nowrap;">Count ID:</td>
+                                <th class="px-2"><span class="countID" style="font-weight: 550"></span></th>
+                            </tr>
+                            <tr>
+                                <td style="white-space: nowrap;">Placed By:</td>
+                                <th class="px-2"><span class="countUser text-uppercase" style="font-weight: 550"></span></th>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col ">
+                    <table class="invCountTableHeader" style="font-size: 14px">
+                        <tbody>
+                            <tr>
+                                <td style="white-space: nowrap;">Date Created:</td>
+                                <th class="px-2"><span class="countDate" style="font-weight: 550"></span></th>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="col ">
-                <table class="invCountTableHeader" style="font-size: 14px">
-                    <tbody>
-                        <tr>
-                            <td style="white-space: nowrap;">Date Created:</td>
-                            <th class="px-2"><span class="countDate" style="font-weight: 550"></span></th>
-                        </tr>
-                    </tbody>
-                </table>
+            <hr>
+            <table class="table" style="font-size: 12px; width: 100%;" id="ICDetails">
+            </table>
+        </x-slot:form_fields>
+        <x-slot:modalFooterBtns>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteICBtn">Delete Sheet</button>
+                <button type="button" class="btn btn-sm btn-primary" id="rePrintPage" style="display: none;">Print Sheet</button>
             </div>
-        </div>
-        <hr>
-        <table class="table" style="font-size: 12px; width: 100%;" id="ICDetails">
-        </table>
-    </x-slot:form_fields>
-</x-invCount_modal>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="confirmIC">Confrim Sheet</button>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="addICBtn">Add Sheet</button>
+                <button type="button" class="btn btn-sm btn-info text-white" id="editICBtn">Edit Sheet</button>
+                <button type="button" class="btn btn-sm btn-danger text-white" id="cancelEditICBtn">Cancel Changes</button>
+                <button type="button" class="btn btn-sm btn-secondary" id="closeICBtn" data-bs-dismiss="modal">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
+    </x-mainModal>
 
 @endsection
 

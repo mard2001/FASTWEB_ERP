@@ -10,58 +10,58 @@
 @endsection
 
 @section('table')
-<style>
-    .secBtns .selected {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-    }
+    <style>
+        .secBtns .selected {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+        }
 
-    .secBtns button {
-        border-bottom: 2px solid transparent;
-        border-top: 1px solid transparent;
-        border-left: 1px solid transparent;
-        border-right: 1px solid transparent;
-    }
+        .secBtns button {
+            border-bottom: 2px solid transparent;
+            border-top: 1px solid transparent;
+            border-left: 1px solid transparent;
+            border-right: 1px solid transparent;
+        }
 
-    .secBtns button:hover {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-        border-top: 0.5px solid #0275d8;
-        border-left: 0.5px solid #0275d8;
-        border-right: 0.5px solid #0275d8;
-    }
+        .secBtns button:hover {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+            border-top: 0.5px solid #0275d8;
+            border-left: 0.5px solid #0275d8;
+            border-right: 0.5px solid #0275d8;
+        }
 
-    .autocompleteHover:hover {
-        background-color: #3B71CA;
-        cursor: pointer;
-    }
+        .autocompleteHover:hover {
+            background-color: #3B71CA;
+            cursor: pointer;
+        }
 
-    .ui-autocomplete {
-        z-index: 9999 !important;
-    }
+        .ui-autocomplete {
+            z-index: 9999 !important;
+        }
 
-    .fs15 * {
-        font-size: 15px;
-    }
+        .fs15 * {
+            font-size: 15px;
+        }
 
-    #adjTable thead tr{
-        white-space: nowrap;
-    }
-</style>
+        #adjTable thead tr{
+            white-space: nowrap;
+        }
+    </style>
 
-<x-table id="adjTable">
-    <x-slot:td>
-        <td class="col">ENTRY_DATE</td>
-        <td class="col">REFERENCE</td>
-        <td class="col">STOCKCODE</td>
-        <td class="col">WAREHOUSE</td>
-        <td class="col">PREV_QTY</td>
-        <td class="col">NEW_QTY</td>
-        <td class="col">ADJUSTED_QTY</td>
-        <td class="col">ADJUSTMENT_TYPE</td>
-        <td class="col">HANDLED_BY</td>
-    </x-slot:td>
-</x-table>
+    <x-table id="adjTable">
+        <x-slot:td>
+            <td class="col">ENTRY_DATE</td>
+            <td class="col">REFERENCE</td>
+            <td class="col">STOCKCODE</td>
+            <td class="col">WAREHOUSE</td>
+            <td class="col">PREV_QTY</td>
+            <td class="col">NEW_QTY</td>
+            <td class="col">ADJUSTED_QTY</td>
+            <td class="col">ADJUSTMENT_TYPE</td>
+            <td class="col">HANDLED_BY</td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 @section('modal')
@@ -143,7 +143,7 @@
 
 </style>
 
-<x-stockAdjustment_modal>
+<x-mainModal mainModalTitle="stockAdjMainModal" modalDialogClass="modal-lg" modalHeaderTitle="STOCK ADJUSTMENT" modalSubHeaderTitle="Apply stock corrections to maintain inventory accuracy.">
     <x-slot:form_fields>
         <div class="sAdjheaderform">
             <div class="row">
@@ -194,7 +194,15 @@
             </x-sub_table>
         </div>
     </x-slot:form_fields>
-</x-stockAdjustment_modal>
+    <x-slot:modalFooterBtns>
+        <div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm btn-primary text-white" id="saveSAdjBtn">Adjust Stocks</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="closeSTBtn" data-bs-dismiss="modal">Close</button>
+        </div>
+    </x-slot:modalFooterBtns>
+</x-mainModal>
 
 <div class="modal fade modal modal-lg text-dark" id="itemModal">
     <div class="modal-dialog modal-dialog-centered">

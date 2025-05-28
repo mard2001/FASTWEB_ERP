@@ -197,7 +197,7 @@
 
 </style>
 
-<x-so_modal>
+<x-mainModal mainModalTitle="salesOrderMainModal" modalDialogClass="modal-lg" modalHeaderTitle="SALES ORDER" modalSubHeaderTitle="All key details related to this sales transaction.">
     <x-slot:form_fields>
         <div class="sooheaderform">
             <div class="row">
@@ -277,10 +277,9 @@
                 <button type="button" class="btn btn-primary btn-sm text-white mx-1" id="addItems">Add Item</button>
                 <div id="searchBar"></div>
             </div>
-            <x-sub_table id="itemTables" class="fs12 table-bordered">
+            <x-sub_table id="itemTables" class="">
                 <x-slot:td>
                     <td class="col">StockCode</td>
-                    <td class="col">Description</td>
                     <td class="col">Quantity</td>
                     <td class="col">UOM</td>
                     <td class="col">Unit Price</td>
@@ -325,7 +324,26 @@
         </div>
     </x-slot:form_fields>
 
-</x-so_modal>
+    <x-slot:modalFooterBtns>
+        <div>
+            <button type="button" class="btn btn-sm btn-danger" id="deleteSOBtn">Delete Order</button>
+            {{-- <button type="button" class="btn btn-sm btn-primary" id="rePrintPage" style="display: none;">Print Sheet</button> --}}
+            <button type="button" class="btn btn-sm btn-primary text-white statBtns" id="availableSO">Available</button>
+            <button type="button" class="btn btn-sm btn-secondary text-white statBtns" id="unavailableSO">Unavailable</button>
+            <button type="button" class="btn btn-sm btn-primary text-white statBtns" id="restockedSO">Restocked</button>
+            <button type="button" class="btn btn-sm btn-danger text-white statBtns" id="suspenseSO">Suspense Order</button>
+            <button type="button" class="btn btn-sm btn-success text-white statBtns" id="invoiceSO">Proceed to Invoice</button>
+            <button type="button" class="btn btn-sm btn-success text-white statBtns" id="completeSO">Completed Order</button>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm btn-primary text-white" id="saveSOBtn">Save Details</button>
+            <button type="button" class="btn btn-sm btn-info text-white" id="editSOBtn">Edit Order</button>
+            <button type="button" class="btn btn-sm btn-danger text-white" id="cancelEditSOBtn">Cancel Changes</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="closeSOBtn" data-bs-dismiss="modal">Close</button>
+        </div>
+    </x-slot:modalFooterBtns>
+
+</x-mainModal>
 
 <div class="modal fade modal modal-lg text-dark" id="itemModal">
     <div class="modal-dialog modal-dialog-centered">

@@ -11,43 +11,44 @@
 @endsection
 
 @section('table')
-<x-table id="supplierTable">
-    <x-slot:td>
-        <td class="col">Supplier Code</td>
-        <td class="col">Terms Code</td>
-        <td class="col">Contact Person</td>
-        <td class="col">Complete Address</td>
-        <td class="col">Region</td>
-        <td class="col">Province</td>
-        <td class="col">Municipality</td>
-        <td class="col">City</td>
-        <td class="col">Hold Status</td>
-        <td class="col">Price Code</td>
-        <td class="col">Last Updated</td>
-    </x-slot:td>
-</x-table>
+    <x-table id="supplierTable">
+        <x-slot:td>
+            <td class="col">Supplier Code</td>
+            <td class="col">Terms Code</td>
+            <td class="col">Contact Person</td>
+            <td class="col">Complete Address</td>
+            <td class="col">Region</td>
+            <td class="col">Province</td>
+            <td class="col">Municipality</td>
+            <td class="col">City</td>
+            <td class="col">Hold Status</td>
+            <td class="col">Price Code</td>
+            <td class="col">Last Updated</td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 @section('modal')
-<style>
-    #customerMainModal .modal-body label{
-        font-size: 12px;
-    }
-    #supplierTable thead{
-        white-space: nowrap;
-    }
+    <style>
+        #customerMainModal .modal-body label{
+            font-size: 12px;
+        }
+        #supplierTable thead{
+            white-space: nowrap;
+        }
 
-    .supplierForm div div label{
-        font-size: 10px;
-        margin-bottom: 0;
-    }
-    
-    .supplierForm div div input{
-        font-size: 13px;
-        margin-bottom: 0;
-    }
-</style>
-    <x-supplier_modal>
+        .supplierForm div div label{
+            font-size: 10px;
+            margin-bottom: 0;
+        }
+        
+        .supplierForm div div input{
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+    </style>
+
+    <x-mainModal mainModalTitle="supplierMainModal" modalDialogClass="modal-lg" modalHeaderTitle="SUPPLIER DETAILS" modalSubHeaderTitle="Key details about this supplier’s identity.">
         <x-slot:form_fields>
             <div class="row h-100 supplierForm">
                 <div class="col-3">
@@ -124,7 +125,7 @@
                 </div>
             </div>
         </x-slot:form_fields>
-    </x-supplier_modal>
+    </x-mainModal>
 
     <div class="modal fade modal-lg" id="uploadCsv">
         <div class="modal-dialog">

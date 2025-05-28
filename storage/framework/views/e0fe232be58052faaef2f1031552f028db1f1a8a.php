@@ -225,14 +225,14 @@
 </style>
 
 <?php if (isset($component)) { $__componentOriginalc254754b9d5db91d5165876f9d051922ca0066f4 = $component; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.so_modal','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
-<?php $component->withName('so_modal'); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.mainModal','data' => ['mainModalTitle' => 'salesOrderMainModal','modalDialogClass' => 'modal-lg','modalHeaderTitle' => 'SALES ORDER','modalSubHeaderTitle' => 'All key details related to this sales transaction.']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('mainModal'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
 <?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
 <?php endif; ?>
-<?php $component->withAttributes([]); ?>
+<?php $component->withAttributes(['mainModalTitle' => 'salesOrderMainModal','modalDialogClass' => 'modal-lg','modalHeaderTitle' => 'SALES ORDER','modalSubHeaderTitle' => 'All key details related to this sales transaction.']); ?>
      <?php $__env->slot('form_fields', null, []); ?> 
         <div class="sooheaderform">
             <div class="row">
@@ -313,17 +313,16 @@
                 <div id="searchBar"></div>
             </div>
             <?php if (isset($component)) { $__componentOriginalc254754b9d5db91d5165876f9d051922ca0066f4 = $component; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.sub_table','data' => ['id' => 'itemTables','class' => 'fs12 table-bordered']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.sub_table','data' => ['id' => 'itemTables','class' => '']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
 <?php $component->withName('sub_table'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
 <?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['id' => 'itemTables','class' => 'fs12 table-bordered']); ?>
+<?php $component->withAttributes(['id' => 'itemTables','class' => '']); ?>
                  <?php $__env->slot('td', null, []); ?> 
                     <td class="col">StockCode</td>
-                    <td class="col">Description</td>
                     <td class="col">Quantity</td>
                     <td class="col">UOM</td>
                     <td class="col">Unit Price</td>
@@ -370,6 +369,25 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+     <?php $__env->endSlot(); ?>
+
+     <?php $__env->slot('modalFooterBtns', null, []); ?> 
+        <div>
+            <button type="button" class="btn btn-sm btn-danger" id="deleteSOBtn">Delete Order</button>
+            
+            <button type="button" class="btn btn-sm btn-primary text-white statBtns" id="availableSO">Available</button>
+            <button type="button" class="btn btn-sm btn-secondary text-white statBtns" id="unavailableSO">Unavailable</button>
+            <button type="button" class="btn btn-sm btn-primary text-white statBtns" id="restockedSO">Restocked</button>
+            <button type="button" class="btn btn-sm btn-danger text-white statBtns" id="suspenseSO">Suspense Order</button>
+            <button type="button" class="btn btn-sm btn-success text-white statBtns" id="invoiceSO">Proceed to Invoice</button>
+            <button type="button" class="btn btn-sm btn-success text-white statBtns" id="completeSO">Completed Order</button>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm btn-primary text-white" id="saveSOBtn">Save Details</button>
+            <button type="button" class="btn btn-sm btn-info text-white" id="editSOBtn">Edit Order</button>
+            <button type="button" class="btn btn-sm btn-danger text-white" id="cancelEditSOBtn">Cancel Changes</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="closeSOBtn" data-bs-dismiss="modal">Close</button>
         </div>
      <?php $__env->endSlot(); ?>
 

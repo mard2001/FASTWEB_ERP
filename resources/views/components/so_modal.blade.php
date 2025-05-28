@@ -1,8 +1,12 @@
 <div class="modal fade modal-lg text-dark" id="salesOrderMainModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content w-100 h-100">
-            <div class="modal-header py-0">
-                <p class="text-nowrap text-primary text-center mx-auto my-0" style="font-size: 2rem; font-weight: bold;">SALES ORDER</p>
+            <div class="modal-header py-0" style="border-bottom: none">
+                <div>
+                    <p class="text-nowrap" style="font-size: 1.5em; font-weight: bold; color: #33336F; margin-bottom:-10px;">SALES ORDER</p>
+                    <small style="">Sales Order Entry & Details</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body overflow-auto" style="height: auto;">
                 <form id="modalFields">

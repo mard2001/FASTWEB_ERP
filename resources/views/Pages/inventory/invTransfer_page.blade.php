@@ -10,133 +10,133 @@
 @endsection
 
 @section('table')
-<style>
-    .secBtns .selected {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-    }
+    <style>
+        .secBtns .selected {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+        }
 
-    .secBtns button {
-        border-bottom: 2px solid transparent;
-        border-top: 1px solid transparent;
-        border-left: 1px solid transparent;
-        border-right: 1px solid transparent;
-    }
+        .secBtns button {
+            border-bottom: 2px solid transparent;
+            border-top: 1px solid transparent;
+            border-left: 1px solid transparent;
+            border-right: 1px solid transparent;
+        }
 
-    .secBtns button:hover {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-        border-top: 0.5px solid #0275d8;
-        border-left: 0.5px solid #0275d8;
-        border-right: 0.5px solid #0275d8;
-    }
+        .secBtns button:hover {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+            border-top: 0.5px solid #0275d8;
+            border-left: 0.5px solid #0275d8;
+            border-right: 0.5px solid #0275d8;
+        }
 
-    .autocompleteHover:hover {
-        background-color: #3B71CA;
-        cursor: pointer;
-    }
+        .autocompleteHover:hover {
+            background-color: #3B71CA;
+            cursor: pointer;
+        }
 
-    .ui-autocomplete {
-        z-index: 9999 !important;
-    }
+        .ui-autocomplete {
+            z-index: 9999 !important;
+        }
 
-    .fs15 * {
-        font-size: 15px;
-    }
-</style>
+        .fs15 * {
+            font-size: 15px;
+        }
+    </style>
 
-<x-table id="transferTable">
-    <x-slot:td>
-        <td class="col">Transfer Date</td>
-        <td class="col">Origin Warehouse</td>
-        <td class="col">Destination Warehouse</td>
-        <td class="col">StockCode</td>
-        <td class="col">Description</td>
-        <td class="col">Quantity</td>
-    </x-slot:td>
-</x-table>
+    <x-table id="transferTable">
+        <x-slot:td>
+            <td class="col">Transfer Date</td>
+            <td class="col">Origin Warehouse</td>
+            <td class="col">Destination Warehouse</td>
+            <td class="col">StockCode</td>
+            <td class="col">Description</td>
+            <td class="col">Quantity</td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 @section('modal')
-<style>
-    #editXmlDataModal .modal-dialog {
-        width: 70vw !important;
-        /* Set width to 90% of viewport width */
-        max-width: none !important;
-        /* Remove any max-width constraints */
-    }
+    <style>
+        #editXmlDataModal .modal-dialog {
+            width: 70vw !important;
+            /* Set width to 90% of viewport width */
+            max-width: none !important;
+            /* Remove any max-width constraints */
+        }
 
-    #editXmlDataModal .modal-content {
-        margin: auto !important;
-        /* Center the modal content */
-    }
+        #editXmlDataModal .modal-content {
+            margin: auto !important;
+            /* Center the modal content */
+        }
 
-    .soTableHeader tbody tr:hover{
-        background: transparent
-    }
+        .soTableHeader tbody tr:hover{
+            background: transparent
+        }
 
-    #SODetails th {
-        white-space: nowrap; /* Prevents text from wrapping */
-    }
+        #SODetails th {
+            white-space: nowrap; /* Prevents text from wrapping */
+        }
 
-    #itemTables_wrapper #dt-search-1{
-        height: 10px;
-    }
+        #itemTables_wrapper #dt-search-1{
+            height: 10px;
+        }
 
-    .stheaderform .row div div label{
-        font-size: 0.5em;
-        margin-bottom: 0;
-    }
-    
-    .stheaderform .row div div input{
-        font-size: 0.65em;
-        margin-bottom: 0;
-    }
+        .stheaderform .row div div label{
+            font-size: 0.5em;
+            margin-bottom: 0;
+        }
+        
+        .stheaderform .row div div input{
+            font-size: 0.65em;
+            margin-bottom: 0;
+        }
 
-    #customItemSearchBox{
-        margin-right: 0.3em;
-        width: auto;
-        background-color: whitesmoke;
-        padding: 5px 10px;
-        border: 1px solid #aaa;
-        border-radius: 5px;
-        font-size: 12px;
-    }
-    
-    .soofooterform {
-        width: 100%;
-        margin-bottom: 1rem;
-        color: #212529;
-        border-collapse: collapse;
-        font-size: 13px;
-    }
+        #customItemSearchBox{
+            margin-right: 0.3em;
+            width: auto;
+            background-color: whitesmoke;
+            padding: 5px 10px;
+            border: 1px solid #aaa;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .soofooterform {
+            width: 100%;
+            margin-bottom: 1rem;
+            color: #212529;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
 
-    .soofooterform th,
-    .soofooterform td {
-        padding: 2px 15px;
-        vertical-align: top;
-        border-top: 1px solid #dee2e6;
-        height: 35px;
-        vertical-align: middle !important;
-    }
+        .soofooterform th,
+        .soofooterform td {
+            padding: 2px 15px;
+            vertical-align: top;
+            border-top: 1px solid #dee2e6;
+            height: 35px;
+            vertical-align: middle !important;
+        }
 
-    .soofooterform thead th {
-        vertical-align: bottom;
-        border-bottom: 2px solid #dee2e6;
-    }
+        .soofooterform thead th {
+            vertical-align: bottom;
+            border-bottom: 2px solid #dee2e6;
+        }
 
-    .soofooterform tbody + tbody {
-        border-top: 2px solid #dee2e6;
-    }
+        .soofooterform tbody + tbody {
+            border-top: 2px solid #dee2e6;
+        }
 
-    .soofooterform tbody tr:hover {
-        background-color: transparent !important;
-        /* cursor: pointer; */
-    }
+        .soofooterform tbody tr:hover {
+            background-color: transparent !important;
+            /* cursor: pointer; */
+        }
 
-</style>
+    </style>
 
-<x-stockTransfer_modal>
+<x-mainModal mainModalTitle="stockTransferMainModal" modalDialogClass="modal-lg" modalHeaderTitle="STOCK TRANSFER" modalSubHeaderTitle="Record and track internal stock transfers across your warehouses.">
     <x-slot:form_fields>
         <div class="stheaderform">
             <div class="row">
@@ -190,7 +190,16 @@
             </x-sub_table>
         </div>
     </x-slot:form_fields>
-</x-stockTransfer_modal>
+
+    <x-slot:modalFooterBtns>
+        <div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm btn-primary text-white" id="saveSTBtn">Transfer Stocks</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="closeSTBtn" data-bs-dismiss="modal">Close</button>
+        </div>
+    </x-slot:modalFooterBtns>
+</x-mainModal>
 
 <div class="modal fade modal modal-lg text-dark" id="itemModal">
     <div class="modal-dialog modal-dialog-centered">
