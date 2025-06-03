@@ -116,13 +116,15 @@ $(document).ready(async function () {
   $(document).on("click", ".itemDeleteIcon", async function () {
     // console.log($(this).parent());
     const row = $(this).closest("tr");
-    const skuCode = row.find("td:first"); // Get the first <td>
+    // const skuCode = row.find("td:first"); // Get the first <td>
+    const skuCode = row.attr("id");
     POItemsModal.itemTmpDelete(skuCode);
   });
 
   $(document).on("click", ".itemUpdateIcon", async function () {
     const row = $(this).closest("tr");
-    const itemStockCode = row.find("td:first").text().trim();
+    // const itemStockCode = row.find("td:first").text().trim();
+    const itemStockCode = row.attr("id");
     POItemsModal.enable(true);
 
     $("#CSQuantity").val("");
@@ -619,6 +621,10 @@ const initVS = {
       hideClearButton: true, // Hide clear button
       disabledOptions: ["air_freight"],
       selectedValue: "road_delivery", // Preselect (must match `value`)
+      additionalClasses: 'rounded',
+      additionalDropboxClasses: 'rounded',
+      additionalDropboxContainerClasses: 'rounded',
+      additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
     });
 
     // Initialize VirtualSelect for filter po
@@ -747,6 +753,10 @@ const initVS = {
                                         <button id="ShipperNoDataFoundBtn" type="button" class="btn btn-primary btn-sm">Add new</button>
                                     </div>
                                 </div>`,
+          additionalClasses: 'rounded',
+          additionalDropboxClasses: 'rounded',
+          additionalDropboxContainerClasses: 'rounded dropboxCont',
+          additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
         });
 
         $("#shippedToName").on("afterClose", function () {
@@ -1324,7 +1334,7 @@ const POItemsModal = {
 
   itemTmpDelete: (skuCode) => {
     itemTmpSave = itemTmpSave.filter(
-      (item) => item.StockCode != skuCode.text()
+      (item) => item.StockCode != skuCode
     );
 
     datatables.initPOItemsDatatable(itemTmpSave);
@@ -1678,6 +1688,10 @@ const vendorModal = {
                                                     <button id="CustomerNoDataFoundBtn" type="button" class="btn btn-primary btn-sm">Add new</button>
                                                 </div>
                                             </div>`,
+          additionalClasses: 'rounded',
+          additionalDropboxClasses: 'rounded',
+          additionalDropboxContainerClasses: 'rounded dropboxCont',
+          additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
         });
       },
       (xhr, status, error) => {

@@ -424,7 +424,8 @@ $(document).ready(async function () {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 const row = $(this).closest("tr");
-                const skuCode = row.find("td:first"); // Get the first <td>
+                // const skuCode = row.find("td:first"); // Get the first <td>
+                const skuCode = row.attr("id");
                 SOItemsModal.itemTmpDelete(skuCode);
                 isSelectedEdited = true;
             }
@@ -433,7 +434,8 @@ $(document).ready(async function () {
 
     $(document).on("click", ".itemUpdateIcon", async function () {
         const row = $(this).closest("tr");
-        const itemStockCode = row.find("td:first").text().trim();
+        // const itemStockCode = row.find("td:first").text().trim();
+        const itemStockCode = row.attr("id");
         SOItemsModal.enable(true);
     
         $("#CSQuantity").val("");
@@ -681,7 +683,7 @@ const datatables = {
                 // scrollX: '100%',
                 "pageLength": 5,
                 "createdRow": function (row, data) {
-                    $(row).attr('id', data.id);
+                    $(row).attr('id', data.MStockCode);
                 },
                 "lengthChange": false,  // Hides the per page dropdown
                 initComplete: function () {
@@ -839,6 +841,10 @@ const initVS = {
                                         <button id="ShipperNoDataFoundBtn" type="button" class="btn btn-primary btn-sm">Add new</button>
                                     </div>
                                 </div>`,
+                additionalClasses: 'rounded',
+                additionalDropboxClasses: 'rounded',
+                additionalDropboxContainerClasses: 'rounded dropboxCont',
+                additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
 
             });
 
@@ -891,6 +897,10 @@ const initVS = {
                 autofocus: true,
                 search: true,
                 hasOptionDescription: true,
+                additionalClasses: 'rounded',
+                additionalDropboxClasses: 'rounded',
+                additionalDropboxContainerClasses: 'rounded',
+                additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
             });
     
             $("#StockCode").on("afterClose", async function () {
@@ -1506,7 +1516,7 @@ const SOItemsModal = {
     },
     itemTmpDelete: (skuCode) => {
         itemTmpSave = itemTmpSave.filter(
-          (item) => item.MStockCode != skuCode.text()
+          (item) => item.MStockCode != skuCode
         );
     
         datatables.initSOItemsDatatable(itemTmpSave);

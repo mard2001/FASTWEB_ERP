@@ -1,6 +1,8 @@
 *{
   font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
   font-weight: 400;
+  font-style: normal;
 }
 
 .mainInnerDiv{
@@ -280,12 +282,81 @@
     height: 35px;
 }
 
+.vscomp-option {
+  font-size: 10px !important;
+  height: 30px;
+}
+
+
 #filterPOVS .vscomp-option {
   font-size: 12px !important;
 }
 
 #modalFields{
     font-size: 0.9em;
+}
+
+.ModalFieldCustomVS{
+    height: 30px;
+    font-size: 0.68em;
+}
+
+.dropboxCont{
+    max-width: 250px !important;
+    width: 250px !important;
+}
+
+.modalHeaderTitle {
+    font-weight: 700 !important;
+    font-size: 1.4em;
+    color: #33336F;
+    margin-bottom: -10px !important;
+}
+
+#addItems{
+    margin: 0 5px;
+    font-size: 0.65em;
+    color: #33336F;
+    background-color: transparent;
+    border: 1px solid #33336F;
+    transition: 0.3s ease;
+}
+
+#addItems:hover{
+    color: #FFF;
+    background-color: #33336F;
+    transition: 0.3s ease;
+}
+
+#itemModalFields .sectionTitle{
+    color: #33336F;
+    font-weight: 700;
+    text-wrap: nowrap;
+    font-size: 0.8em;
+}
+
+#itemModalFields .row div div label{
+    font-size: 0.53em;
+    margin-bottom: 0;
+    text-transform: uppercase;
+
+}
+    
+#itemModalFields .row div div input{
+    font-size: 0.68em;
+    margin-bottom: 0;
+}
+
+#itemModalFields .row div div .input-group span{
+    font-size: 0.53em;
+    margin-bottom: 0;
+    text-transform: uppercase;
+
+}
+
+#itemModalFields .row div div .input-group input{
+    font-size: 0.68em;
+    margin-bottom: 0;
 }
 
 @media screen and (min-width: 768px) and (max-width: 1200px){
