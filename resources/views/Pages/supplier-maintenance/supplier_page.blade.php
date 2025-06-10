@@ -4,13 +4,16 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <script src="https://unpkg.com/read-excel-file@5.x/bundle/read-excel-file.min.js"></script>
     <title>Supplier Maintenance</title>
-@endsection 
+@endsection
 
 @section('title_header')
     <x-header title="Supplier Maintenance" />
 @endsection
 
 @section('table')
+
+    <x-contentButtonDiv addFunc="true" downloadFunc="true" uploadFunc="true"></x-contentButtonDiv>
+
     <x-table id="supplierTable">
         <x-slot:td>
             <td class="col">Supplier Code</td>
@@ -41,7 +44,7 @@
             font-size: 10px;
             margin-bottom: 0;
         }
-        
+
         .supplierForm div div input{
             font-size: 13px;
             margin-bottom: 0;
@@ -50,81 +53,95 @@
 
     <x-mainModal mainModalTitle="supplierMainModal" modalDialogClass="modal-lg" modalHeaderTitle="SUPPLIER DETAILS" modalSubHeaderTitle="Key details about this supplier’s identity.">
         <x-slot:form_fields>
-            <div class="row h-100 supplierForm">
-                <div class="col-3">
-                    <div class="mb-3">
-                        <label for="SupplierCode">SupplierCode</label>
-                        <input disabled type="text" id="SupplierCode" name="SupplierCode" class="form-control bg-white needField" required>
+            <div id="itemModalFields">
+                <div class="row h-100 supplierForm">
+                    <div class="col-3">
+                        <div class="mb-3">
+                            <label for="SupplierCode">SupplierCode</label>
+                            <input disabled type="text" id="SupplierCode" name="SupplierCode" class="form-control bg-white needField" required>
+                        </div>
                     </div>
-                </div>
-                <div class="col-6">
-                    <div class="mb-3">
-                        <label for="SupplierName">Supplier Name</label>
-                        <input disabled type="text" id="SupplierName" name="SupplierName" class="form-control bg-white needField" required>
-                    </div>    
-                </div>
-                <div class="col-3">
-                    <div class="mb-3">
-                        <label for="SupplierType">Supplier Type</label>
-                        <input disabled type="text" id="SupplierType" name="SupplierType" class="form-control bg-white" required>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="SupplierName">Supplier Name</label>
+                            <input disabled type="text" id="SupplierName" name="SupplierName" class="form-control bg-white needField" required>
+                        </div>
                     </div>
-                </div>
-                <div class="col-5">
-                    <div class="mb-3">
-                        <label for="ContactPerson">Contact Person</label>
-                        <input disabled type="text" id="ContactPerson" name="ContactPerson" class="form-control bg-white" required>
-                    </div>    
-                </div>
-                <div class="col-4">
-                    <div class="mb-3">
-                        <label for="ContactNo">Contact Number</label>
-                        <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required>
-                    </div>    
-                </div>
-                <div class="col-3">
-                    <div class="mb-3">
-                        <label for="TermsCode">Terms Code</label>
-                        <input disabled type="text" id="TermsCode" name="TermsCode" class="form-control bg-white needField" required>
-                    </div>    
-                </div>
-                <div class="col-4">
-                    <div class="mb-3">
-                        <label for="address">Region</label>
-                        <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
-                    </div>    
-                </div>
-                <div class="col-4">
-                    <div class="mb-3">
-                        <label for="address">Province</label>
-                        <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
-                    </div>    
-                </div>
-                <div class="col-4">
-                    <div class="mb-3">
-                        <label for="address">Municipaliy</label>
-                        <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
-                    </div>    
-                </div>
-                <div class="col-12">
-                    <div class="mb-3">
-                        <label for="CompleteAddress">Home # / Street / Bldg. / Brgy.</label>
-                        <input disabled type="text" id="CompleteAddress" name="CompleteAddress" class="form-control bg-white needField" required placeholder="address">
-                    </div>    
-                </div>
-                <div class="col-6">
-                    <div class="mb-3">
-                        <label for="PriceCode">Price Code</label>
-                        <input disabled type="text" id="PriceCode" name="PriceCode" class="form-control bg-white needField" required onkeypress="return /[0-9]/.test(event.key)" maxlength="2">
-                    </div>    
-                </div>
-                <div class="col-6">
-                    <div class="mb-3">
-                        <label for="holdStatus">Hold Status</label>
-                        <input disabled type="text" id="holdStatus" name="holdStatus" class="form-control bg-white needField" required>
-                    </div>    
+                    <div class="col-3">
+                        <div class="mb-3">
+                            <label for="SupplierType">Supplier Type</label>
+                            <input disabled type="text" id="SupplierType" name="SupplierType" class="form-control bg-white" required>
+                        </div>
+                    </div>
+                    <div class="col-5">
+                        <div class="mb-3">
+                            <label for="ContactPerson">Contact Person</label>
+                            <input disabled type="text" id="ContactPerson" name="ContactPerson" class="form-control bg-white" required>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="ContactNo">Contact Number</label>
+                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="mb-3">
+                            <label for="TermsCode">Terms Code</label>
+                            <input disabled type="text" id="TermsCode" name="TermsCode" class="form-control bg-white needField" required>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="address">Region</label>
+                            <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="address">Province</label>
+                            <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="address">Municipaliy</label>
+                            <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="CompleteAddress">Home # / Street / Bldg. / Brgy.</label>
+                            <input disabled type="text" id="CompleteAddress" name="CompleteAddress" class="form-control bg-white needField" required placeholder="address">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="PriceCode">Price Code</label>
+                            <input disabled type="text" id="PriceCode" name="PriceCode" class="form-control bg-white needField" required onkeypress="return /[0-9]/.test(event.key)" maxlength="2">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="holdStatus">Hold Status</label>
+                            <input disabled type="text" id="holdStatus" name="holdStatus" class="form-control bg-white needField" required>
+                        </div>
+                    </div>
                 </div>
             </div>
         </x-slot:form_fields>
+        <x-slot:modalFooterBtns>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteSuppBtn">Delete Supplier</button>
+                <button type="button" class="btn btn-sm btn-primary" id="rePrintPage" style="display: none;">Print Details</button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="confirmSupp">Confrim Detials</button>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="addSuppBtn">Add Supplier</button>
+                <button type="button" class="btn btn-sm btn-info text-white" id="editSuppBtn">Edit Details</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
     </x-mainModal>
 
     <div class="modal fade modal-lg" id="uploadCsv">

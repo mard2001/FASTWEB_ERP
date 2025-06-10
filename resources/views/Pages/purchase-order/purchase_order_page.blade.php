@@ -59,7 +59,7 @@
             font-size: 0.53em;
             margin-bottom: 0;
         }
-        
+
         .poheaderform .row div div input{
             font-size: 0.68em;
             margin-bottom: 0;
@@ -69,7 +69,7 @@
             font-size: 0.68em;
             text-wrap: nowrap;
             color: #33336F;
-            font-weight: 900;
+            font-weight: 500;
             text-transform: uppercase;
             padding: 0 10px;
         }
@@ -123,7 +123,19 @@
                 margin: auto;
             }
         }
+
+        #customItemSearchBox{
+            margin-right: 0.3em;
+            width: auto;
+            background-color: whitesmoke;
+            padding: 5px 10px;
+            border: 1px solid #aaa;
+            border-radius: 5px;
+            font-size: 12px;
+        }
     </style>
+
+    <x-contentButtonDiv addFunc="true" downloadFunc="true" uploadFunc="true"></x-contentButtonDiv>
 
     <x-table id="POHeaderTable">
         <x-slot:td>
@@ -142,347 +154,269 @@
 @endsection
 
 @section('modal')
-<x-mainModal mainModalTitle="editXmlDataModal" modalDialogClass="modal-xl" modalHeaderTitle="PURCHASE ORDER" modalSubHeaderTitle="All key details related to this purchase order.">
-    <x-slot:form_fields>
-        <div class="poheaderform">
-            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                <div style="width:100%;"><hr></div>
-                <div class="poheaderSectionTitle">REQUISITIONER INFORMATION:</div>
-                <div style="width:100%;"><hr></div>
+    <x-mainModal mainModalTitle="editXmlDataModal" modalDialogClass="modal-xl" modalHeaderTitle="PURCHASE ORDER" modalSubHeaderTitle="All key details related to this purchase order.">
+        <x-slot:form_fields>
+            <div class="poheaderform">
+                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                    <div style="width:100%;"><hr></div>
+                    <div class="poheaderSectionTitle">REQUISITIONER INFORMATION:</div>
+                    <div style="width:100%;"><hr></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="requisitioner" class="form-label">REQUISITIONER</label>
+                            <input type="text" disabled id="requisitioner" name="requisitioner" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="requisitioner" class="form-label">SHIP VIA</label>
+                            <div id="shipVia" name="shipVia" class="form-control border-0 p-0">Shipper Name</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="fob" class="form-label">F.O.B.</label>
+                            <input type="text" disabled id="fob" name="fob" class="form-control" required >
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="shippingTerms" class="form-label">SHIPPING TERMS</label>
+                            <input type="text" disabled id="shippingTerms" name="shippingTerms" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                    <div style="width:100%;"><hr></div>
+                    <div class="poheaderSectionTitle">VENDOR INFORMATION:</div>
+                    <div style="width:100%;"><hr></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="vendorName" class="form-label">SUPPLIER</label>
+                            <div id="vendorName" name="vendorName" class="form-control border-0 p-0">Shipper Name</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="VendorContactName" class="form-label">SUPPLIER CONTACT PERSON</label>
+                            <input type="text" disabled id="VendorContactName" name="VendorContactName" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="vendorAddress" class="form-label">SUPPLIER ADDRESS</label>
+                            <input type="text" disabled id="vendorAddress" name="vendorAddress" class="form-control" required >
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="vendorPhone" class="form-label">SUPPLIER CONTACT NUMBER</label>
+                            <input type="text" disabled id="vendorPhone" name="vendorPhone" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                    <div style="width:100%;"><hr></div>
+                    <div class="poheaderSectionTitle">SHIP TO INFORMATION:</div>
+                    <div style="width:100%;"><hr></div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="requisitioner" class="form-label">SHIP TO</label>
+                            <div id="shippedToName" name="shippedToName" class="form-control border-0 p-0">Shipper Name</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="shippedToContactName" class="form-label">CONSIGNEE</label>
+                            <input type="text" disabled id="shippedToContactName" name="shippedToContactName" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="shippedToAddress" class="form-label">CONSIGNEE ADDRESS</label>
+                            <input type="text" disabled id="shippedToAddress" name="shippedToAddress" class="form-control" required >
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="shippedToPhone" class="form-label">CONTACT NUMBER</label>
+                            <input type="text" disabled id="shippedToPhone" name="shippedToPhone" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="row mb-2">
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="requisitioner" class="form-label">REQUISITIONER</label>
-                        <input type="text" disabled id="requisitioner" name="requisitioner" class="form-control" required>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="requisitioner" class="form-label">SHIP VIA</label>
-                        <div id="shipVia" name="shipVia" class="form-control border-0 p-0">Shipper Name</div>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="fob" class="form-label">F.O.B.</label>
-                        <input type="text" disabled id="fob" name="fob" class="form-control" required >
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="shippingTerms" class="form-label">SHIPPING TERMS</label>
-                        <input type="text" disabled id="shippingTerms" name="shippingTerms" class="form-control" required>
-                    </div>
-                </div>
-            </div>
-            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                <div style="width:100%;"><hr></div>
-                <div class="poheaderSectionTitle">VENDOR INFORMATION:</div>
-                <div style="width:100%;"><hr></div>
-            </div>
-            <div class="row mb-2">
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="vendorName" class="form-label">SUPPLIER</label>
-                        <div id="vendorName" name="vendorName" class="form-control border-0 p-0">Shipper Name</div>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="VendorContactName" class="form-label">SUPPLIER CONTACT PERSON</label>
-                        <input type="text" disabled id="VendorContactName" name="VendorContactName" class="form-control" required>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="vendorAddress" class="form-label">SUPPLIER ADDRESS</label>
-                        <input type="text" disabled id="vendorAddress" name="vendorAddress" class="form-control" required >
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="vendorPhone" class="form-label">SUPPLIER CONTACT NUMBER</label>
-                        <input type="text" disabled id="vendorPhone" name="vendorPhone" class="form-control" required>
-                    </div>
-                </div>
-            </div>
-            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                <div style="width:100%;"><hr></div>
-                <div class="poheaderSectionTitle">SHIP TO INFORMATION:</div>
-                <div style="width:100%;"><hr></div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="requisitioner" class="form-label">SHIP TO</label>
-                        <div id="shippedToName" name="shippedToName" class="form-control border-0 p-0">Shipper Name</div>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="shippedToContactName" class="form-label">CONSIGNEE</label>
-                        <input type="text" disabled id="shippedToContactName" name="shippedToContactName" class="form-control" required>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="shippedToAddress" class="form-label">CONSIGNEE ADDRESS</label>
-                        <input type="text" disabled id="shippedToAddress" name="shippedToAddress" class="form-control" required >
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="">
-                        <label for="shippedToPhone" class="form-label">CONTACT NUMBER</label>
-                        <input type="text" disabled id="shippedToPhone" name="shippedToPhone" class="form-control" required>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row justify-content-between d-none">
+            <div class="row justify-content-between d-none">
 
-            <div class="col-5">
-                <textarea class="form-control" id="exampleFormControlTextarea1 rounded-0" placeholder="Address" rows="2" style="resize: none;"></textarea>
-                <input type="text" disabled id="mobile" name="mobile"
-                    class="form-control form-control-sm bg-white rounded-0" required placeholder="Mobile">
+                <div class="col-5">
+                    <textarea class="form-control" id="exampleFormControlTextarea1 rounded-0" placeholder="Address" rows="2" style="resize: none;"></textarea>
+                    <input type="text" disabled id="mobile" name="mobile"
+                        class="form-control form-control-sm bg-white rounded-0" required placeholder="Mobile">
+                </div>
+
+                <div class="col-5 text-end">
+                    <input type="text" disabled id="date" name="date" readonly
+                        class="form-control form-control-sm bg-white rounded-0" required placeholder="Date">
+
+                    <input type="text" disabled id="poNumber" name="poNumber"
+                        class="form-control form-control-sm bg-white rounded-0" required placeholder="PO #">
+                </div>
             </div>
 
-            <div class="col-5 text-end">
-                <input type="text" disabled id="date" name="date" readonly
-                    class="form-control form-control-sm bg-white rounded-0" required placeholder="Date">
-
-                <input type="text" disabled id="poNumber" name="poNumber"
-                    class="form-control form-control-sm bg-white rounded-0" required placeholder="PO #">
-            </div>
-        </div>
-
-        <div class="row mt-2">
-            <div class="d-flex align-items-center px-2">
-
-                <div>
+            <div class="row mt-2">
+                <div class="d-flex align-items-center justify-content-between px-2 fs12 mb-1">
                     <button type="button" class="btn" disabled id="addItems"><span class="mdi mdi-plus-circle"></span> Add Item</button>
-                    <!-- <button type="button" class="btn btn-danger btn-sm text-white mx-1" id="itemDelete" disabled>Delete Item</button> -->
+                    <div id="searchBar"></div>
+                </div>
+                <x-sub_table id="itemTables" class="">
+                    <x-slot:td>
+                        <td class="col">StockCode</td>
+                        <td class="col">Quantity</td>
+                        <td class="col">UOM</td>
+                        <td class="col">Unit Price</td>
+                        <td class="col">Total Price</td>
+                        <!-- <td class="col">Action</td> -->
+                        <td class="col text-center">
+                            Action
+                        </td>
+
+                    </x-slot:td>
+                </x-sub_table>
+            </div>
+
+            <div class="row mt-2 mx-0">
+                <table class="table pofooterform">
+                    <tbody>
+                        <tr>
+                            <td class="col-sm-6 col-md-7 col-lg-9"> Comments or Special Instructions
+                            </td>
+                            <td class="col">SUB TOTAL: </td>
+                            <td id="subTotal" class="col text-end"></td>
+                        </tr>
+                        <tr>
+                            <td rowspan="3" class="p-0">
+                                <textarea class="form-control px-2 w-100" id="poComment" rows="5" style="resize: none; margin-top: -6px; height:100px"></textarea>
+
+                            </td>
+                            <td>TAX: </td>
+                            <td id="taxCost" class="text-end"></td>
+                        </tr>
+                        <tr class="d-none">
+                            <td>OTHER: </td>
+                            <td id="others" class="text-end"></td>
+                        </tr>
+                        <tr>
+                            <td>TOTAL ITEM: </td>
+                            <td id="totalItemsLabel" class="text-end"></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">TOTAL: </td>
+                            <td id="grandTotal" style="font-weight: bold;" class="text-end"></td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </x-slot:form_fields>
+        <x-slot:modalFooterBtns>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteBtn">Delete</button>
+                <button type="button" class="btn btn-sm btn-primary" id="rePrintPage">Print purchase order</button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="confirmPO">Confrim PO</button>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="saveBtn">Save details</button>
+                <button type="button" class="btn btn-sm btn-info text-white" id="editBtn">Edit details</button>
+                <button type="button" class="btn btn-sm btn-secondary" id="poCloseBtn">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
+    </x-mainModal>
+
+    <x-mainItemModal>
+        <x-slot:customFields>
+            <div class="col-6">
+                <div class="">
+                    <label for="PricePerUnit" class="form-label">Price Per Unit</label>
+                    <input disabled type="text" id="PricePerUnit" name="PricePerUnit" class="form-control" required placeholder="Price Per Unit">
                 </div>
             </div>
-
-            <x-sub_table id="itemTables" class="">
-                <x-slot:td>
-                    <td class="col">StockCode</td>
-                    <td class="col">Decription</td>
-                    <td class="col">Quantity</td>
-                    <td class="col">UOM</td>
-                    <td class="col">Unit Price</td>
-                    <td class="col">Total Price</td>
-                    <!-- <td class="col">Action</td> -->
-                    <td class="col text-center">
-                        Action
-                    </td>
-
-                </x-slot:td>
-            </x-sub_table>
-        </div>
-
-        <div class="row mt-2 mx-0">
-            <table class="table pofooterform">
-                <tbody>
-                    <tr>
-                        <td class="col-sm-6 col-md-7 col-lg-9"> Comments or Special Instructions
-                        </td>
-                        <td class="col">SUB TOTAL: </td>
-                        <td id="subTotal" class="col text-end"></td>
-                    </tr>
-                    <tr>
-                        <td rowspan="3" class="p-0">
-                            <textarea class="form-control px-2 w-100" id="poComment" rows="5" style="resize: none; margin-top: -6px; height:100px"></textarea>
-
-                        </td>
-                        <td>TAX: </td>
-                        <td id="taxCost" class="text-end"></td>
-                    </tr>
-                    <tr class="d-none">
-                        <td>OTHER: </td>
-                        <td id="others" class="text-end"></td>
-                    </tr>
-                    <tr>
-                        <td>TOTAL ITEM: </td>
-                        <td id="totalItemsLabel" class="text-end"></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: bold;">TOTAL: </td>
-                        <td id="grandTotal" style="font-weight: bold;" class="text-end"></td>
-                    </tr>
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </x-slot:form_fields>
-    <x-slot:modalFooterBtns>
-        <div>
-            <button type="button" class="btn btn-sm btn-danger" id="deleteBtn">Delete</button>
-            <button type="button" class="btn btn-sm btn-primary" id="rePrintPage">Print purchase order</button>
-        </div>
-        <div>
-            <button type="button" class="btn btn-sm btn-primary text-white" id="confirmPO">Confrim PO</button>
-            <button type="button" class="btn btn-sm btn-primary text-white" id="saveBtn">Save details</button>
-            <button type="button" class="btn btn-sm btn-info text-white" id="editBtn">Edit details</button>
-            <button type="button" class="btn btn-sm btn-secondary" id="poCloseBtn">Close</button>
-        </div>
-    </x-slot:modalFooterBtns>
-</x-mainModal>
-
-<div class="modal fade" id="itemModal">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content w-100 h-100">
-            <div class="modal-body" style="height: auto; max-height: 75vh;">
-                <form id="itemModalFields">
-                    <div class="row">
-                        <div class="col-sm-6 col-md-4">
-                            <span class="sectionTitle">Product Description</span>
-                        </div>
-                        <div class="col-sm-6 col-md-8">
-                            <hr>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="">
-                                <label for="OrderStatus" class="form-label">STOCK CODE</label>
-                                <div id="StockCode" name="StockCode" class="form-control bg-white p-0 w-100"></div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="">
-                                <label for="OrderStatus" class="form-label">Description</label>
-                                <input disabled type="text" id="Decription" name="Decription" class="form-control" required placeholder="Description">
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="">
-                                <label for="PricePerUnit" class="form-label">Price Per Unit</label>
-                                <input disabled type="text" id="PricePerUnit" name="PricePerUnit" class="form-control" required placeholder="Price Per Unit">
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="">
-                                <label for="TotalPrice" class="form-label">Total Price</label>
-                                <input disabled type="text" id="TotalPrice" name="TotalPrice" class="form-control" required placeholder="Total Price">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-6 col-md-4">
-                            <span class="sectionTitle">Product Quantity</span>
-                        </div>
-                        <div class="col-sm-6 col-md-8">
-                            <hr>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-6 UOMField" id="CSDiv">
-                            <div class="">
-                                <label for="CSQuantity" class="form-label">CS Quantity</label>
-                                <div class="input-group">
-                                    <span class="input-group-text w-25 rounded-0">CS</span>
-                                    <input disabled type="number" id="CSQuantity" name="CSQuantity" class="form-control" min="0" onkeypress="return /[0-9]/.test(event.key)">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 UOMField" id="IBDiv">
-                            <div class="">
-                                <label for="IBQuantity" class="form-label">IB Quantity</label>
-                                <div class="input-group">
-                                    <span class="input-group-text w-25 rounded-0">IB</span>
-                                    <input disabled type="number" id="IBQuantity" name="IBQuantity" class="form-control" min="0" onkeypress="return /[0-9]/.test(event.key)">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 UOMField" id="PCDiv">
-                            <div class="">
-                                <label for="PCQuantity" class="form-label">PC Quantity</label>
-                                <div class="input-group">
-                                    <span class="input-group-text w-25 rounded-0">PC</span>
-                                    <input disabled type="number" id="PCQuantity" name="PCQuantity" class="form-control" min="0" onkeypress="return /[0-9]/.test(event.key)">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
+            <div class="col-6">
+                <div class="">
+                    <label for="TotalPrice" class="form-label">Total Price</label>
+                    <input disabled type="text" id="TotalPrice" name="TotalPrice" class="form-control" required placeholder="Total Price">
+                </div>
             </div>
+        </x-slot:customFields>
+    </x-mainItemModal>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary btn-sm text-white" id="itemSave">Save Item</button>
-                {{-- <button type="button" class="btn btn-info btn-sm text-white" id="itemEdit">Edit Item</button> --}}
-                <button type="button" class="btn btn-secondary btn-sm" id="itemCloseBtn">Close</button>
-            </div>
+    <div class="modal fade modal modal-lg text-dark" id="newVendorModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content w-100 h-100">
+                <div class="modal-body" style="height: auto; max-height: 75vh;">
+                    <form id="newVendorForm">
+                        <div class="row">
+                            <div class="col d-flex flex-column">
 
-        </div>
-    </div>
-</div>
-
-<div class="modal fade modal modal-lg text-dark" id="newVendorModal">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content w-100 h-100">
-            <div class="modal-body" style="height: auto; max-height: 75vh;">
-                <form id="newVendorForm">
-                    <div class="row">
-                        <div class="col d-flex flex-column">
-
-                            <input type="text" id="SupplierType" name="SupplierType" class="form-control bg-white mt-2 rounded-0"
-                                required placeholder="Supplier Type">
+                                <input type="text" id="SupplierType" name="SupplierType" class="form-control bg-white mt-2 rounded-0"
+                                    required placeholder="Supplier Type">
 
 
-                            <input type="text" id="SupplierName" name="SupplierName" class="form-control bg-white mt-2 rounded-0"
-                                required placeholder="Supplier Name">
+                                <input type="text" id="SupplierName" name="SupplierName" class="form-control bg-white mt-2 rounded-0"
+                                    required placeholder="Supplier Name">
 
-                            <input type="text" id="TermsCode" name="TermsCode" class="form-control bg-white mt-2 rounded-0"
-                                required placeholder="Terms Code">
+                                <input type="text" id="TermsCode" name="TermsCode" class="form-control bg-white mt-2 rounded-0"
+                                    required placeholder="Terms Code">
 
 
-                            <input type="text" id="ContactPerson" name="ContactPerson" class="form-control bg-white mt-2 rounded-0"
-                                required placeholder="Contact Person">
+                                <input type="text" id="ContactPerson" name="ContactPerson" class="form-control bg-white mt-2 rounded-0"
+                                    required placeholder="Contact Person">
 
-                            <input type="text" id="ContactNo" name="ContactNo" class="form-control bg-white mt-2 rounded-0"
-                                required placeholder="ContactNo">
+                                <input type="text" id="ContactNo" name="ContactNo" class="form-control bg-white mt-2 rounded-0"
+                                    required placeholder="ContactNo">
 
+                            </div>
+                            <div class="col d-flex flex-column">
+
+                                <div id="Region" name="Region" class="form-control bg-white p-0 w-100 mt-2 rounded-0">
+                                    <input disabled type="text" class="form-control bg-white rounded-0"
+                                        required placeholder="Region" readonly>
+                                </div>
+
+                                <div id="Province" name="Province" class="form-control bg-white p-0 w-100 mt-2 rounded-0">
+                                    <input disabled type="text" class="form-control bg-white rounded-0"
+                                        required placeholder="Province" readonly>
+                                </div>
+
+                                <div id="CityMunicipality" name="CityMunicipality" class="form-control bg-white p-0 w-100 mt-2 rounded-0">
+                                    <input disabled type="text" class="form-control bg-white rounded-0"
+                                        required placeholder="City / Municipality" readonly>
+                                </div>
+
+                                <div id="Barangay" name="Barangay" class="form-control bg-white p-0 w-100 mt-2 rounded-0">
+                                    <input disabled type="text" class="form-control bg-white rounded-0"
+                                        required placeholder="Barangay" readonly>
+                                </div>
+                                <textarea class="form-control mt-2 rounded-0" id="NVCompleteAddress" placeholder="Address" rows="2" style="resize: none;"></textarea>
+
+                            </div>
                         </div>
-                        <div class="col d-flex flex-column">
+                    </form>
+                </div>
 
-                            <div id="Region" name="Region" class="form-control bg-white p-0 w-100 mt-2 rounded-0">
-                                <input disabled type="text" class="form-control bg-white rounded-0"
-                                    required placeholder="Region" readonly>
-                            </div>
-
-                            <div id="Province" name="Province" class="form-control bg-white p-0 w-100 mt-2 rounded-0">
-                                <input disabled type="text" class="form-control bg-white rounded-0"
-                                    required placeholder="Province" readonly>
-                            </div>
-
-                            <div id="CityMunicipality" name="CityMunicipality" class="form-control bg-white p-0 w-100 mt-2 rounded-0">
-                                <input disabled type="text" class="form-control bg-white rounded-0"
-                                    required placeholder="City / Municipality" readonly>
-                            </div>
-
-                            <div id="Barangay" name="Barangay" class="form-control bg-white p-0 w-100 mt-2 rounded-0">
-                                <input disabled type="text" class="form-control bg-white rounded-0"
-                                    required placeholder="Barangay" readonly>
-                            </div>
-                            <textarea class="form-control mt-2 rounded-0" id="NVCompleteAddress" placeholder="Address" rows="2" style="resize: none;"></textarea>
-
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary btn-sm text-white px-3" id="newVendorSaveBtn">Save</button>
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary btn-sm text-white px-3" id="newVendorSaveBtn">Save</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
 @endsection
 
 @section('pagejs')
@@ -654,12 +588,12 @@
                         <td class = "col-9" style="padding-left: 0px;">
                             <span>${fileName}</span>
                         </td>
-                        <td id="insertedStat${indexId}" class="text-end col-2">    
-                        
+                        <td id="insertedStat${indexId}" class="text-end col-2">
+
                         </td>
-                        <td id="fileStatus${indexId}" class="text-center col-1">       
-                            <span class="loader">                                    
-                        </span>              
+                        <td id="fileStatus${indexId}" class="text-center col-1">
+                            <span class="loader">
+                        </span>
                         </td>
 
                     </tr>`;

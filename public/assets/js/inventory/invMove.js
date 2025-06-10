@@ -11,16 +11,8 @@ var chartStockOutData = [];
 var prodSKUData = [];
 var prodFlowChart;
 
-const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
-                                <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvDLBtn">
-                                    <div class="btnImg me-2" id="dlImg">
-                                    </div>
-                                    <span>Download Report</span>
-                                </div>
-                            </div>`;
-
 $(document).ready(async function () {
-    
+
     dayjs.extend(dayjs_plugin_relativeTime);
     const user = localStorage.getItem('user');
     const userObject = JSON.parse(user);
@@ -54,7 +46,7 @@ $(document).ready(async function () {
                     text: "Please wait... Refreshing Data...",
                     timerProgressBar: true,
                     allowOutsideClick: false,
-                    allowEscapeKey: false,  
+                    allowEscapeKey: false,
                     allowEnterKey: false,
                     didOpen: () => {
                         Swal.showLoading();
@@ -67,7 +59,7 @@ $(document).ready(async function () {
             }
         }
     });
-    
+
 });
 
 async function ajax(endpoint, method, data, successCallback = () => { }, errorCallback = () => { }) {
@@ -93,12 +85,12 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 
 const datatables = {
     loadInvMovementData: async (stockCode,warehouse) => {
-        await ajax('api/inv/product-movement/'+ stockCode + '/' + warehouse, 'GET', null, (response) => {  
+        await ajax('api/inv/product-movement/'+ stockCode + '/' + warehouse, 'GET', null, (response) => {
             jsonArr = response.data;
             datatables.initInvMovementDatatable(response);
             miniDashboard.updateValues(response.totalStockIn, response.totalStockOut, response.totalStockAvail, response.stockCode, response.description, response.warehouse, response.ttlPrice, response.unitPrice)
-            
-        }, (xhr, status, error) => { 
+
+        }, (xhr, status, error) => {
             console.error('Error:', error);
         });
     },
@@ -111,17 +103,25 @@ const datatables = {
             } else {
                 MainTH = $('#invMovementTable').DataTable({
                     data: response.data,
-                    layout: {
-                        topStart: function () {
-                            return $(dataTableCustomBtn);
-                        }
+                    language: {
+                        searchPlaceholder: "Search here..."
                     },
                     columns: [
                         { data: 'EntryDate',  title: 'Date',
-                            render: function(data, type, row){
-                                if (!data) return ''; 
+                            render: function (data, type, row) {
+                                if (!data) return '';
 
-                                return data.split(' ')[0];
+                                const dateObj = new Date(data.split(' ')[0]);
+
+                                if (type === 'display' || type === 'filter') {
+                                    return dateObj.toLocaleDateString('en-GB', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    });
+                                }
+
+                                return dateObj.toISOString();
                             }
                         },
                         { data: 'MovementType',  title: 'Type',
@@ -130,13 +130,14 @@ const datatables = {
                                 if(data == "I" ){
                                     if(row.TrnType == "T"){
                                         if(row.NewWarehouse == " "){
-                                            result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                            result = "<span class='statusBadge1 align-middle' style='width:38.3167px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                         } else{
                                             result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
                                         }
-                                    } 
-                                    else{
-                                        result = "<span class='statusBadge1 align-middle' style='width:47.4833px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
+                                    } else if(row.TrnType == "A"){
+                                        result = "<span class='statusBadge4 align-middle'><span class='mdi mdi-package-check'> ADJ</span></span>";
+                                    } else{
+                                        result = "<span class='statusBadge1 align-middle' style='width:38.3167px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                     }
                                 } else{
                                     result = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT</span></span>";
@@ -150,16 +151,17 @@ const datatables = {
                                 if(data.trim() != "" && row.MovementType != "S"){
                                     if(row.TrnType == "T"){
                                         if(row.NewWarehouse == " "){
-                                            result = `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
+                                            result = `<span style="color:#22bb33">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                         } else{
-                                            result = `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>`;
+                                            result = `<span style="color:#df3639">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                         }
-                                    } 
-                                    else{
-                                        result = `<span style="color:#22bb33">+${Math.floor(data)} pcs.</span>`;
+                                    } else if(row.TrnType == "A"){
+                                        result = `<span style="color:#076aff">${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                    } else{
+                                        result = `<span style="color:#22bb33">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                     }
                                 } else{
-                                    result = `<span style="color:#df3639">-${Math.floor(data)} pcs.</span>`;
+                                    result = `<span style="color:#df3639">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                 }
                                 return result;
                             }
@@ -202,7 +204,7 @@ const datatables = {
                                 return (data != null && row.MovementType == "S")? data.Name : '<span style="font-size:10px; color:#808080">---</span>';
                             }
                         },
-                        
+
                     ],
                     columnDefs: [
                         { className: "text-start", targets: [ 0, 6, 7, 8, 9, 10  ] },
@@ -223,19 +225,22 @@ const datatables = {
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
                         $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
-                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 150px" class="bg-white p-0 mx-1">Filter</div>');
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         // $('#chartloadingScreen').remove();
                         $('#myChart, .canvasDiv, .canvasTitle').show();
                         $('#dattableDiv').removeClass('opacity-0');
+
+                        const tableDiv = $('.dt-layout-row').first();
+                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Inventory Movement</p></div>');
                     }
 
                 });
@@ -252,38 +257,38 @@ const datatables = {
 const initVS = {
     liteDataVS: async () => {
         VirtualSelect.init({
-            ele: '#filterPOVS',   
+            ele: '#filterPOVS',
             options: [
                 // { label: "", value: null },
                 // { label: "Active", value: 1 },
                 // { label: "Deleted", value: 0 },
 
-            ], 
-            multiple: true, 
-            hideClearButton: true, 
+            ],
+            multiple: true,
+            hideClearButton: true,
             search: false,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded customVS-height',
         });
     },
     fetchProductFilterData: () => {
         prodSKUData = [];
 
-        ajax('api/inv/available/products', 'GET', null, (response) => { 
+        ajax('api/inv/available/products', 'GET', null, (response) => {
             prodSKUData = response.response;
 
             var data = prodSKUData.map((item) => {
                 return {
-                  value: item.StockCode, 
-                  label: item.StockCode+" - "+item.prodname.Description, 
+                  value: item.StockCode,
+                  label: item.StockCode+" - "+item.prodname.Description,
                 };
             });
 
             initVS.productFilterVS(data);
-        }, (xhr, status, error) => { 
+        }, (xhr, status, error) => {
             console.error('Error:', error);
         });
     },
@@ -298,17 +303,17 @@ const initVS = {
         $('.prodSKU_VS_Div').show();
     },
     fetchWarehouseFilterData: (StockCode) => {
-        ajax('api/inv/available/product-warehouse/'+ StockCode, 'GET', null, (response) => { 
+        ajax('api/inv/available/product-warehouse/'+ StockCode, 'GET', null, (response) => {
             var uniqueWarehouses = response.response;
 
             var data = uniqueWarehouses.map((item) => {
                 return {
-                  value: item.Warehouse, 
-                  label: item.Warehouse, 
+                  value: item.Warehouse,
+                  label: item.Warehouse,
                 };
             });
             initVS.warehouseFilterVS(data);
-        }, (xhr, status, error) => { 
+        }, (xhr, status, error) => {
             console.error('Error:', error);
         });
     },
@@ -330,7 +335,7 @@ const initVS = {
         setTimeout(() => {
             document.querySelector('#warehouse_VS').enable();
         }, 500);
-        
+
     }
 }
 
@@ -342,7 +347,7 @@ const miniDashboard = {
                             </div>`;
 
         $('.canvasTitle').hide();
-        $('.canvasDiv').hide();         
+        $('.canvasDiv').hide();
         $('#chartCanvasMainDiv').prepend(loadingCont1);
 
         $('#totalStockInVal').slideUp(200, function() {
@@ -372,14 +377,14 @@ const miniDashboard = {
     },
     isFinishLoadingData: () => {
         $('.canvasTitle').show();
-        $('.canvasDiv').show();         
+        $('.canvasDiv').show();
         $('#chartloadingScreen').remove();
     },
     loadMovements: async (stockCode,warehouse) => {
-        await ajax('api/inv/product-movement-chart/'+ stockCode + '/' + warehouse, 'GET', null, (response) => {  
+        await ajax('api/inv/product-movement-chart/'+ stockCode + '/' + warehouse, 'GET', null, (response) => {
             stockInOutResArr = response;
             miniDashboard.setChartData(stockInOutResArr);
-        }, (xhr, status, error) => { 
+        }, (xhr, status, error) => {
             console.error('Error:', error);
         });
     },
@@ -411,7 +416,7 @@ const miniDashboard = {
     },
     generateSalesmanPieChart: async () => {
         const ctx = document.getElementById('myChart');
-    
+
         var newData = {
             labels: chartLabels,
             datasets: [
@@ -433,10 +438,10 @@ const miniDashboard = {
                 }
             ]
         };
-    
+
         if (prodFlowChart) {
             prodFlowChart.data = newData;
-            prodFlowChart.update(); 
+            prodFlowChart.update();
         } else {
             prodFlowChart = new Chart(ctx, {
                 type: 'line',
@@ -464,16 +469,16 @@ const miniDashboard = {
         chartLabels = [];
         chartStockInData = [];
         chartStockOutData = [];
-    
+
         resData.forEach(item => {
             var monthKey = `${date[item.trnMonth]},${item.trnYear}`;
-            
+
             if (!summaryMap[monthKey]) {
                 summaryMap[monthKey] = { month: monthKey, in: 0, out: 0 };
             }
             (item.MovementType == 'I') ? summaryMap[monthKey].in += parseInt(item.TotalTrn) : summaryMap[monthKey].out += parseInt(item.TotalTrn);
         });
-    
+
         chartDataArr = Object.values(summaryMap);
         chartDataArr.forEach(item => {
             chartLabels.push(item.month);

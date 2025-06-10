@@ -58,14 +58,14 @@ class InvController extends Controller
                 ->with('productdetails')
                 ->orderBy('DateLastStockMove', 'desc')
                 ->chunk(500, function ($products) use (&$results, $productCalculator) {
-                    // foreach ($products as $prod) {
-                    //     $qtyInPcs = (float) $prod['QtyOnHand'];
-                    //     $productDetails = $prod->productdetails;
+                    foreach ($products as $prod) {
+                        $qtyInPcs = (float) $prod['QtyOnHand'];
+                        $productDetails = $prod->productdetails;
 
-                    //     $prod->conversion = $productCalculator->originalDynamicConvOptimized($productDetails, $qtyInPcs);
+                        $prod->conversion = $productCalculator->originalDynamicConvOptimized($productDetails, $qtyInPcs);
 
-                    //     $results[] = $prod;
-                    // }
+                        $results[] = $prod;
+                    }
                 });
 
             return response()->json([
@@ -82,139 +82,116 @@ class InvController extends Controller
         }
     }
 
-    public function getSKUMovement2(string $StockCode){
-        try {
-            $productCalculator = new ProductCalculator();
-            $runningBal = 0;
-            $total_stockin = 0;
-            $total_stockout = 0;
-            $availstock = 0;
-            $unitPrice = '';
+public function getSKUMovement(string $StockCode, string $Warehouse)
+{
+    try {
+        $productCalculator = new ProductCalculator();
 
-            $data = InvMovements::select('StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate','MovementType','Reference', 'SalesOrder', 'Customer', 'Salesperson','CustomerPoNumber', 'TrnQty', 'UnitCost')
-                                ->with(['productdetails', 'salesmandetails'])->where('StockCode', $StockCode)
-                                ->orderBy('EntryDate', 'ASC')->get();
+        $runningBal = 0;
+        $totalStockIn = 0;
+        $totalStockOut = 0;
+        $totalStockAdj = 0;
+        $unitPrice = 0;
+        $conversionCache = [];
+        $results = [];
 
+        InvMovements::select(
+                'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate',
+                'MovementType', 'TrnType', 'Reference', 'SalesOrder', 'Customer',
+                'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost', 'NewWarehouse'
+            )
+            ->with(['productdetails', 'salesmandetails'])
+            ->where('StockCode', $StockCode)
+            ->where('Warehouse', $Warehouse)
+            ->orderBy('EntryDate', 'ASC')
+            ->chunk(50, function ($movements) use (&$results, &$runningBal, &$totalStockIn, &$totalStockOut, &$totalStockAdj, &$unitPrice, &$productCalculator, &$conversionCache) {
+                foreach ($movements as $item) {
+                    $qty = (float) $item->TrnQty;
+                    $movementType = strtoupper($item->MovementType);
+                    $trnType = strtoupper($item->TrnType);
+                    $newWarehouse = trim($item->NewWarehouse);
 
-            foreach($data as $movementRow){
-                if($movementRow->MovementType == "I"){
-                    $runningBal += floor($movementRow->TrnQty);
-                    $movementRow->runningPcsBal = $runningBal;
-                    $total_stockin += floor($movementRow->TrnQty);
-                    
-                } else if($movementRow->MovementType == "S"){
-                    $runningBal -= floor($movementRow->TrnQty);
-                    $movementRow->runningPcsBal = $runningBal;
-                    $total_stockout += floor($movementRow->TrnQty);
-                }
-                if((float)$movementRow->UnitCost != 0){
-                    $unitPrice = (float)$movementRow->UnitCost;
-                }
-                $conv = $productCalculator->originalDynamicConv($movementRow->StockCode, $runningBal);
-                $movementRow->runningBal = $conv["result"];
-            }
-            $availstock = $total_stockin - $total_stockout;
-            $totalPrice = $unitPrice*$total_stockout;
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Product movement retrieved successfully',
-                'data' => $data,
-                'totalStockIn' => $total_stockin,
-                'totalStockOut' => $total_stockout,
-                'totalStockAvail' => $availstock,
-                'stockCode' => $data[0]['StockCode'],
-                'description' => $data[0]['productdetails']['Description'],
-                'warehouse' => $data[0]['Warehouse'],
-                'unitPrice' => $unitPrice,
-                'ttlPrice' => $totalPrice
-            ], 200);  // HTTP 200 OK
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ], 500);  // HTTP 500 Internal Server Error
-        }
-    }
-
-    public function getSKUMovement(string $StockCode, string $Warehouse)
-    {   
-        try {
-            $productCalculator = new ProductCalculator();
-
-            $runningBal = 0;
-            $totalStockIn = 0;
-            $totalStockOut = 0;
-            $unitPrice = 0;
-
-            // Fetch only necessary data with eager loading
-            $movements = InvMovements::select( 'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate', 'MovementType', 'TrnType', 'Reference', 'SalesOrder', 'Customer', 'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost', 'NewWarehouse')
-                ->with(['productdetails', 'salesmandetails'])
-                ->where('StockCode', $StockCode)
-                ->where('Warehouse', $Warehouse)
-                ->orderBy('EntryDate', 'ASC')
-                // ->limit(10)
-                ->get();
-            // Transform the data
-            $movements->transform(function ($row) use (&$runningBal, &$totalStockIn, &$totalStockOut, &$unitPrice, $productCalculator) {
-                $qty = (int) floor($row->TrnQty);
-
-                if (strtoupper($row->MovementType) == 'I') {
-                    if($row->TrnType == 'T'){
-                        if($row->NewWarehouse != ' '){
-                            $runningBal -= $qty;
-                            $totalStockIn -= $qty;
-                        } else{
+                    if ($movementType === 'I') {
+                        if ($trnType === 'A') {
+                            $diff = $qty - $runningBal;
+                            $runningBal += $diff;
+                            $totalStockAdj++;
+                        } elseif ($trnType === 'T') {
+                            if ($newWarehouse !== '') {
+                                $runningBal -= $qty;
+                                $totalStockOut += $qty;
+                            } else {
+                                $runningBal += $qty;
+                                $totalStockIn += $qty;
+                            }
+                        } else {
                             $runningBal += $qty;
                             $totalStockIn += $qty;
                         }
-                    } else {
-                        $runningBal += $qty;
-                        $totalStockIn += $qty;
+                    } elseif ($movementType === 'S') {
+                        $runningBal -= $qty;
+                        $totalStockOut += $qty;
                     }
-                } elseif (strtoupper($row->MovementType) == 'S') {
-                    $runningBal -= $qty;
-                    $totalStockOut += $qty;
+
+                    if ($item->UnitCost > 0) {
+                        $unitPrice = (float) $item->UnitCost;
+                    }
+
+                    $conversionKey = $item->StockCode . '_' . $runningBal;
+
+                    if (!isset($conversionCache[$conversionKey])) {
+                        $conversionCache[$conversionKey] = $productCalculator->originalDynamicConv($item->StockCode, $runningBal);
+                    }
+
+                    $results[] = [
+                        'StockCode' => $item->StockCode,
+                        'Warehouse' => $item->Warehouse,
+                        'TrnYear' => $item->TrnYear,
+                        'TrnMonth' => $item->TrnMonth,
+                        'EntryDate' => $item->EntryDate,
+                        'MovementType' => $item->MovementType,
+                        'Reference' => $item->Reference,
+                        'SalesOrder' => $item->SalesOrder,
+                        'Customer' => $item->Customer,
+                        'Salesperson' => $item->Salesperson,
+                        'CustomerPoNumber' => $item->CustomerPoNumber,
+                        'TrnQty' => $item->TrnQty,
+                        'UnitCost' => $item->UnitCost,
+                        'TrnType' => $item->TrnType,
+                        'NewWarehouse' => $item->NewWarehouse,
+                        'productdetails' => $item->productdetails,
+                        'salesmandetails' => $item->salesmandetails,
+                        'runningPcsBal' => $runningBal,
+                        'runningBal' => $conversionCache[$conversionKey]['result']
+                    ];
                 }
-
-                // Save the latest non-zero unit cost
-                if ($row->UnitCost > 0) {
-                    $unitPrice = (float) $row->UnitCost;
-                }
-
-                $conversion = $productCalculator->originalDynamicConv($row->StockCode, $runningBal);
-                // dd($conversion);
-
-                $row->runningPcsBal = $runningBal;
-                $row->runningBal = $conversion['result'];
-
-                return $row;
             });
 
-            $availableStock = $totalStockIn - $totalStockOut;
-            $totalValue = $unitPrice * $totalStockOut;
+        $availableStock = $totalStockIn - $totalStockOut;
+        $totalValue = $unitPrice * $totalStockOut;
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Product movement retrieved successfully',
-                'data' => $movements,
-                'totalStockIn' => $totalStockIn,
-                'totalStockOut' => $totalStockOut,
-                'totalStockAvail' => $availableStock,
-                'stockCode' => $movements[0]->StockCode ?? '',
-                'description' => $movements[0]->productdetails->Description ?? '',
-                'warehouse' => $movements[0]->Warehouse ?? '',
-                'unitPrice' => $unitPrice,
-                'ttlPrice' => $totalValue
-            ], 200);
+        return response()->json([
+            'success' => true,
+            'message' => 'Product movement retrieved successfully',
+            'data' => $results,
+            'totalStockIn' => $totalStockIn,
+            'totalStockOut' => $totalStockOut,
+            'totalStockAdj' => $totalStockAdj,
+            'totalStockAvail' => $runningBal,
+            'stockCode' => $results[0]['StockCode'] ?? '',
+            'description' => $results[0]['productdetails']['Description'] ?? '',
+            'warehouse' => $results[0]['Warehouse'] ?? '',
+            'unitPrice' => $unitPrice,
+            'ttlPrice' => $totalValue
+        ], 200);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ], 500);
-        }
-    }   
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 
     public function StockInOut(string $StockCode, string $Warehouse){
         try {
@@ -228,7 +205,7 @@ class InvController extends Controller
                 ->where('Warehouse', $Warehouse)
                 ->whereIn('MovementType', ['I', 'S'])
                 ->whereRaw("
-                    DATEFROMPARTS(trnYear, trnMonth, 1) >= 
+                    DATEFROMPARTS(trnYear, trnMonth, 1) >=
                     DATEADD(MONTH, -11, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1))
                 ")
                 ->groupBy('trnYear', 'trnMonth', 'MovementType')
@@ -253,7 +230,7 @@ class InvController extends Controller
                     ->with('prodname')
                     ->orderBy('StockCode')
                     ->get();
-                    
+
             if (!$data) {
                 return response()->json([
                     'response' => 'products not found',
@@ -273,7 +250,7 @@ class InvController extends Controller
             ]);
         }
     }
-    
+
     public function getProdWarehouse(string $StockCode){
         try {
             $data = InvWarehouse::select('Warehouse')
@@ -326,99 +303,6 @@ class InvController extends Controller
             ]);
         }
     }
-
-    public function getAllSKUMovementPerWarehouse1(string $Warehouse, string $StartDate, string $EndDate)
-    {   
-        try {
-                $StartDate = $StartDate . ' 00:00:00';
-                $EndDate = $EndDate . ' 23:59:59';
-
-                $productCalculator = new ProductCalculator();
-
-                $runningBal = 0;
-                $totalStockIn = 0;
-                $totalStockOut = 0;
-                $totalStockAdj = 0;
-                $StockRecord = [];
-
-                $movements = InvMovements::select(
-                        'StockCode', 'Warehouse', 'TrnYear', 'TrnMonth', 'EntryDate',
-                        'MovementType', 'Reference', 'SalesOrder', 'Customer',
-                        'Salesperson', 'CustomerPoNumber', 'TrnQty', 'UnitCost',
-                        'TrnType', 'NewWarehouse'
-                    )
-                    ->with(['productdetails', 'salesmandetails'])
-                    ->where('Warehouse', $Warehouse)
-                    ->whereBetween('EntryDate', [$StartDate, $EndDate])
-                    ->orderBy('EntryDate', 'ASC')
-                    ->get()
-                    ->toArray();
-
-                foreach ($movements as &$item) {
-                    $stockCode = $item['StockCode'];
-                    $qty = (float) $item['TrnQty'];
-                    $movementType = $item['MovementType'];
-                    $trnType = $item['TrnType'];
-                    $newWarehouse = $item['NewWarehouse'];
-
-                    if (!isset($StockRecord[$stockCode])) {
-                        $StockRecord[$stockCode] = [
-                            'StockCode' => $stockCode,
-                            'Qty' => 0
-                        ];
-                    }
-
-                    // Adjust quantity
-                    if ($movementType === 'I') {
-                        if ($trnType === 'A') {
-                            // Adjustment: calculate diff from current to new qty
-                            $diff = $qty - $StockRecord[$stockCode]['Qty'];
-                            $StockRecord[$stockCode]['Qty'] += $diff;
-                            $totalStockAdj++;
-                        } elseif ($trnType === 'T') {
-                            // Transfer: Increase if from another warehouse, decrease if leaving
-                            if ($newWarehouse === '') {
-                                $StockRecord[$stockCode]['Qty'] += $qty;
-                                $totalStockIn++;
-                            } else {
-                                $StockRecord[$stockCode]['Qty'] -= $qty;
-                                $totalStockOut++;
-                            }
-                        } else {
-                            // Standard Stock In
-                            $StockRecord[$stockCode]['Qty'] += $qty;
-                            $totalStockIn++;
-                        }
-                    } elseif ($movementType === 'S') {
-                        // Stock Out
-                        $StockRecord[$stockCode]['Qty'] -= $qty;
-                        $totalStockOut++;
-                    }
-
-                    // Add current qty and converted values
-                    $item['CurrentQty'] = $StockRecord[$stockCode]['Qty'];
-                    $conversion = $productCalculator->originalDynamicConv($stockCode, $item['CurrentQty']);
-                    $item['conversion'] = $conversion['result'];
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Product movement retrieved successfully',
-                    'data' => $movements,
-                    'totalStockIn' => $totalStockIn,
-                    'totalStockOut' => $totalStockOut,
-                    'totalStockAdj' => $totalStockAdj,
-                    'totalStockAvail' => count($StockRecord),
-                ], 200);
-
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-            ], 500);
-        }
-    }   
 
     public function getAllSKUMovementPerWarehouse(string $Warehouse, string $StartDate, string $EndDate)
     {
@@ -580,7 +464,7 @@ class InvController extends Controller
                 ->where('Warehouse', $Warehouse)
                 ->whereIn('MovementType', ['I', 'S'])
                 ->whereRaw("
-                    DATEFROMPARTS(trnYear, trnMonth, 1) >= 
+                    DATEFROMPARTS(trnYear, trnMonth, 1) >=
                     DATEADD(MONTH, -11, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1))
                 ")
                 ->groupBy('trnYear', 'trnMonth', 'MovementType')
@@ -605,8 +489,8 @@ class InvController extends Controller
                             ->where('Warehouse', $Warehouse)
                             ->whereBetween('EntryDate', [$Startdate, $Enddate])
                             ->groupBy('StockCode')
-                            ->orderBy('TotalMoved', 'desc') 
-                            ->limit(10) 
+                            ->orderBy('TotalMoved', 'desc')
+                            ->limit(10)
                             ->get();
 
             // dd($topMovers);
@@ -633,7 +517,7 @@ class InvController extends Controller
         try {
             $productCalculator = new ProductCalculator();
             $data = InvMovements::select('StockCode','Warehouse','TrnQty','NewWarehouse','EntryDate','Reference')->with('productdetails')->where('MovementType', "I")->where('TrnType', "T")->orderBy('EntryDate','DESC')->orderBy('NewWarehouse', 'ASC')->get();
-            
+
             $data->transform(function ($row) use ($productCalculator) {
                 $qty = (int) floor($row->TrnQty);
 
@@ -742,7 +626,7 @@ class InvController extends Controller
             $items = $request->data['Items'];
             $mainDetails = $request->data;
             unset($mainDetails['Items']);
-            
+
             $timestamp = now()->setTimezone('Asia/Manila')->format('Ymd_His');
             $ref = 'ADJ' . $mainDetails['Warehouse'] . $timestamp;
             $mainDetails["adjustmentRef"] = $ref;

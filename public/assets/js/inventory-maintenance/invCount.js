@@ -6,20 +6,6 @@ var detailsDatatable;
 var isEditable = false;
 var originalSelected = [];
 
-const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
-                                <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvDLBtn">
-                                    <div class="btnImg me-2" id="dlImg">
-                                    </div>
-                                    <span>Download Report</span>
-                                </div>
-
-                                <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="manualSheetDLBtn">
-                                    <div class="btnImg me-2" id="dlImg">
-                                    </div>
-                                    <span>Download Manual Sheet</span>
-                                </div>
-                            </div>`;
-
 $(document).ready(async function () {
     await datatables.loadCountData();
     await initVS.liteDataVS();
@@ -30,14 +16,14 @@ $(document).ready(async function () {
             text: "Please wait... Preparing data...",
             timerProgressBar: true,
             allowOutsideClick: false,
-            allowEscapeKey: false,  
+            allowEscapeKey: false,
             allowEnterKey: false,
             didOpen: () => {
                 Swal.showLoading();
             },
         });
         const selectedICID = $(this).attr('id');
-        await ajax('api/report/v2/countsheet/' + selectedICID, 'GET', null, (response) => { 
+        await ajax('api/report/v2/countsheet/' + selectedICID, 'GET', null, (response) => {
             Swal.close();
             if (response.success == 1) {
                 ICModal.viewMode(response.data);
@@ -90,11 +76,11 @@ $(document).ready(async function () {
             if (result.isConfirmed) {
                 let userData = localStorage.getItem('user');
                 let user = JSON.parse(userData);
-                ajax('api/report/v2/countsheet/' + selectedMain.CNTHEADER_ID, 'POST', JSON.stringify({ 
+                ajax('api/report/v2/countsheet/' + selectedMain.CNTHEADER_ID, 'POST', JSON.stringify({
                     data: {
                         userID: user.name
                     },
-                    _method: 'DELETE' 
+                    _method: 'DELETE'
                 }), (response) => { // Success callback
                     if(response.success){
                         Swal.fire({
@@ -113,9 +99,9 @@ $(document).ready(async function () {
                     console.error('Error:', error);
                 });
 
-                
+
             }
-        }); 
+        });
     })
 
     $('#editICBtn').on('click', function () {
@@ -147,12 +133,12 @@ $(document).ready(async function () {
                     $('#confirmIC').hide();
                     $('#rePrintPage').show();
                     $('#cancelEditICBtn').hide();
-        
+
                     let updatedData = detailsDatatable.rows().data().toArray();
                     updateCount(updatedData);
                 }
-            }); 
-            
+            });
+
         }
     })
 
@@ -216,10 +202,8 @@ const datatables = {
             } else {
                 MainTH = $('#icTable').DataTable({
                     data: response.data,
-                    layout: {
-                        topStart: function () {
-                            return $(dataTableCustomBtn);
-                        }
+                    language: {
+                        searchPlaceholder: "Search here..."
                     },
                     columns: [
                         { data: 'CNTHEADER_ID',  title: 'Count ID' },
@@ -252,17 +236,20 @@ const datatables = {
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
                         $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
-                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 150px" class="bg-white p-0 mx-1">Filter</div>');
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
+
+                        const tableDiv = $('.dt-layout-row').first();
+                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Stock Count Report</p></div>');
                     }
                 });
             }
@@ -272,11 +259,6 @@ const datatables = {
     initDetailsDatatable: (data) => {
         detailsDatatable = new DataTable('#ICDetails', {
             data: data,
-            layout: {
-                // topStart: function () {
-                //     return $(dataTableCustomBtn);
-                // }
-            },
             columns: [
                 { data: 'STOCKCODE',  title: 'StockCode' },
                 { data: 'proddetails.Description',  title: 'Description' },
@@ -382,7 +364,7 @@ const ICModal = {
         $('#deleteICBtn').text('Delete Sheet');
         $('#rePrintPage').show();
         $('#cancelEditICBtn').hide();
-        
+
 
         // ICModal.enable(false);
         ICModal.show();
@@ -390,9 +372,9 @@ const ICModal = {
     fill: async (InvCountData) => {
         var tbody = $(".invCountTbody");
         tbody.empty();
-        $('.countID').html(InvCountData.CNTHEADER_ID);
-        $('.countUser').html(InvCountData.user.FULLNAME);
-        $('.countDate').html(InvCountData.DATECREATED);
+        $('#countID').val(InvCountData.CNTHEADER_ID);
+        $('#countUser').val(InvCountData.user.FULLNAME);
+        $('#countDate').val(InvCountData.DATECREATED);
         detailsDatatable.clear().rows.add(InvCountData.details).draw();
         // (InvCountData.details).forEach((item, index) => {
         //     var tr = `
@@ -404,7 +386,7 @@ const ICModal = {
         //         <td class="text-center">${item.calculated_units["inIB"]}</td>
         //         <td class="text-center">${item.calculated_units["inPC"]}</td>
         //     </tr>`;
-        
+
         //     tbody.append(tr);
         // });
     },
@@ -420,15 +402,15 @@ const initVS = {
                 // { label: "", value: 1 },
                 // { label: "", value: "2" },
 
-            ], 
-            multiple: true, 
-            hideClearButton: true, 
+            ],
+            multiple: true,
+            hideClearButton: true,
             search: false,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded customVS-height',
         });
     }
 }
@@ -471,12 +453,12 @@ function downloadManualCountSheet(manual){
         ajax('api/remCNTHeader', 'GET', null, (response) => { // Success callback
             if (response.success == 1) {
                 window.open('/print/countsheet/manual', '_blank');
-            } 
+            }
         }, (xhr, status, error) => { // Error callback
             console.error('Error:', error);
         });
     }
-    
+
 }
 
 function updateCount(updated) {
@@ -488,13 +470,13 @@ function updateCount(updated) {
         text: "Please wait... Preparing data...",
         timerProgressBar: true,
         allowOutsideClick: false,
-        allowEscapeKey: false,  
+        allowEscapeKey: false,
         allowEnterKey: false,
         didOpen: () => {
             Swal.showLoading();
         },
     });
-    
+
     ajax('api/report/v2/countsheet/' + selectedMain.CNTHEADER_ID, 'POST', JSON.stringify({
         data: {
             userID: user.name,
@@ -534,7 +516,7 @@ function getUpdatedSKUs(originalList, updatedList){
 
     let updateDetailsItem = updatedList.filter(newItem => {
         // Find the matching item in oldArray by stockcode and headerID
-        let oldItem = oldDetails.find(old => 
+        let oldItem = oldDetails.find(old =>
             old.STOCKCODE == newItem.STOCKCODE && old.CNTDETAILS_ID == newItem.CNTDETAILS_ID
         );
 

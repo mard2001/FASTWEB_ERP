@@ -4,13 +4,21 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <script src="https://unpkg.com/read-excel-file@5.x/bundle/read-excel-file.min.js"></script>
     <title>Customer Maintenance</title>
-@endsection 
+@endsection
 
 @section('title_header')
     <x-header title="Customer Maintenance" />
 @endsection
 
 @section('table')
+    <style>
+        #customerTable thead tr td{
+            white-space: nowrap;
+        }
+    </style>
+
+    <x-contentButtonDiv addFunc="true" downloadFunc="true" uploadFunc="true"></x-contentButtonDiv>
+
     <x-table id="customerTable">
         <x-slot:td>
             <td class="col">Customer</td>
@@ -27,9 +35,14 @@
 
 @section('modal')
     <style>
-        #customerMainModal .modal-body label{
-            font-size: 12px;
+        /* #customerMainModal .modal-body label{
+            font-size: 0.53em;
         }
+
+        #customerMainModal .modal-body label{
+            font-size: 0.53em;
+        } */
+
         #customerTable thead{
             white-space: nowrap;
         }
@@ -37,21 +50,21 @@
 
     <x-mainModal mainModalTitle="customerMainModal" modalDialogClass="modal-lg" modalHeaderTitle="CUSTOMER DETAILS" modalSubHeaderTitle="Maintain accurate and up-to-date customer records.">
         <x-slot:form_fields>
-            <div class="row h-100">
-                <div class="row">
+            <div class="row h-100" id="itemModalFields">
+                <div class="row" id="">
                     <span style="font-size:12px;" class="text-secondary">Salesman Assigned:</span>
                     <div class="col-4">
                         <div class="mb-3">
                             <label for="mdCode">Salesman Code</label>
                             <div id="VSmdCode" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">MdCode</div>
                             <input disabled type="text" id="mdCode" name="mdCode" class="form-control bg-white" required placeholder="mdCode">
-                        </div> 
+                        </div>
                     </div>
                     <div class="col-8">
                         <div class="mb-3">
                             <label for="Salesman">Salesman Name</label>
                             <input disabled type="text" id="Salesman" name="Salesman" class="form-control bg-white" required placeholder="Salesman">
-                        </div>    
+                        </div>
                     </div>
                 </div>
                 <hr>
@@ -75,7 +88,7 @@
                         <div class="mb-3">
                             <label for="Name">Name</label>
                             <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="custName">
-                        </div>    
+                        </div>
                     </div>
                     <div class="col-7">
                         <div class="mb-3">
@@ -87,43 +100,43 @@
                         <div class="mb-3">
                             <label for="Telephone">Contact Cell Number</label>
                             <input disabled type="text" id="Telephone" name="Telephone" class="form-control bg-white" required placeholder="contactCellNumber">
-                        </div>    
+                        </div>
                     </div>
                     <div class="col-4">
                         <div class="mb-3">
                             <label for="address">Region</label>
                             <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">MdCode</div>
-                        </div>    
+                        </div>
                     </div>
                     <div class="col-4">
                         <div class="mb-3">
                             <label for="address">Province</label>
                             <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">MdCode</div>
-                        </div>    
+                        </div>
                     </div>
                     <div class="col-4">
                         <div class="mb-3">
                             <label for="address">Municipaliy</label>
                             <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">MdCode</div>
-                        </div>    
+                        </div>
                     </div>
                     <div class="col-12">
                         <div class="mb-3">
                             <label for="address">Home # / Street / Bldg. / Brgy.</label>
                             <input disabled type="text" id="address" name="address" class="form-control bg-white needField" required placeholder="address">
-                        </div>    
+                        </div>
                     </div>
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="PriceCode">Price Code</label>
                             <input disabled type="text" id="PriceCode" name="PriceCode" class="form-control bg-white needField" required placeholder="priceCode" onkeypress="return /[0-9]/.test(event.key)" maxlength="2">
-                        </div>    
+                        </div>
                     </div>
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="CustomerClass">Customer Class</label>
                             <input disabled type="text" id="CustomerClass" name="CustomerClass" class="form-control bg-white needField" required placeholder="CustomerClass">
-                        </div>    
+                        </div>
                     </div>
                 </div>
             </div>

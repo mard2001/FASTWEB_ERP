@@ -58,6 +58,16 @@
 
     </style>
 
+    <x-contentButtonDiv downloadFunc="true">
+        <x-slot:additionalButtons>
+            <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="manualSheetDLBtn">
+                <div class="btnImg me-2" id="dlImg">
+                </div>
+                <span>Download Manual Sheet</span>
+            </div>
+        </x-slot:additionalButtons>
+    </x-contentButtonDiv>
+
     <x-table id="icTable">
         <x-slot:td>
             <td class="col">id</td>
@@ -94,33 +104,29 @@
 
     <x-mainModal mainModalTitle="invCountMainModal" modalDialogClass="modal-lg" modalHeaderTitle="INVENTORY COUNT" modalSubHeaderTitle="Track discrepancies between recorded and actual stock levels.">
         <x-slot:form_fields>
-            <div class="row g-4">
-                <div class="col">
-                    <table class="invCountTableHeader" style="font-size: 14px">
-                        <tbody>
-                            <tr>
-                                <td style="white-space: nowrap;">Count ID:</td>
-                                <th class="px-2"><span class="countID" style="font-weight: 550"></span></th>
-                            </tr>
-                            <tr>
-                                <td style="white-space: nowrap;">Placed By:</td>
-                                <th class="px-2"><span class="countUser text-uppercase" style="font-weight: 550"></span></th>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="col ">
-                    <table class="invCountTableHeader" style="font-size: 14px">
-                        <tbody>
-                            <tr>
-                                <td style="white-space: nowrap;">Date Created:</td>
-                                <th class="px-2"><span class="countDate" style="font-weight: 550"></span></th>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div id="itemModalFields" class="stheaderform">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="">
+                            <label for="countDate" class="form-label">Date Created</label>
+                            <input type="text" disabled class="form-control" id="countDate" name="countDate">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="">
+                            <label for="countUser" class="form-label">Placed By</label>
+                            <input type="text" disabled class="form-control" id="countUser" name="countUser">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="">
+                            <label for="countID" class="form-label">Stock Count Reference ID</label>
+                            <input type="text" disabled class="form-control" id="countID" name="countID">
+                        </div>
+                    </div>
+
                 </div>
             </div>
-            <hr>
             <table class="table" style="font-size: 12px; width: 100%;" id="ICDetails">
             </table>
         </x-slot:form_fields>

@@ -4,13 +4,16 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <script src="https://unpkg.com/read-excel-file@5.x/bundle/read-excel-file.min.js"></script>
     <title>Warehouse Maintenance</title>
-@endsection 
+@endsection
 
 @section('title_header')
     <x-header title="Warehouse Maintenance" />
 @endsection
 
 @section('table')
+
+    <x-contentButtonDiv addFunc="true" downloadFunc="true" uploadFunc="true"></x-contentButtonDiv>
+
     <x-table id="whTable">
         <x-slot:td>
             <td class="col">Warehouse</td>
@@ -25,78 +28,61 @@
 @endsection
 
 @section('modal')
-    <style>
-        #warehouseMainModal .modal-body label{
-            font-size: 12px;
-        }
-        #whTable thead{
-            white-space: nowrap;
-        }
-
-        .warehouseForm div div label{
-            font-size: 10px;
-            margin-bottom: 0;
-        }
-        
-        .warehouseForm div div input{
-            font-size: 13px;
-            margin-bottom: 0;
-        }
-    </style>
-
     <x-mainModal mainModalTitle="warehouseMainModal" modalDialogClass="" modalHeaderTitle="WAREHOUSE DETAILS" modalSubHeaderTitle="Manage warehouse data including codes, addresses, and storage status.">
         <x-slot:form_fields>
-            <div class="row h-100 warehouseForm">
-                <div class="col-6">
-                    <div class="mb-3">
-                        <label for="Warehouse">Warehouse</label>
-                        <input disabled type="text" id="Warehouse" name="Warehouse" class="form-control bg-white needField" required>
+            <div id="itemModalFields">
+                <div class="row h-100 warehouseForm">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="Warehouse">Warehouse</label>
+                            <input disabled type="text" id="Warehouse" name="Warehouse" class="form-control bg-white needField" required>
+                        </div>
                     </div>
-                </div>
-                <div class="col-6">
-                    <div class="mb-3">
-                        <label for="WHType">Warehouse Type</label>
-                        <input disabled type="text" id="WHType" name="WHType" class="form-control bg-white needField" required>
-                    </div>    
-                </div>
-                <div class="col-4">
-                    <div class="mb-3">
-                        <label for="WHGroupCode">WH Group Code</label>
-                        <input disabled type="text" id="WHGroupCode" name="WHGroupCode" class="form-control bg-white" required>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="WHType">Warehouse Type</label>
+                            <input disabled type="text" id="WHType" name="WHType" class="form-control bg-white needField" required>
+                        </div>
                     </div>
-                </div>
-                <div class="col-8">
-                    <div class="mb-3">
-                        <label for="WHGroupDesc">WH Group Description</label>
-                        <input disabled type="text" id="WHGroupDesc" name="WHGroupDesc" class="form-control bg-white" required>
-                    </div>    
-                </div>
-                <div class="col-12">
-                    <div class="mb-3">
-                        <label for="address">Region</label>
-                        <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
-                    </div>    
-                </div>
-                <div class="col-12">
-                    <div class="mb-3">
-                        <label for="address">Province</label>
-                        <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
-                    </div>    
-                </div>
-                <div class="col-12">
-                    <div class="mb-3">
-                        <label for="address">Municipaliy</label>
-                        <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
-                    </div>    
-                </div>
-                <div class="col-6">
-                    <div class="mb-3">
-                        <label for="Status">Status</label>
-                        {{-- <input disabled type="text" id="Status" name="Status" class="form-control bg-white needField" required onkeypress="return /[0-9]/.test(event.key)" maxlength="2"> --}}
-                        <select disabled class="form-select" aria-label="Select Status" id="Status" name="Status" required>
-                            <option value="A">Active</option>
-                        </select>
-                    </div>    
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="WHGroupCode">WH Group Code</label>
+                            <input disabled type="text" id="WHGroupCode" name="WHGroupCode" class="form-control bg-white" required>
+                        </div>
+                    </div>
+                    <div class="col-8">
+                        <div class="mb-3">
+                            <label for="WHGroupDesc">WH Group Description</label>
+                            <input disabled type="text" id="WHGroupDesc" name="WHGroupDesc" class="form-control bg-white" required>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="address">Region</label>
+                            <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="address">Province</label>
+                            <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="address">Municipaliy</label>
+                            <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="Status">Status</label>
+                            {{-- <input disabled type="text" id="Status" name="Status" class="form-control bg-white needField" required onkeypress="return /[0-9]/.test(event.key)" maxlength="2"> --}}
+                            <select disabled class="form-select" aria-label="Select Status" id="Status" name="Status" required>
+                                <option value="A">Active</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </x-slot:form_fields>

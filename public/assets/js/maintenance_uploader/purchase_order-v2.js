@@ -7,26 +7,6 @@ var productConFact;
 var itemTmpSave = [];
 var priceCodes;
 
-const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
-<div class="btn d-flex justify-content-around px-2 align-items-center me-1" id="addBtn">
-    <div class="btnImg me-2" id="addImg">
-    </div>
-    <span>Add new</span>
-</div>
-
-<div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvShowBtn">
-    <div class="btnImg me-2" id="dlImg">
-    </div>
-    <span>Download Template</span>
-</div>
-
-<div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvUploadShowBtn">
-    <div class="btnImg me-2" id="ulImg">
-    </div>
-    <span>Upload Template</span>
-</div>
-</div>`;
-
 $(document).ready(async function () {
   await datatables.loadPO();
   await initVS.liteDataVS();
@@ -164,7 +144,7 @@ $(document).ready(async function () {
     datatables.initPOItemsDatatable(null);
     $("#confirmPO").hide();
     $("#addItems").show();
-    ItemsTH.column(6).visible(true);
+    ItemsTH.column(5).visible(true);
   });
 
   $("#confirmPO").on("click", async function () {
@@ -227,7 +207,7 @@ $(document).ready(async function () {
       itemTmpSave = selectedMain.p_o_items;
       POModal.enable(false);
       $("#confirmPO").show();
-      ItemsTH.column(6).visible(false);
+      ItemsTH.column(5).visible(false);
     } else {
       Swal.fire({
         title: "Are you sure?",
@@ -323,7 +303,7 @@ $(document).ready(async function () {
       selectedVendor = vendordata.find(
         (item) => (item.id = modalCurrentVendor)
       );
-      ItemsTH.column(6).visible(true);
+      ItemsTH.column(5).visible(true);
       $("#addItems").show();
     } else {
       //save update
@@ -367,7 +347,7 @@ $(document).ready(async function () {
                   POModal.hide();
                   datatables.loadPO();
 
-                  ItemsTH.column(6).visible(false);
+                  ItemsTH.column(5).visible(false);
                 } else {
                   Swal.fire({
                     title: "Opppps..",
@@ -642,7 +622,7 @@ const initVS = {
       additionalClasses: "rounded",
       additionalDropboxClasses: "rounded",
       additionalDropboxContainerClasses: "rounded",
-      additionalToggleButtonClasses: "rounded",
+      additionalToggleButtonClasses: "rounded customVS-height",
       // selectedValue: 'road_delivery',    // Preselect (must match `value`)
     });
 
@@ -682,7 +662,7 @@ const initVS = {
           });
           $("#vendorName").trigger("reset");
         }
-      } 
+      }
     });
 
     $("#vendorName").on("reset", function () {
@@ -822,12 +802,16 @@ const initVS = {
 
         // Initialize VirtualSelect
         VirtualSelect.init({
-          ele: "#StockCode", // Attach to the element
-          options: newData, // Provide options
-          maxWidth: "100%", // Set maxWidth
-          autofocus: true,
-          search: true,
-          hasOptionDescription: true,
+            ele: "#StockCode", // Attach to the element
+            options: newData, // Provide options
+            maxWidth: "100%", // Set maxWidth
+            autofocus: true,
+            search: true,
+            hasOptionDescription: true,
+            additionalClasses: 'rounded',
+            additionalDropboxClasses: 'rounded',
+            additionalDropboxContainerClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
         });
 
         $("#StockCode").on("afterClose", async function () {
@@ -1051,17 +1035,17 @@ const POModal = {
       .text("Edit details")
       .removeClass("btn-primary")
       .addClass("btn-info");
-    ItemsTH.column(6).visible(false);
+    ItemsTH.column(5).visible(false);
     $("#addItems").hide();
 
     if (POData.POStatus == null) {
       $("#confirmPO").show();
       $("#itemBtns").show();
-      // ItemsTH.column(6).visible(true);
+      // ItemsTH.column(5).visible(true);
       $("#rePrintPage").hide();
     } else {
       $("#itemBtns").hide();
-      // ItemsTH.column(6).visible(false);
+      // ItemsTH.column(5).visible(false);
       $("#confirmPO").hide();
       $("#editBtn").hide();
       $("#deleteBtn").hide();
@@ -1457,191 +1441,206 @@ const POItemsModal = {
 // }
 
 const datatables = {
-  loadPO: async () => {
-    const poData = await ajax(
-      "api/orders/po",
-      "GET",
-      null,
-      (response) => {
-        // Success callback
-        if (response.success) {
-          ajaxMainData = response.data;
-          initData = response.data;
-          datatables.initPODatatable(ajaxMainData);
-        }
-      },
-      (xhr, status, error) => {
-        // Error callback
-        console.error("Error:", error);
-      }
-    );
-  },
-  loadItems: async (PONumber) => {
-    const poItems = await ajax(
-      "api/orders/po-items/search-items/" + PONumber,
-      "GET",
-      null,
-      (response) => {
-        // Success callback
-        ajaxItemsData = response.data;
-        datatables.initPOItemsDatatable(ajaxItemsData);
-      },
-      (xhr, status, error) => {
-        // Error callback
-        console.error("Error:", error);
-      }
-    );
-  },
-  initPODatatable: (response) => {
-    if (MainTH) {
-      MainTH.clear().draw();
-      MainTH.rows.add(response).draw();
-    } else {
-      MainTH = $("#POHeaderTable").DataTable({
-        data: response,
-        layout: {
-          topStart: function () {
-            return $(dataTableCustomBtn);
-          },
+    loadPO: async () => {
+        const poData = await ajax( "api/orders/po", "GET", null,(response) => {
+            // Success callback
+            if (response.success) {
+                ajaxMainData = response.data;
+                initData = response.data;
+                datatables.initPODatatable(ajaxMainData);
+            }
         },
-        columns: [
-          { data: "OrderNumber" },
-          { data: "PONumber" },
-          {
-            data: "POStatus",
-            render: function (data, type, row) {
-              return data != null ? "<span class='statusBadge1'>Confirmed</span>" : "<span class='statusBadge3'>Pending</span>";
-            },
-          },
-          { data: "SupplierName" },
-          { data: "PODate" },
-          { data: "orderPlacer" },
-          {
-            data: "totalDiscount",
-            render: function (data, type, row) {
-              return formatMoney(data);
-            },
-          },
-          {
-            data: "totalCost",
-            render: function (data, type, row) {
-              return formatMoney(data);
-            },
-          },
-        ],
-        columnDefs: [
-          { className: "text-center", targets: [2] },
-          { className: "text-end", targets: [5, 6] }
-        ],
-        scrollCollapse: true,
-        scrollY: "100%",
-        scrollX: "100%",
-        createdRow: function (row, data) {
-          $(row).attr("id", data.id);
+        (xhr, status, error) => {
+            // Error callback
+            console.error("Error:", error);
+        });
+    },
+    loadItems: async (PONumber) => {
+        const poItems = await ajax( "api/orders/po-items/search-items/" + PONumber, "GET", null, (response) => {
+            // Success callback
+            ajaxItemsData = response.data;
+            datatables.initPOItemsDatatable(ajaxItemsData);
         },
+        (xhr, status, error) => {
+            // Error callback
+            console.error("Error:", error);
+        });
+    },
+    initPODatatable: (response) => {
+        if (MainTH) {
+            MainTH.clear().draw();
+            MainTH.rows.add(response).draw();
+        } else {
+            MainTH = $("#POHeaderTable").DataTable({
+                data: response,
+                language: {
+                    searchPlaceholder: "Search here..."
+                },
+                columns: [
+                    { data: "OrderNumber" },
+                    { data: "PONumber" },
+                    {
+                        data: "POStatus",
+                        render: function (data, type, row) {
+                        return data != null ? "<span class='statusBadge1'>Confirmed</span>" : "<span class='statusBadge3'>Pending</span>";
+                        },
+                    },
+                    { data: "SupplierName" },
+                    { data: "PODate" },
+                    { data: "orderPlacer" },
+                    {
+                        data: "totalDiscount",
+                        render: function (data, type, row) {
+                            return formatMoney(data);
+                        },
+                    },
+                    {
+                        data: "totalCost",
+                        render: function (data, type, row) {
+                            return formatMoney(data);
+                        },
+                    },
+                ],
+                columnDefs: [
+                    { className: "text-center", targets: [2] },
+                    { className: "text-end", targets: [5, 6] }
+                ],
+                scrollCollapse: true,
+                scrollY: "100%",
+                scrollX: "100%",
+                createdRow: function (row, data) {
+                    $(row).attr("id", data.id);
+                },
 
-        pageLength: 15,
-        lengthChange: false,
+                pageLength: 15,
+                lengthChange: false,
 
-        initComplete: function () {
-          $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-          $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-          $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
-          $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
-          $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
-          $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
+                initComplete: function () {
+                    $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
+                    $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                    $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
+                    $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
+                    $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
+                    $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
-          // Select the label element and replace it with a div
-          $(".dt-search label").replaceWith(function () {
-            return $("<div>", {
-              html: $(this).html(),
-              id: $(this).attr("id"),
-              class: $(this).attr("class"),
+                    // Select the label element and replace it with a div
+                    $(".dt-search label").replaceWith(function () {
+                        return $("<div>", {
+                            html: $(this).html(),
+                            id: $(this).attr("id"),
+                            class: $(this).attr("class"),
+                        });
+                    });
+                    const dtlayoutTE = $(".dt-layout-cell.dt-end").first();
+                    dtlayoutTE.addClass("d-flex justify-content-end");
+                    dtlayoutTE.prepend(
+                        '<div id="filterPOVS" name="filter" style="width: 150px" class="bg-white p-0 mx-1">Filter</div>'
+                    );
+                    $(this.api().table().container()).find(".dt-search").addClass("d-flex justify-content-end");
+                    $(".loadingScreen").remove();
+                    $("#dattableDiv").removeClass("opacity-0");
+
+                    const tableDiv = $('.dt-layout-row').first();
+                    tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Purchase Order Report</p></div>');
+                },
             });
-          });
-          const dtlayoutTE = $(".dt-layout-cell.dt-end").first();
-          dtlayoutTE.addClass("d-flex justify-content-end");
-          dtlayoutTE.prepend(
-            '<div id="filterPOVS" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>'
-          );
-          $(this.api().table().container())
-            .find(".dt-search")
-            .addClass("d-flex justify-content-end");
-          $(".loadingScreen").remove();
-          $("#dattableDiv").removeClass("opacity-0");
-        },
-      });
-    }
-  },
+        }
+    },
   initPOItemsDatatable: (datas) => {
     if (ItemsTH) {
       ItemsTH.clear().draw();
       datas && ItemsTH.rows.add(datas).draw();
     } else {
       ItemsTH = $("#itemTables").DataTable({
-        data: datas,
-        columns: [
-          { data: "StockCode" },
-          { data: "Decription" },
-          { data: "Quantity" },
-          { data: "UOM" },
-          {
-            data: "PricePerUnit",
-            render: function (data, type, row) {
-              return formatMoney(data);
-            },
-          },
-          {
-            data: "TotalPrice",
-            render: function (data, type, row) {
-              return formatMoney(data);
-            },
-          },
-          {
-            data: null, // Placeholder for checkbox
-            render: function (data, type, row) {
-              // return '<div class="form-check d-flex justify-content-center align-items-center"><input type="checkbox" class="form-check-input row-checkbox cursor-pointer hover:bg-light" data-id="' + row.id + '"></div>';
+            dom: "rt<'d-flex justify-content-between' ip>",
+            data: datas,
+            columns: [
+                {
+                    data: 'StockCode',
+                    title: 'StockCode',
+                    render: function(data,type,row){
+                        if (!data) return '';
+                        return `<strong>${row.StockCode}</strong><br><small>${row.Decription}</small>`;
+                    }
+                },
+                {
+                    data: "Quantity",
+                    render: function(data,type,row){
+                        return parseFloat(data).toFixed(2);
+                    }
+                },
+                { data: "UOM" },
+                {
+                    data: "PricePerUnit",
+                    render: function (data, type, row) {
+                        return formatMoney(data);
+                    },
+                },
+                {
+                    data: "TotalPrice",
+                    render: function (data, type, row) {
+                        return formatMoney(data);
+                    },
+                },
+                {
+                    data: null, // Placeholder for checkbox
+                    render: function (data, type, row) {
+                    // return '<div class="form-check d-flex justify-content-center align-items-center"><input type="checkbox" class="form-check-input row-checkbox cursor-pointer hover:bg-light" data-id="' + row.id + '"></div>';
 
-              return ` <div class="d-flex actIcon">
-                                        <div class="w-50 d-flex justify-content-center itemUpdateIcon">
-                                            <i class="fa-regular fa-pen-to-square fa-lg text-primary m-auto "></i>
-                                        </div>
-                                        <div class="w-50 d-flex justify-content-center itemDeleteIcon">
-                                            <i class="fa-solid fa-trash fa-lg text-danger m-auto"></i>
-                                        </div>
-                                    </div>`;
+                    return ` <div class="d-flex actIcon">
+                                                <div class="w-50 d-flex justify-content-center itemUpdateIcon">
+                                                    <i class="fa-regular fa-pen-to-square fa-lg text-primary m-auto "></i>
+                                                </div>
+                                                <div class="w-50 d-flex justify-content-center itemDeleteIcon">
+                                                    <i class="fa-solid fa-trash fa-lg text-danger m-auto"></i>
+                                                </div>
+                                            </div>`;
+                    },
+                    orderable: false, // Prevent sorting on the checkbox column
+                    searchable: false, // Disable search on the checkbox column
+                    createdCell: function (
+                        cell,
+                        cellData,
+                        rowData,
+                        rowIndex,
+                        colIndex
+                    ) {
+                        // Add class to the parent <td> element dynamically
+                        $(cell).addClass("nhover");
+                    },
+                },
+            ],
+            columnDefs: [
+                { className: "text-start", targets: [ 0 ] },
+                { className: "text-center", targets: [ 1, 2, 5 ] },
+                { className: "text-end", targets: [ 3, 4 ] },
+                { className: "text-nowrap", targets: '_all' },
+            ],
+            searching: true,
+            scrollCollapse: true,
+            responsive: true, // Enable responsive modeoWidth: true, // Enable auto-width calculation
+            // scrollY: '100%',
+            // scrollX: '100%',
+            "pageLength": 5,
+            "createdRow": function (row, data) {
+                $(row).attr('id', data.StockCode);
             },
-            orderable: false, // Prevent sorting on the checkbox column
-            searchable: false, // Disable search on the checkbox column
-            createdCell: function (
-              cell,
-              cellData,
-              rowData,
-              rowIndex,
-              colIndex
-            ) {
-              // Add class to the parent <td> element dynamically
-              $(cell).addClass("nhover");
+            "lengthChange": false,  // Hides the per page dropdown
+            initComplete: function () {
+                $(this.api().table().container()).find('#itemTables_info').css({'font-size':'11px'});
+                $(this.api().table().container()).find('.paging_full_numbers').css({'font-size':'10px','padding-top':'10px'});
             },
-          },
-        ],
-        columnDefs: [
-          { className: "text-start", targets: [0, 1] },
-          { className: "text-center", targets: [2, 3] },
-          { className: "text-end", targets: [ 4, 5] },
-        ],
-        searching: false,
-        scrollCollapse: true,
-        responsive: true, // Enable responsive modeoWidth: true, // Enable auto-width calculation
-        scrollY: "40vh",
-        scrollX: "100%",
-        createdRow: function (row, data) {
-          $(row).attr("id", data.id);
-        },
-        lengthChange: false, // Hides the per page dropdown
-        info: false, // Hides the bottom text (like "Showing x to y of z entries")
-        paging: false, // Hides the pagination controls (Next, Previous, etc.)
-      });
+            createdRow: function (row, data) {
+                $(row).attr("id", data.StockCode);
+            },
+        });
+        // Move search input to #searchContainer
+        $('#searchBar').html('<input type="text" id="customItemSearchBox" placeholder="Search...">');
+
+        // Custom search event
+        $('#customItemSearchBox').on('keyup', function() {
+            ItemsTH.search(this.value).draw();
+        });
     }
 
     $("#totalItemsLabel").text(datas ? datas.length : 0);

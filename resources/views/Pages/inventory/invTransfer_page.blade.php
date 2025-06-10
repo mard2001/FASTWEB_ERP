@@ -45,6 +45,8 @@
         }
     </style>
 
+    <x-contentButtonDiv addFunc="true" downloadFunc="true"></x-contentButtonDiv>
+
     <x-table id="transferTable">
         <x-slot:td>
             <td class="col">Transfer Date</td>
@@ -87,7 +89,7 @@
             font-size: 0.5em;
             margin-bottom: 0;
         }
-        
+
         .stheaderform .row div div input{
             font-size: 0.65em;
             margin-bottom: 0;
@@ -102,7 +104,7 @@
             border-radius: 5px;
             font-size: 12px;
         }
-        
+
         .soofooterform {
             width: 100%;
             margin-bottom: 1rem;
@@ -136,144 +138,71 @@
 
     </style>
 
-<x-mainModal mainModalTitle="stockTransferMainModal" modalDialogClass="modal-lg" modalHeaderTitle="STOCK TRANSFER" modalSubHeaderTitle="Record and track internal stock transfers across your warehouses.">
-    <x-slot:form_fields>
-        <div class="stheaderform">
-            <div class="row">
-                <div class="col-6">
-                    <div class="">
-                        <label for="Reference" class="form-label">TRANSFER REFERENCE</label>
-                        <input type="text" disabled class="form-control" id="Reference" name="Reference">
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="">
-                        <label for="EntryDate" class="form-label">TRANSFER DATE</label>
-                        <input type="date" disabled id="EntryDate" name="EntryDate" class="form-control" required>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="">
-                        <label for="Warehouse" class="form-label">ORIGIN WAREHOUSE</label>
-                        {{-- <input type="text" class="form-control" id="Warehouse" name="Warehouse"> --}}
-                        <div id="VSWarehouse" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="">
-                        <label for="NewWarehouse" class="form-label">DESTINATION WAREHOUSE</label>
-                        {{-- <input type="text" class="form-control" id="NewWarehouse" name="NewWarehouse"> --}}
-                        <div id="VSNewWarehouse" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-2">
-            <hr style="margin: 15px 0 0 0"/>
-            <span style="font-size: 12px; margin-bottom: 15px;">Items:</span>
-            <div class="d-flex align-items-center justify-content-between px-2 fs12 mb-1">
-                <button type="button" class="btn btn-primary btn-sm text-white mx-1" id="addItems">Add Item</button>
-                <div id="searchBar"></div>
-            </div>
-            <x-sub_table id="itemTables" class="fs12 table-bordered">
-                <x-slot:td>
-                    <td class="col">StockCode</td>
-                    <td class="col">Description</td>
-                    <td class="col">Quantity</td>
-                    <td class="col">UOM</td>
-                    <!-- <td class="col">Action</td> -->
-                    <td class="col text-center">
-                        Action
-                    </td>
-                </x-slot:td>
-            </x-sub_table>
-        </div>
-    </x-slot:form_fields>
-
-    <x-slot:modalFooterBtns>
-        <div>
-        </div>
-        <div>
-            <button type="button" class="btn btn-sm btn-primary text-white" id="saveSTBtn">Transfer Stocks</button>
-            <button type="button" class="btn btn-sm btn-secondary" id="closeSTBtn" data-bs-dismiss="modal">Close</button>
-        </div>
-    </x-slot:modalFooterBtns>
-</x-mainModal>
-
-<div class="modal fade modal modal-lg text-dark" id="itemModal">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content w-100 h-100">
-            <div class="modal-body" style="height: auto; max-height: 75vh;">
-                <form id="itemModalFields">
-                    <div class="row h-100">
-                        <div class="d-flex justify-content-between">
-                            <div class="col">
-                                <div class="px-1 py-0 w-100">
-                                    <label for="StockCode">StockCode</label>
-                                    <div id="StockCode" name="StockCode" class="form-control bg-white p-0 w-100">
-                                        <span class="loader d-flex align-self-center" style="height: 15px; width: 15px"></span>
-                                    </div>
-                                </div>
-                                <div class="px-1 py-0 w-100">
-                                    <label for="Decription">Description</label>
-                                    <input disabled type="text" id="Decription" name="Decription" class="form-control bg-white rounded-0" required placeholder="Decription">
-                                </div>
-                            </div>
-                            <div class="col">
-                                <div class="row mx-1 UOMField" id="CSDiv">
-                                    <label for="CSQuantity">CS Quantity</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text w-25 rounded-0">CS</span>
-                                        <input disabled type="number" id="CSQuantity" name="CSQuantity" class="form-control bg-white rounded-0" min="0" onkeypress="return /[0-9]/.test(event.key)">
-                                        <div class="w-25 d-flex justify-content-evenly align-items-center">
-                                            <i class="text-danger fa-solid fa-minus"></i>
-                                            <i class="text-primary fa-solid fa-plus"></i>
-                                        </div>
-                                    </div>
-                                    <label id="CSQuantity-error" class="error px-1" for="CSQuantity"></label>
-                                </div>
-
-                                <div class="row mx-1 UOMField" id="IBDiv">
-                                    <label for="IBQuantity">IB Quantity</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text w-25 rounded-0">IB</span>
-                                        <input disabled type="number" id="IBQuantity" name="IBQuantity" class="form-control bg-white rounded-0" min="0" onkeypress="return /[0-9]/.test(event.key)">
-                                        <div class="w-25 d-flex justify-content-evenly align-items-center">
-                                            <i class="text-danger fa-solid fa-minus"></i>
-                                            <i class="text-primary fa-solid fa-plus"></i>
-                                        </div>
-                                    </div>
-                                    <label id="IBQuantity-error" class="error px-1" for="IBQuantity"></label>
-                                </div>
-
-                                <div class="row mx-1 UOMField" id="PCDiv">
-                                    <label for="PCQuantity">PC Quantity</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text w-25 rounded-0">PC</span>
-                                        <input disabled type="number" id="PCQuantity" name="PCQuantity" class="form-control bg-white rounded-0" min="0" onkeypress="return /[0-9]/.test(event.key)">
-                                        <div class="w-25 d-flex justify-content-evenly align-items-center">
-                                            <i class="text-danger fa-solid fa-minus"></i>
-                                            <i class="text-primary fa-solid fa-plus"></i>
-                                        </div>
-                                    </div>
-                                    <label id="PCQuantity-error" class="error px-1" for="PCQuantity"></label>
-                                </div>
-                            </div>
+    <x-mainModal mainModalTitle="stockTransferMainModal" modalDialogClass="modal-lg" modalHeaderTitle="STOCK TRANSFER" modalSubHeaderTitle="Record and track internal stock transfers across your warehouses.">
+        <x-slot:form_fields>
+            <div class="stheaderform">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="">
+                            <label for="Reference" class="form-label">TRANSFER REFERENCE</label>
+                            <input type="text" disabled class="form-control" id="Reference" name="Reference">
                         </div>
                     </div>
-                </form>
+                    <div class="col-6">
+                        <div class="">
+                            <label for="EntryDate" class="form-label">TRANSFER DATE</label>
+                            <input type="date" disabled id="EntryDate" name="EntryDate" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="">
+                            <label for="Warehouse" class="form-label">ORIGIN WAREHOUSE</label>
+                            {{-- <input type="text" class="form-control" id="Warehouse" name="Warehouse"> --}}
+                            <div id="VSWarehouse" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="">
+                            <label for="NewWarehouse" class="form-label">DESTINATION WAREHOUSE</label>
+                            {{-- <input type="text" class="form-control" id="NewWarehouse" name="NewWarehouse"> --}}
+                            <div id="VSNewWarehouse" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary btn-sm text-white" id="itemSave">Save Item</button>
-                {{-- <button type="button" class="btn btn-info btn-sm text-white" id="itemEdit">Edit Item</button> --}}
-                <button type="button" class="btn btn-secondary btn-sm" id="itemCloseBtn">Close</button>
+            <div class="row mt-2">
+                <hr style="margin: 15px 0 0 0"/>
+                <span style="font-size: 12px; margin-bottom: 15px;">Items:</span>
+                <div class="d-flex align-items-center justify-content-between px-2 fs12 mb-1">
+                    <button type="button" class="btn" id="addItems"><span class="mdi mdi-plus-circle"></span> Add Item</button>
+                    <div id="searchBar"></div>
+                </div>
+                <x-sub_table id="itemTables" class="">
+                    <x-slot:td>
+                        <td class="col">StockCode</td>
+                        <td class="col">Quantity</td>
+                        <td class="col">UOM</td>
+                        <!-- <td class="col">Action</td> -->
+                        <td class="col text-center">
+                            Action
+                        </td>
+                    </x-slot:td>
+                </x-sub_table>
             </div>
+        </x-slot:form_fields>
 
-        </div>
-    </div>
-</div>
+        <x-slot:modalFooterBtns>
+            <div>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="saveSTBtn">Transfer Stocks</button>
+                <button type="button" class="btn btn-sm btn-secondary" id="closeSTBtn" data-bs-dismiss="modal">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
+    </x-mainModal>
+
+    <x-mainItemModal></x-mainItemModal>
 @endsection
 
 @section('pagejs')

@@ -8,26 +8,6 @@ var iconResult;
 var errorFile = false;
 var isloading = false;
 
-const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
-                                <div class="btn d-flex justify-content-around px-2 align-items-center me-1" id="addBtn">
-                                    <div class="btnImg me-2" id="addImg">
-                                    </div>
-                                    <span>Add new</span>
-                                </div>
-
-                                <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvDLBtn">
-                                    <div class="btnImg me-2" id="dlImg">
-                                    </div>
-                                    <span>Download Template</span>
-                                </div>
-
-                                <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvUploadShowBtn">
-                                    <div class="btnImg me-2" id="ulImg">
-                                    </div>
-                                    <span>Upload Template</span>
-                                </div>
-                            </div>`;
-                            
 let issueTable = `
                 <div class='mx-auto' style="font-size:14px">
                     <strong>Possible Issues:</strong>
@@ -77,7 +57,7 @@ $(document).ready(async function () {
         WHModal.enable(true);
         WHModal.clear();
         $('#modalFields #warehouseMainModal').prop('disabled', false);
-        
+
         $('#warehouseMainModal').modal('show');
 
         $('#deleteWHBtn').hide();
@@ -137,17 +117,17 @@ $(document).ready(async function () {
                 if (result.isConfirmed) {
                     var selectedWH = $('#Warehouse').val();
                     // console.log(selectedCustID)
-                    ajax('api/wh/warehouse/' + selectedWH, 'POST', JSON.stringify({ 
-                        _method: 'DELETE' 
+                    ajax('api/wh/warehouse/' + selectedWH, 'POST', JSON.stringify({
+                        _method: 'DELETE'
                     }), (response) => { // Success callback
-                        
+
                         if (response.success) {
                             Swal.fire({
                                 title: "Success!",
                                 text: response.message,
                                 icon: "success",
                                 allowOutsideClick: false,
-                                allowEscapeKey: false,  
+                                allowEscapeKey: false,
                                 allowEnterKey: false,
                             }).then((result) => {
                                 if (result.isConfirmed) {
@@ -156,7 +136,7 @@ $(document).ready(async function () {
                                         text: "Please wait... reloading data...",
                                         timerProgressBar: true,
                                         allowOutsideClick: false,
-                                        allowEscapeKey: false,  
+                                        allowEscapeKey: false,
                                         allowEnterKey: false,
                                         didOpen: () => {
                                             Swal.showLoading();
@@ -223,7 +203,7 @@ $(document).ready(async function () {
                                     text: response.message,
                                     icon: "success",
                                     allowOutsideClick: false,
-                                    allowEscapeKey: false,  
+                                    allowEscapeKey: false,
                                     allowEnterKey: false,
                                 }).then((result) => {
                                     if (result.isConfirmed) {
@@ -233,13 +213,13 @@ $(document).ready(async function () {
                                             text: "Please wait... reloading data...",
                                             timerProgressBar: true,
                                             allowOutsideClick: false,
-                                            allowEscapeKey: false,  
+                                            allowEscapeKey: false,
                                             allowEnterKey: false,
                                             didOpen: () => {
                                                 Swal.showLoading();
                                             },
                                         });
-        
+
                                         datatables.loadWHData();
                                     }
                                 });
@@ -314,10 +294,8 @@ const datatables = {
             } else {
                 MainTH = $('#whTable').DataTable({
                     data: response.data,
-                    layout: {
-                        topStart: function () {
-                            return $(dataTableCustomBtn);
-                        }
+                    language: {
+                        searchPlaceholder: "Search here..."
                     },
                     columns: [
                         { data: 'Warehouse',  title: 'Warehouse' },
@@ -325,14 +303,26 @@ const datatables = {
                         { data: 'WHGroupCode',  title: 'Warehouse GroupCode' },
                         { data: 'WHGroupDesc',  title: 'Warehouse GroupDesc' },
                         { data: 'Municipality',  title: 'Municipality' },
-                        { data: 'Status',  title: 'Status', 
+                        { data: 'Status',  title: 'Status',
                             render: function(data, type, row){
                                 return (data == "A") ? "<span class='statusBadge1 align-middle'> Active </span>" : "";
                             }
                         },
                         { data: 'DateUpdated',  title: 'Date Updated',
-                            render: function(data,type, row){
-                                return data.split("T")[0];
+                            render: function (data, type, row) {
+                                if (!data) return '';
+
+                                const dateObj = new Date(data.split("T")[0]);
+
+                                if (type === 'display' || type === 'filter') {
+                                    return dateObj.toLocaleDateString('en-GB', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    });
+                                }
+
+                                return dateObj.toISOString();
                             }
                         },
                     ],
@@ -354,18 +344,20 @@ const datatables = {
 
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
-                        dtlayoutTE.prepend('<div id="filterSupplier" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend('<div id="filterSupplier" name="filter" style="width: 150px" class="bg-white p-0 mx-1">Filter</div>');
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
+                        const tableDiv = $('.dt-layout-row').first();
+                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">List of Warehouse</p></div>');
                     }
                 });
             }
@@ -407,7 +399,7 @@ const WHModal = {
             document.querySelector('#VSprovince').enable();
             document.querySelector('#VSmunicipality').enable();
         }
-        
+
     },
     viewMode: async (whData) => {
         WHModal.fill(whData);
@@ -440,7 +432,7 @@ const WHModal = {
             document.querySelector('#VSprovince').setOptions([])
             document.querySelector('#VSprovince').addOption({
                 label: selectedProv[0].province_name,
-                value: selectedProv[0].province_id 
+                value: selectedProv[0].province_id
             });
             document.querySelector('#VSprovince').setValue(selectedProv[0].province_id);
         }, 100);
@@ -449,7 +441,7 @@ const WHModal = {
             document.querySelector('#VSmunicipality').setOptions([])
             document.querySelector('#VSmunicipality').addOption({
                 label: selectedMunicipality[0].municipality_name,
-                value: selectedMunicipality[0].municipality_id 
+                value: selectedMunicipality[0].municipality_id
             });
             document.querySelector('#VSmunicipality').setValue(selectedMunicipality[0].municipality_id );
         }, 500);
@@ -510,15 +502,15 @@ const initVS = {
             ele: '#filterSupplier',                   // Attach to the element
             options: [
                 { label: "Active", value: 'A' },
-            ], 
-            multiple: true, 
-            hideClearButton: true, 
+            ],
+            multiple: true,
+            hideClearButton: true,
             search: false,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded customVS-height',
         });
 
         $("#filterSupplier").on("change", async function () {
@@ -532,19 +524,19 @@ const initVS = {
                     filteredData.data = jsonArr.filter(item => filterValues.includes(item.Status));
                 }
                 datatables.initWHDatatable(filteredData);
-                
+
             }
         });
     },
 
-    
+
 
     regionVS: async () => {
         filteredRegion = [];
 
         filteredRegion = Region.map(item => {
             return {
-                value: item.region_id, 
+                value: item.region_id,
                 label: item.region_name,
             };
         });
@@ -552,18 +544,18 @@ const initVS = {
         if (document.querySelector('#VSregion')?.virtualSelect) {
             document.querySelector('#VSregion').destroy();
         }
-        
+
         VirtualSelect.init({
             ele: '#VSregion',
-            options: filteredRegion, 
-            multiple: false, 
-            hideClearButton: false, 
+            options: filteredRegion,
+            multiple: false,
+            hideClearButton: false,
             search: true,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
         });
 
         $('#VSregion').on('afterClose', function () {
@@ -571,7 +563,7 @@ const initVS = {
                 filteredProvince = Province.filter(prov => prov.region_id == this.value)
                     .map(prov => {
                         return {
-                            value: prov.province_id, 
+                            value: prov.province_id,
                             label: prov.province_name,
                         };
                     });
@@ -596,18 +588,18 @@ const initVS = {
         if (document.querySelector('#VSprovince')?.virtualSelect) {
             document.querySelector('#VSprovince').destroy();
         }
-        
+
         VirtualSelect.init({
             ele: '#VSprovince',
-            options: filteredProvince, 
-            multiple: false, 
-            hideClearButton: false, 
+            options: filteredProvince,
+            multiple: false,
+            hideClearButton: false,
             search: true,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
         });
 
         $('#VSprovince').on('afterClose', function () {
@@ -615,11 +607,11 @@ const initVS = {
                 filteredMunicipality = Municipality.filter(mul => mul.province_id == this.value)
                     .map(mul => {
                         return {
-                            value: mul.municipality_id, 
+                            value: mul.municipality_id,
                             label: mul.municipality_name,
                         };
                     });
-                    
+
                 initVS.municipalityVS();
             }
         });
@@ -637,18 +629,18 @@ const initVS = {
         if (document.querySelector('#VSmunicipality')?.virtualSelect) {
             document.querySelector('#VSmunicipality').destroy();
         }
-        
+
         VirtualSelect.init({
             ele: '#VSmunicipality',
-            options: filteredMunicipality, 
-            multiple: false, 
-            hideClearButton: false, 
+            options: filteredMunicipality,
+            multiple: false,
+            hideClearButton: false,
             search: true,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
         });
 
         // $('#VSprovince').on('afterClose', function () {
@@ -656,11 +648,11 @@ const initVS = {
         //         filteredMunicipality = Municipality.filter(mul => mul.province_id == this.value)
         //             .map(mul => {
         //                 return {
-        //                     value: mul.municipality_id, 
+        //                     value: mul.municipality_id,
         //                     label: mul.municipality_name,
         //                 };
         //             });
-                    
+
         //         initVS.municipalityVS();
         //     }
         // });
@@ -701,9 +693,9 @@ async function ajaxCall(method, formDataArray = null, id) {
             }
 
             $('#totalUploadSuccess').text(insertion);
-            $("#fileStatus" + id).html(iconResult); 
+            $("#fileStatus" + id).html(iconResult);
             $("#insertedStat" + id).html(`${response.successful} / ${response.totalFileLength}`).addClass(insertedResultColor);
-            
+
             if(fileCtrTotal>0 && fileCtrTotal==insertion){
                 console.log('1')
                 if(expectedtotalRows>0 && expectedtotalRows == actualtotalRows){
@@ -745,12 +737,12 @@ function trNew(fileName, indexId) {
                 <td class = "col-9" style="padding-left: 0px;">
                     <span>${fileName}</span>
                 </td>
-                <td id="insertedStat${indexId}" class="text-end col-2">    
-                
+                <td id="insertedStat${indexId}" class="text-end col-2">
+
                 </td>
-                <td id="fileStatus${indexId}" class="text-center col-1">       
-                    <span class="loader">                                    
-                    </span>              
+                <td id="fileStatus${indexId}" class="text-center col-1">
+                    <span class="loader">
+                    </span>
                 </td>
             </tr>`;
 }
@@ -761,7 +753,7 @@ const uploadconfirmUpload = document.getElementById('uploadBtn2')
         insertion = 0;
         fileCtrTotal = 0;
         expectedtotalRows = 0;
-        actualtotalRows = 0; 
+        actualtotalRows = 0;
         errorFile = false;
         // Get all the files selected in the file input
         var files = document.getElementById('formFileMultiple').files;
@@ -777,7 +769,7 @@ const uploadconfirmUpload = document.getElementById('uploadBtn2')
             if(!['csv','xlsx'].includes(fileExtension)){
                 setTimeout(function() {
                     iconResult = `<span class="mdi mdi-alpha-x-circle text-danger resultIcon"></span>`;
-                    $("#fileStatus" + i).html(iconResult); 
+                    $("#fileStatus" + i).html(iconResult);
                 }, 100);
                 errorFile = true;
             }

@@ -128,157 +128,64 @@
 @endsection
 
 @section('table')
-<style>
-    .secBtns .selected {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-    }
+    <style>
+        .secBtns .selected {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+        }
 
-    .secBtns button {
-        border-bottom: 2px solid transparent;
-        border-top: 1px solid transparent;
-        border-left: 1px solid transparent;
-        border-right: 1px solid transparent;
-    }
+        .secBtns button {
+            border-bottom: 2px solid transparent;
+            border-top: 1px solid transparent;
+            border-left: 1px solid transparent;
+            border-right: 1px solid transparent;
+        }
 
-    .secBtns button:hover {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-        border-top: 0.5px solid #0275d8;
-        border-left: 0.5px solid #0275d8;
-        border-right: 0.5px solid #0275d8;
-    }
+        .secBtns button:hover {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+            border-top: 0.5px solid #0275d8;
+            border-left: 0.5px solid #0275d8;
+            border-right: 0.5px solid #0275d8;
+        }
 
-    .autocompleteHover:hover {
-        background-color: #3B71CA;
-        cursor: pointer;
-    }
+        .autocompleteHover:hover {
+            background-color: #3B71CA;
+            cursor: pointer;
+        }
 
-    .ui-autocomplete {
-        z-index: 9999 !important;
-    }
+        .ui-autocomplete {
+            z-index: 9999 !important;
+        }
 
-    .fs15 * {
-        font-size: 15px;
-    }
+        .fs15 * {
+            font-size: 15px;
+        }
 
-    #invMovementTable thead tr{
-        white-space: nowrap;
-    }
-</style>
+        #invMovementTable thead tr{
+            white-space: nowrap;
+        }
+    </style>
 
-<x-table id="invMovementTable">
-    <x-slot:td>
-        <td class="col">Date</td>
-        <td class="col">Type</td>
-        <td class="col">Warehouse</td>
-        <td class="col">StockCode</td>
-        <td class="col">Reference</td>
-        <td class="col">SalesOrder</td>
-        <td class="col">CustomerPoNumber</td>
-        <td class="col">Customer</td>
-        <td class="col">SalesPerson</td>
-    </x-slot:td>
-</x-table>
+    <x-contentButtonDiv downloadFunc="true"></x-contentButtonDiv>
+
+    <x-table id="invMovementTable">
+        <x-slot:td>
+            <td class="col">Date</td>
+            <td class="col">Type</td>
+            <td class="col">Warehouse</td>
+            <td class="col">StockCode</td>
+            <td class="col">Reference</td>
+            <td class="col">SalesOrder</td>
+            <td class="col">CustomerPoNumber</td>
+            <td class="col">Customer</td>
+            <td class="col">SalesPerson</td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 
 @section('modal')
-
-<style>
-    #editXmlDataModal .modal-dialog {
-        width: 70vw !important;
-        /* Set width to 90% of viewport width */
-        max-width: none !important;
-        /* Remove any max-width constraints */
-    }
-
-    #editXmlDataModal .modal-content {
-        margin: auto !important;
-        /* Center the modal content */
-    }
-</style>
-
-<x-rr_modal>
-    <x-slot:form_fields>
-        {{-- <h2 class="text-center mb-5">Receiving Report</h2> --}}
-        
-        <div class="row g-4">
-            <div class="col">
-                <table style="font-size: 14px">
-                    <tbody>
-                        <tr>
-                            <td></td>
-                            <th></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Supplier Code:</td>
-                            <th class="px-2"><span class="supCode" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Supplier Name:</td>
-                            <th class="px-2"><span class="supName" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Supplier TIN:</td>
-                            <th class="px-2"><span class="supTin" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Address:</td>
-                            <th class="px-2"><span class="supAdd" style="font-weight: 550"></span></th>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="col ">
-                <table style="font-size: 14px">
-                    <tbody>
-                        <tr>
-                            <td></td>
-                            <th></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">RR No.:</td>
-                            <th class="px-2"><span class="rrNo" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Date:</td>
-                            <th class="px-2"><span class="date" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Reference:</td>
-                            <th class="px-2"><span class="reference" style="font-weight: 550"></span></th>
-                        </tr>
-                        <tr>
-                            <td style="white-space: nowrap;">Status:</td>
-                            <th class="px-2"><span class="status" style="font-weight: 550"></span></th>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <hr>
-        <table class="table" style="font-size: 12px">
-            <thead>
-                <tr>
-                    <th scope="col" class="text-center">No.</th>
-                    <th scope="col" class="text-center">Item</th>
-                    <th scope="col" class="text-center">Description</th>
-                    <th scope="col" class="text-center">Quantity</th>
-                    <th scope="col" class="text-center">OuM</th>
-                    <th scope="col" class="text-center">WhsCode</th>
-                    <th scope="col" class="text-center">Unit Price</th>
-                    <th scope="col" class="text-center">Net of Vat</th>
-                    <th scope="col" class="text-center">Vat</th>
-                    <th scope="col" class="text-center">Gross</th>
-                </tr>
-            </thead>
-            <tbody class="rrTbody">
-            </tbody>
-        </table>
-    </x-slot:form_fields>
-</x-rr_modal>
-
 @endsection
 
 @section('pagejs')

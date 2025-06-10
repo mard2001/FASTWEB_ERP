@@ -44,10 +44,10 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 
 const datatables = {
     loadInvWarehouseData: async () => {
-        const invData = await ajax('api/inv', 'GET', null, (response) => {  
+        const invData = await ajax('api/inv', 'GET', null, (response) => {
             jsonArr = response.data;
             datatables.initInvWarehouseDatatable(response);
-        }, (xhr, status, error) => { 
+        }, (xhr, status, error) => {
             console.error('Error:', error);
         });
     },
@@ -60,15 +60,13 @@ const datatables = {
             } else {
                 MainTH = $('#invTable').DataTable({
                     data: response.data,
-                    layout: {
-                        topStart: function () {
-                            return $(dataTableCustomBtn);
-                        }
+                    language: {
+                        searchPlaceholder: "Search here..."
                     },
                     columns: [
                         { data: 'Warehouse',  title: 'Warehouse' },
-                        {  
-                            data: null,  
+                        {
+                            data: null,
                             title: 'Stock Code',
                             render: function(data, type, row){
                                 if (!data) return '';
@@ -95,7 +93,7 @@ const datatables = {
                         },
                         { data: 'DateLastStockMove',  title: 'Last Stock Move',
                             render: function(data, type, row){
-                                if (!data) return ''; 
+                                if (!data) return '';
 
                                 return dayjs(data).fromNow();
                             }
@@ -121,17 +119,20 @@ const datatables = {
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
                         $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
-                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 150px" class="bg-white p-0 mx-1">Filter</div>');
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
+
+                        const tableDiv = $('.dt-layout-row').first();
+                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Inventory Warehouse Report</p></div>');
                     }
 
                 });
@@ -153,15 +154,15 @@ const initVS = {
                 // { label: "Active", value: 1 },
                 // { label: "Deleted", value: 0 },
 
-            ], 
-            multiple: true, 
-            hideClearButton: true, 
+            ],
+            multiple: true,
+            hideClearButton: true,
             search: false,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded customVS-height',
         });
     }
 }

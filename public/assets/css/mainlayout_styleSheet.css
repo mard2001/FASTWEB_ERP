@@ -32,7 +32,7 @@
 
 .headerUserDiv:hover{
     border: 1px solid #6C757D;
-    
+
 }
 
 .statusBadge1{
@@ -203,7 +203,7 @@
 
 #myChart {
     width: 100%;
-    height: 100px; 
+    height: 100px;
 }
 
 .contentTitle{
@@ -214,7 +214,7 @@
 }
 
 .contentValue{
-    font-weight: 900;
+    font-weight: 700;
     font-size: 0.7rem;
     margin-bottom: 0;
     white-space: nowrap;
@@ -278,8 +278,9 @@
     border-bottom: 0.1px solid #eff4ff;
 }
 
-.customVS-height{ 
-    height: 35px;
+.customVS-height{
+    height: 29px;
+    font-size: 11px;
 }
 
 .vscomp-option {
@@ -298,7 +299,7 @@
 
 .ModalFieldCustomVS{
     height: 30px;
-    font-size: 0.68em;
+    font-size: 0.75em;
 }
 
 .dropboxCont{
@@ -336,26 +337,28 @@
 }
 
 #itemModalFields .row div div label{
-    font-size: 0.53em;
+    font-size: 0.54em;
     margin-bottom: 0;
     text-transform: uppercase;
 
 }
-    
-#itemModalFields .row div div input{
-    font-size: 0.68em;
+
+#itemModalFields .row div div input,
+#itemModalFields .row div div select,
+#itemModalFields .row div div textarea{
+    font-size: 0.75em;
     margin-bottom: 0;
 }
 
 #itemModalFields .row div div .input-group span{
-    font-size: 0.53em;
+    font-size: 0.54em;
     margin-bottom: 0;
     text-transform: uppercase;
 
 }
 
 #itemModalFields .row div div .input-group input{
-    font-size: 0.68em;
+    font-size: 0.75em;
     margin-bottom: 0;
 }
 

@@ -44,7 +44,7 @@ $("#vendorPhone").val(selectedVendor.ContactNo);
 $("#shippingTerms").val(selectedVendor.TermsCode);
 // ===============================================
 
-const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
+const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2 py-2" style="font-size: 12px;">
                                 <div class="btn d-flex justify-content-around px-2 align-items-center me-1" id="addBtn">
                                     <div class="btnImg me-2" id="addImg">
                                     </div>
@@ -62,8 +62,8 @@ const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto
                                 </div>
                             </div>`;
 const dataTableFilter = `<div class="FilterBtnDiv">
-                            <button type="button" id="filterBtn" class="btn FilterRES" style="font-size: 0.9em">
-                                <i class="fa-solid fa-filter"></i> Filter Sales Orders 
+                            <button type="button" id="filterBtn" class="btn FilterRES" style="font-size: 0.9em; border:1px solid #ddd;">
+                                <span class="mdi mdi-filter-variant"></span> Filter
                             </button>
                         </div>`;
 
@@ -83,8 +83,8 @@ $(document).ready(async function () {
     initVS.initFilterDataVS();
     setDate();
     datePicker();
-    
-    
+
+
     $('#filterBtn').on("click", function () {
         $('.reportrangeDiv').hide();
         $('#checkboxDateFiltering').prop('checked', false);
@@ -97,14 +97,14 @@ $(document).ready(async function () {
             text: "Please wait... Preparing data...",
             timerProgressBar: true,
             allowOutsideClick: false,
-            allowEscapeKey: false,  
+            allowEscapeKey: false,
             allowEnterKey: false,
             didOpen: () => {
                 Swal.showLoading();
             },
         });
         const selectedSalesOrderID = $(this).attr('id');
-        await ajax('api/sales-order/header/' + selectedSalesOrderID, 'GET', null, (response) => { 
+        await ajax('api/sales-order/header/' + selectedSalesOrderID, 'GET', null, (response) => {
             Swal.close();
             if (response.success == 1) {
                 isEditing = false;
@@ -164,7 +164,7 @@ $(document).ready(async function () {
     $(document).on('click', '#addBtn', async function () {
         SOModal.clear();
         SOModal.enable(true);
-        
+
         // $('#editXmlDataModal').modal('show');
 
         $('#deleteSOBtn').hide();
@@ -180,7 +180,7 @@ $(document).ready(async function () {
         SOModal.buttonsView();
         SOModal.show();
     });
-    
+
     $('#availableSO').on('click', function () {
         SOStatus.ChangeSOStatus('in-warehouse', selectedMain.SalesOrder, userObject.name);
     });
@@ -213,10 +213,10 @@ $(document).ready(async function () {
             ItemsTH.column(5).visible(true);
             $('.statBtns').hide();
         } else {
-            const updatedData = SOModal.checkData();
-            console.log(updatedData);
-            hasChanges(selectedMain, updatedData);
-            if(isEditing && isSelectedEdited){
+            // const updatedData = SOModal.checkData();
+            // console.log(updatedData);
+            // hasChanges(selectedMain, updatedData);
+            // if(isEditing && isSelectedEdited){
                 Swal.fire({
                     title: "Are you sure?",
                     text: "Do you want to update this data?",
@@ -231,7 +231,7 @@ $(document).ready(async function () {
                             text: "Please wait... Saving New Changes...",
                             timerProgressBar: true,
                             allowOutsideClick: false,
-                            allowEscapeKey: false,  
+                            allowEscapeKey: false,
                             allowEnterKey: false,
                             didOpen: () => {
                                 Swal.showLoading();
@@ -249,19 +249,19 @@ $(document).ready(async function () {
                         isSelectedEdited = false;
                     }
                 });
-            } else{
-                if($('#editSOBtn').text().toLowerCase() == "save changes"){
-                    $(this).text("Edit Order");
-                    SOModal.enable(false);
-                    ItemsTH.column(5).visible(false);
-                    SOModal.buttonsView();
-                    isEditing = false;
-                    isSelectedEdited = false;
-                }
-            }
-            
+            // } else{
+            //     if($('#editSOBtn').text().toLowerCase() == "save changes"){
+            //         $(this).text("Edit Order");
+            //         SOModal.enable(false);
+            //         ItemsTH.column(5).visible(false);
+            //         SOModal.buttonsView();
+            //         isEditing = false;
+            //         isSelectedEdited = false;
+            //     }
+            // }
+
         }
-        
+
     });
 
     $("#saveSOBtn").on("click", function () {
@@ -288,7 +288,7 @@ $(document).ready(async function () {
                             text: "Please wait... Saving Sales Order...",
                             timerProgressBar: true,
                             allowOutsideClick: false,
-                            allowEscapeKey: false,  
+                            allowEscapeKey: false,
                             allowEnterKey: false,
                             didOpen: () => {
                                 Swal.showLoading();
@@ -296,7 +296,7 @@ $(document).ready(async function () {
                         });
                     }
                 });
-            } 
+            }
         } else {
             Swal.fire({
                 title: "Missing Required Fields!",
@@ -365,14 +365,14 @@ $(document).ready(async function () {
     $("#itemCloseBtn").on("click", function () {
         let valid = false;
         const data = SOItemsModal.getData();
-    
+
         // Check for empty values (excluding totalDiscount since it's always 0)
         for (const key in data) {
           if (data[key] === "" || data[key] === null || data[key] === undefined) {
-            valid = true;  
+            valid = true;
           }
         }
-    
+
         if (valid) {
             Swal.fire({
                 title: "Are you sure?",
@@ -392,13 +392,13 @@ $(document).ready(async function () {
     $(".fa-minus").on("click", function () {
         const quantityElement = $(this).closest(".input-group").find("input");
         let quantity = quantityElement.val();
-    
+
         if (quantity && parseInt(quantity) > 0) {
           quantityElement.val(parseInt(quantity) - 1);
           autoCalculateTotalPrice();
         }
     });
-    
+
     $(".fa-plus").on("click", function () {
         const quantity = $(this).closest(".input-group").find("input");
         quantity.val(quantity.val() ? parseInt(quantity.val()) + 1 : 1);
@@ -437,23 +437,23 @@ $(document).ready(async function () {
         // const itemStockCode = row.find("td:first").text().trim();
         const itemStockCode = row.attr("id");
         SOItemsModal.enable(true);
-    
+
         $("#CSQuantity").val("");
         $("#IBQuantity").val("");
         $("#PCQuantity").val("");
-    
+
         SOItemsModal.show();
-    
+
         const select = document.querySelector("#StockCode");
-    
+
         // Set value programmatically
         select.setValue(itemStockCode);
-    
+
         // Manually trigger the `afterClose` event
         const event = new CustomEvent("afterClose");
         select.dispatchEvent(event);
     });
-    
+
 });
 
 async function ajax(endpoint, method, data, successCallback = () => { }, errorCallback = () => { }) {
@@ -497,10 +497,8 @@ const datatables = {
             } else {
                 MainTH = $('#soTable').DataTable({
                     data: response.data,
-                    layout: {
-                        topStart: function () {
-                            return $(dataTableFilter);
-                        }
+                    language: {
+                        searchPlaceholder: "Search here..."
                     },
                     columns: [
                         {
@@ -510,7 +508,16 @@ const datatables = {
                                 if (!data) return '';
 
                                 const dateObj = new Date(data);
-                                return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short',   year: 'numeric'});
+
+                                if (type === 'display' || type === 'filter') {
+                                    return dateObj.toLocaleDateString('en-GB', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    });
+                                }
+
+                                return dateObj.toISOString();
                             }
                         },
                         {
@@ -520,7 +527,7 @@ const datatables = {
                                 let color = '';
                                 let backgroundColor = '';
                                 let text = '';
-                        
+
                                 switch (row.OrderStatus	) {
                                     case '1': color = '#f39c12'; backgroundColor = '#fde3a7'; text = 'Open Order'; break;
                                     case '2': color = '#f39c12'; backgroundColor = '#fde3a7'; text = 'Open Back Order'; break;
@@ -532,7 +539,7 @@ const datatables = {
                                     case '9': color = '#28a745'; backgroundColor = '#d4edda'; text = 'Complete'; break;
                                     default: color = '#808080'; backgroundColor = '#f0f0f0'; text = 'Unknown';
                                 }
-                        
+
                                 var bardgeStatus = `<span class="statusbadge" style="color: ${color}; background-color: ${backgroundColor};" border: 1px solid ${color}">${text}</span>`;
                                 return `<strong>${row.SalesOrder}</strong><br><small>${bardgeStatus}</small>`;
 
@@ -580,19 +587,22 @@ const datatables = {
 
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
+                        $(this.api().table().container()).find('.dt-search label').addClass('py-1 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
-                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 200px;" class="form-control bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend('<div id="filterPOVS" name="filter" style="width: 150px;" class="bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend(`${dataTableFilter}`);
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
                         // $('#soTable thead tr td .dt-column-title').css('white-space','nowrap !important');
+                        const tableDiv = $('.dt-layout-row').first();
+                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Sales Order Report</p></div>');
                     }
                 });
             }
@@ -621,7 +631,7 @@ const datatables = {
                 dom: "rt<'d-flex justify-content-between' ip>",
                 data: datas,
                 columns: [
-                    { 
+                    {
                         data: null,
                         title: 'Product Item',
                         render: function (data, type, row){
@@ -630,10 +640,10 @@ const datatables = {
                             return `<strong>${row.MStockCode}</strong><br><small>${data.MStockDes}</small>`;
                         }
                     },
-                    { 
+                    {
                         data: 'MOrderQty',
                         render: function (data, type, row){
-                            return parseFloat(data);
+                            return parseFloat(data).toFixed(2);
                         }
                     },
                     { data: 'MOrderUom' },
@@ -650,7 +660,7 @@ const datatables = {
                         }
                     },
                     {
-                        data: null, 
+                        data: null,
                         render: function (data, type, row) {
                             return ` <div class="d-flex actIcon">
                                         <div class="w-50 d-flex justify-content-center itemUpdateIcon">
@@ -733,11 +743,11 @@ const initVS = {
                 { label: "In Suspense", value: "S" },
                 { label: "Complete", value: "9" },
 
-            ], 
-            multiple: true, 
-            hideClearButton: true, 
+            ],
+            multiple: true,
+            hideClearButton: true,
             search: false,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
@@ -755,7 +765,7 @@ const initVS = {
                     filteredData.data = jsonArr.filter(item => filterValues.includes(item.OrderStatus));
                 }
                 datatables.initSODatatable(filteredData);
-                
+
             }
         });
 
@@ -768,25 +778,25 @@ const initVS = {
                 const validPriceCode = priceCodes.some(
                     (item) => item.PRICECODE == findVendor.PriceCode.trim()
                 );
-              
+
                 if (validPriceCode) {
                     $("#VendorContactName").val(findVendor.ContactPerson);
                     $("#vendorAddress").val(findVendor.CompleteAddress);
-      
+
                     var mobileContact = (findVendor.ContactNo = /^9\d{9}$/.test(
                         findVendor.ContactNo
                     )
                     ? findVendor.ContactNo.replace(/^9/, "09")
                     : findVendor.ContactNo);
-      
+
                 selectedVendor = findVendor;
-      
+
                 $("#vendorPhone").val(mobileContact);
-      
+
                 if (this.value && $("#shippedToName").value) {
                     $("#addItems").prop("disabled", false);
                 }
-      
+
                 $("#shippingTerms").val(findVendor.TermsCode);
             } else {
                 selectedVendor = null;
@@ -797,9 +807,9 @@ const initVS = {
                 });
                 $("#vendorName").trigger("reset");
               }
-            } 
+            }
         });
-      
+
         $("#vendorName").on("reset", function () {
             $("#VendorContactName").val("");
             $("#vendorAddress").val("");
@@ -810,7 +820,7 @@ const initVS = {
         //shippedToData
         await ajax('api/maintenance/v2/customer', 'GET', null, (response) => { // Success callback
             shippedToData = response.data;
-            
+
 
             const newData = response.data.map(item => {
                 // Create a new object with the existing properties and the new column
@@ -876,19 +886,19 @@ const initVS = {
         await ajax( "api/product", "GET", null,
           (response) => {
             const products = response.data;
-    
+
             const newData = products.map((item) => {
               return {
                 description: item.Description,
-                value: item.StockCode, 
-                label: item.StockCode, 
+                value: item.StockCode,
+                label: item.StockCode,
               };
             });
-    
+
             if (document.querySelector("#StockCode")?.virtualSelect) {
               document.querySelector("#StockCode").destroy();
             }
-    
+
             // Initialize VirtualSelect
             VirtualSelect.init({
                 ele: "#StockCode", // Attach to the element
@@ -902,7 +912,7 @@ const initVS = {
                 additionalDropboxContainerClasses: 'rounded',
                 additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
             });
-    
+
             $("#StockCode").on("afterClose", async function () {
                 if (this.value) {
                     const stockCode = this.value;
@@ -911,45 +921,45 @@ const initVS = {
                     );
                     // console.log(findProduct);
                     $("#Decription").val(findProduct.Description);
-      
+
                     let priceCode = selectedVendor.PriceCode.trim();
-      
+
                     const getPriceBody = {
                         stockCode: stockCode,
                         priceCode: priceCode,
                     };
-      
+
                     await ajax( "api/getProductPrice", "GET", getPriceBody, (response) => {
                       if (response.status_response == 1) {
                         var uomColumn = ["StockUom", "AlternateUom", "OtherUom"];
-      
+
                         var uoms = uomColumn.map((item) => {
                             return {
-                                value: findProduct[item], 
-                                label: findProduct[item], 
+                                value: findProduct[item],
+                                label: findProduct[item],
                             };
                         });
-                        
+
                         uoms = uoms.filter(
                             (item, index, self) =>
                                 index === self.findIndex((other) => other.value === item.value)
                         );
-      
+
                         if (!$(".UOMField").hasClass("d-none")) {
                             $(".UOMField").addClass("d-none");
                             $("#itemModalFields").validate().resetForm();
                         }
-      
+
                         uoms.forEach((item) => {
                             $(`#${item.value}Div`).removeClass("d-none");
                         });
-      
+
                         productConFact = response.convertionFactor;
                         console.log(productConFact);
 
                         $("#PricePerUnit").val(response.response.UNITPRICE);
                         $("#itemSave").prop("disabled", false);
-      
+
                         const isAlreadyExist = itemTmpSave.find(
                             (item) => item.MStockCode == stockCode
                         );
@@ -965,7 +975,7 @@ const initVS = {
                       } else {
                             $("#PricePerUnit").val("");
                             $("#itemSave").prop("disabled", true);
-      
+
                             Swal.fire({
                                 title: "Opppps..",
                                 text: "No price maintained for this product",
@@ -976,7 +986,7 @@ const initVS = {
                     (xhr, status, error) => {
                         $("#PricePerUnit").val("");
                         $("#itemSave").prop("disabled", true);
-      
+
                         Swal.fire({
                             title: "Opppps..",
                             text: "No price maintained for this product",
@@ -984,11 +994,11 @@ const initVS = {
                         });
                     }
                   );
-      
+
                   autoCalculateTotalPrice();
                 }
             });
-    
+
             $("#StockCode").on("reset", function () {
                 $("#Decription").val("");
                 $("#PricePerUnit").val("");
@@ -1027,14 +1037,14 @@ const initVS = {
             text: "Please wait... Fetching Sales Orders within the date range...",
             timerProgressBar: true,
             allowOutsideClick: false,
-            allowEscapeKey: false,  
+            allowEscapeKey: false,
             allowEnterKey: false,
             didOpen: () => {
                 Swal.showLoading();
             },
         });
 
-        ajax( "api/sales-order/orderstatus/filtered/", "POST", JSON.stringify({ 
+        ajax( "api/sales-order/orderstatus/filtered/", "POST", JSON.stringify({
                 data: filterDate
             }),
             (response) => {
@@ -1043,8 +1053,8 @@ const initVS = {
                 if(response.data.length > 0){
                     options = response.data.map((item) => {
                         return {
-                            value: item.SalesOrder, 
-                            label: item.SalesOrder + " - " + item.CustomerName, 
+                            value: item.SalesOrder,
+                            label: item.SalesOrder + " - " + item.CustomerName,
                         };
                     });
                 }
@@ -1109,7 +1119,7 @@ const SOModal = {
         $('#modalFields #SalesOrder').prop('disabled', true);
         $('#modalFields #CustomerPONumber').prop('disabled', true);
         $('#addItems').prop('disabled', !enable);
-        
+
         if (enable) {
             document.querySelector("#shippedToName").enable();
         } else {
@@ -1128,7 +1138,7 @@ const SOModal = {
     },
     fill: async (SODetails) => {
         SOModal.clear();
-        
+
         $('#OrderStatus').val(orderStatusSting(SODetails.OrderStatus));
         $('#Branch').val(SODetails.Branch);
         $('#CustomerPONumber').val(SODetails.CustomerPoNumber);
@@ -1139,8 +1149,8 @@ const SOModal = {
         // $('#shippedToPhone').val(SODetails.)
         $('#subTotal').html((SODetails.grandTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         $('#grandTotal').html((SODetails.grandTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        $('#OrderDate').val(SODetails.OrderDate.substring(0, 10)); 
-        $('#ReqShipDate').val(SODetails.ReqShipDate.substring(0, 10)); 
+        $('#OrderDate').val(SODetails.OrderDate.substring(0, 10));
+        $('#ReqShipDate').val(SODetails.ReqShipDate.substring(0, 10));
 
         datatables.initSOItemsDatatable(SODetails.details);
         setTimeout(() => {
@@ -1156,10 +1166,10 @@ const SOModal = {
         const userObject = JSON.parse(user);
         let SOData = SOModal.getData();
         SOData.Items = itemTmpSave.map((item, index) => ({
-          ...item,  
-          PRD_INDEX: index + 1, 
+          ...item,
+          PRD_INDEX: index + 1,
         }));
-    
+
         SOData.LastOperator = userObject.name;
         SOData.CustomerInfo = selectedShippedTo;
         await ajax( "api/sales-order/header", "POST", JSON.stringify({ data: SOData }),
@@ -1192,7 +1202,7 @@ const SOModal = {
         var salesOrderID = selectedMain.SalesOrder;
 
         // console.log(updateBody);
-        await ajax( "api/sales-order/header/" + salesOrderID, "POST", JSON.stringify({ 
+        await ajax( "api/sales-order/header/" + salesOrderID, "POST", JSON.stringify({
             data: updateBody,
             _method: "PUT",
             }),
@@ -1201,7 +1211,7 @@ const SOModal = {
                     Swal.close();
                     datatables.loadSOData();
                     SOModal.hide();
-            
+
                     Swal.fire({
                         title: "Success!",
                         text: response.message,
@@ -1245,7 +1255,7 @@ const SOModal = {
             Branch: $('#Branch').val(),
             Warehouse: $('#Warehouse').val()
         };
-    
+
         return data;
     },
     checkData: () => {
@@ -1259,7 +1269,7 @@ const SOModal = {
             ReqShipDate: $("#ReqShipDate").val(),
             Customer: $("#shippedToName").val(),
         };
-    
+
         return data;
     },
     buttonsView: () => {
@@ -1303,13 +1313,13 @@ const SOItemsModal = {
                 var csQuantity = $("#CSQuantity").val();
                 var ibQuantity = $("#IBQuantity").val();
                 var pcQuantity = $("#PCQuantity").val();
-        
+
                 // Check if at least one has a value
                 return csQuantity !== "" || ibQuantity !== "" || pcQuantity !== "";
           },
           "At least one quantity field is required."
         ); // Custom error message
-    
+
         $("#itemModalFields").validate({
             rules: {
                 CSQuantity: {
@@ -1402,18 +1412,18 @@ const SOItemsModal = {
           IB: $("#IBQuantity").val(),
           PC: $("#PCQuantity").val(),
         };
-    
+
         UomAndQuantity = Object.fromEntries(
           Object.entries(UomAndQuantity).filter(([_, value]) => value)
         );
-    
+
         return UomAndQuantity;
     },
     getTotalQuantity: (UomAndQuantity) => {
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
         let totalInPieces = 0;
-    
+
         Object.entries(UomAndQuantity).forEach(([key, uom]) => {
           if (key.toUpperCase() === "PC") {
             totalInPieces += Number(uom);
@@ -1427,7 +1437,7 @@ const SOItemsModal = {
     },
     itemEditMode: (uoms, isAlreadyExist) => {
         console.log(isAlreadyExist);
-        
+
         if (!isAlreadyExist.UomAndQuantity) {
             // console.log(isAlreadyExist.QTYinPCS);
             isAlreadyExist.UomAndQuantity = SOItemsModal.reverseItemCalculateUOM(
@@ -1436,41 +1446,41 @@ const SOItemsModal = {
             );
         //   console.log(isAlreadyExist.UomAndQuantity);
         }
-    
+
         Object.entries(isAlreadyExist.UomAndQuantity).forEach(([key, value]) => {
           $(`#${key}Quantity`).val(value);
         });
-    
+
         $("#itemSave").text("Update Item");
     },
     reverseItemCalculateUOM: (uoms, totalInPieces) => {
         console.log(uoms);
-    
+
         let UomAndQuantity = {};
         let moduloResult = totalInPieces % productConFact.ConvFactAltUom;
-    
+
         const { ConvFactAltUom, ConvFactOthUom } = productConFact;
-    
+
         uoms.forEach((element) => {
             switch (element.value) {
                 case "CS":
                     UomAndQuantity.CS = Math.floor(totalInPieces / ConvFactAltUom);
                     break;
-    
+
                 case "IB":
                     const conFact = ConvFactAltUom / ConvFactOthUom;
                     UomAndQuantity.IB = Math.floor((moduloResult === 0 ? totalInPieces : moduloResult) / conFact);
                     break;
-    
+
                 case "PC":
                     const hasIB = uoms.some(item => item.value === "IB");
                     let remainingForPC = hasIB ? moduloResult % (ConvFactAltUom / ConvFactOthUom) : totalInPieces % ConvFactOthUom;
-    
+
                     UomAndQuantity.PC = remainingForPC;
                     break;
             }
         });
-    
+
         // console.log(UomAndQuantity);
         return UomAndQuantity;
     },
@@ -1483,21 +1493,21 @@ const SOItemsModal = {
             MOrderUom: getUOM,
             UomAndQuantity: getUOM,
             MOrderQty: $("#Quantity").val(),
-            MUnitCost: parseFloat($("#PricePerUnit").val()) || 0,  
+            MUnitCost: parseFloat($("#PricePerUnit").val()) || 0,
             MPrice: parseMoney($("#TotalPrice").val()),
             MProductClass: 'GROC',
             MStockUnitMass: 0,
             MStockUnitVol: 0,
             MPriceCode: selectedVendor.PriceCode,
         };
-        
+
     },
     itemCalculateUOM: (getItem) => {
         console.log("getItem",getItem);
         const uomsAndQty = getItem.UomAndQuantity;
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
-    
+
         const totalInPieces = SOItemsModal.getTotalQuantity(uomsAndQty);
         if (uomsAndQty.CS) {
             getItem.MOrderUom = "CS";
@@ -1518,7 +1528,7 @@ const SOItemsModal = {
         itemTmpSave = itemTmpSave.filter(
           (item) => item.MStockCode != skuCode
         );
-    
+
         datatables.initSOItemsDatatable(itemTmpSave);
         calculateCost();
     },
@@ -1530,15 +1540,15 @@ const vendorModal = {
           const newData = vendordata.map((item) => {
             return {
               description: item.CompleteAddress,
-              value: item.cID, 
-              label: item.SupplierName, 
+              value: item.cID,
+              label: item.SupplierName,
             };
           });
-  
+
           if (document.querySelector("#vendorName")?.virtualSelect) {
             document.querySelector("#vendorName").destroy();
           }
-  
+
           VirtualSelect.init({
             ele: "#vendorName",
             options: newData,
@@ -1576,7 +1586,7 @@ const vendorModal = {
       document.querySelector("#Province").reset();
       document.querySelector("#CityMunicipality").reset();
       document.querySelector("#Barangay").reset();
-  
+
       $('#newVendorForm input[type="text"]').val("");
       $('#newVendorForm input[type="number"]').val("");
       $("#newVendorForm textarea").val("");
@@ -1599,7 +1609,7 @@ const vendorModal = {
     },
     newVendorSave: async () => {
       const newVendor = vendorModal.getData();
-  
+
       await ajax(
         "api/vendors",
         "POST",
@@ -1609,7 +1619,7 @@ const vendorModal = {
           if (response.success) {
             vendorModal.loadVendorVS();
             vendorModal.hide();
-  
+
             Swal.fire({
               title: "Success!",
               text: response.message,
@@ -1619,7 +1629,7 @@ const vendorModal = {
         },
         (xhr, status, error) => {
           // Error callback
-  
+
           if (xhr.responseJSON && xhr.responseJSON.message) {
             Swal.fire({
               title: "Opppps..",
@@ -1631,7 +1641,7 @@ const vendorModal = {
       );
     },
 };
-  
+
 function downloadToCSV(jsonArr){
     const csvData = Papa.unparse(jsonArr); // Convert JSON to CSV
     var today = new Date().toISOString().split('T')[0];
@@ -1680,9 +1690,9 @@ async function ajaxCall(method, formDataArray = null, id) {
             }
 
             $('#totalUploadSuccess').text(insertion);
-            $("#fileStatus" + id).html(iconResult); 
+            $("#fileStatus" + id).html(iconResult);
             $("#insertedStat" + id).html(`${response.successful} / ${response.totalFileLength}`).addClass(insertedResultColor);
-            
+
             if(fileCtrTotal>0 && fileCtrTotal==insertion){
                 console.log('1')
                 if(expectedtotalRows>0 && expectedtotalRows == actualtotalRows){
@@ -1722,7 +1732,7 @@ const uploadconfirmUpload = document.getElementById('uploadBtn2')
         insertion = 0;
         fileCtrTotal = 0;
         expectedtotalRows = 0;
-        actualtotalRows = 0; 
+        actualtotalRows = 0;
         errorFile = false;
         // Get all the files selected in the file input
         var files = document.getElementById('formFileMultiple').files;
@@ -1739,7 +1749,7 @@ const uploadconfirmUpload = document.getElementById('uploadBtn2')
             if(!['csv','xlsx'].includes(fileExtension)){
                 setTimeout(function() {
                     iconResult = `<span class="mdi mdi-alpha-x-circle text-danger resultIcon"></span>`;
-                    $("#fileStatus" + i).html(iconResult); 
+                    $("#fileStatus" + i).html(iconResult);
                 }, 100);
                 errorFile = true;
             }
@@ -1805,12 +1815,12 @@ function trNew(fileName, indexId) {
             <td class = "col-9" style="padding-left: 0px;">
                 <span>${fileName}</span>
             </td>
-            <td id="insertedStat${indexId}" class="text-end col-2">    
-            
+            <td id="insertedStat${indexId}" class="text-end col-2">
+
             </td>
-            <td id="fileStatus${indexId}" class="text-center col-1">       
-                <span class="loader">                                    
-                </span>              
+            <td id="fileStatus${indexId}" class="text-center col-1">
+                <span class="loader">
+                </span>
             </td>
         </tr>`;
 }
@@ -1857,7 +1867,7 @@ function calculateCost() {
       .data()
       .toArray()
       .reduce((sum, item) => sum + parseFloat(item.MPrice), 0);
-  
+
     $("#taxCost").text(formatMoney(taxCost));
     $("#shippingCost").text(formatMoney(shippingCost));
     $("#othersCost").text(formatMoney(othersCost));
@@ -1870,14 +1880,14 @@ function setDate(){
     document.getElementById("ReqShipDate").setAttribute("min", today);
     document.getElementById("ReqShipDate").addEventListener("input", function () {
         let selectedDate = new Date(this.value);
-        
+
         if (selectedDate.getDay() === 0) {
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
                 text: "No Shipment on Sundays... Select Another Day",
             });
-            this.value = ""; 
+            this.value = "";
         }
     });
 }
@@ -1907,7 +1917,7 @@ const SOStatus = {
             },
             (xhr, status, error) => {
             // Error callback
-    
+
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 Swal.fire({
                 title: "Opppps..",
@@ -1919,7 +1929,7 @@ const SOStatus = {
         );
     },
 }
-  
+
 
 function orderStatusSting(status){
     let text = '';
@@ -1939,7 +1949,7 @@ function orderStatusSting(status){
 }
 
 function hasChanges(original, modified) {
-    const keysToCheck = ["SalesOrder", "CustomerPoNumber", "Branch", "Warehouse", "Customer", "shippedToName", "OrderDate", "ReqShipDate"];  
+    const keysToCheck = ["SalesOrder", "CustomerPoNumber", "Branch", "Warehouse", "Customer", "shippedToName", "OrderDate", "ReqShipDate"];
 
     for (let key of keysToCheck) {
         let originalValue = original[key];
@@ -2001,7 +2011,7 @@ function datePicker(){
 function getFilteredSO(){
     var salesOrderList = $('#salesOrderList').val();
 
-    ajax( "api/sales-order/filtered-sales-order", "POST", JSON.stringify({ 
+    ajax( "api/sales-order/filtered-sales-order", "POST", JSON.stringify({
             salesOrder: salesOrderList,
         }),
         (response) => {

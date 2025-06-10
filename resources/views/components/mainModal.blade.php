@@ -17,7 +17,7 @@
             <!-- Modal Footer -->
             
             <div class="modal-footer py-1 d-flex justify-content-between" id="delprint">
-                {{ $modalFooterBtns }}
+                {{ $modalFooterBtns ?? '' }}
             </div>
         </div>
     </div>

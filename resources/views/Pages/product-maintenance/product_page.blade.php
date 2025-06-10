@@ -11,6 +11,14 @@
 @endsection
 
 @section('table')
+    <style>
+        #ProductTable thead tr td{
+            white-space: nowrap;
+        }
+    </style>
+
+    <x-contentButtonDiv addFunc="true" downloadFunc="true" uploadFunc="true"></x-contentButtonDiv>
+
     <x-table id="ProductTable">
         <x-slot:td>
             <td class="col">Brand</td>
@@ -31,89 +39,91 @@
 @endsection
 
 @section('modal')
-    <x-mainModal mainModalTitle="prodMainModal" modalDialogClass="modal-lg" modalHeaderTitle="PRODUCT DETAILS" modalSubHeaderTitle="Complete overview of item details for inventory.">
+    <x-mainModal mainModalTitle="prodMainModal" modalDialogClass="" modalHeaderTitle="PRODUCT DETAILS" modalSubHeaderTitle="Complete overview of item details for inventory.">
         <x-slot:form_fields>
-            <div class="row h-100">
-                <div class="col-sm-12 col-md-4 mt-1">
-                    <input type="file" id="imageHolder" style="display:none;" accept="image/*">
+            <div id="itemModalFields">
+                <div class="row h-100">
+                    <div class="col-sm-12 col-md-4 mt-1">
+                        <input type="file" id="imageHolder" style="display:none;" accept="image/*">
 
-                    <div class="col mt-1 d-flex justify-content-center align-items-center px-3 py-2" style="height: 200px;">
-                        <div class="h-100 w-100 my-3 p-2 d-flex justify-content-center align-items-center" style="border: 4px dashed rgba(45, 45, 45, 0.5); position: relative;">
-                            <img id="prdImg" class="border-0 p-2 h-auto w-100" style="max-width: 200px; max-height: 200px; object-fit: cover;  cursor: pointer;" src="./uploads/upload.png" alt="">
+                        <div class="col mt-1 d-flex justify-content-center align-items-center px-3 py-2" style="height: 125px;">
+                            <div class="h-100 w-100 my-3 p-2 d-flex justify-content-center align-items-center" style="border: 4px dashed rgba(45, 45, 45, 0.5); position: relative;">
+                                <img id="prdImg" class="border-0 p-2 h-auto w-100" style="max-width: 200px; max-height: 200px; object-fit: cover;  cursor: pointer;" src="./uploads/upload.png" alt="">
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="w-100 d-flex align-items-center justify-content-center">
-                        <button type="button" class="btn btn-sm btn-primary text-white" id="uploadImage" type="file">Choose Image</button>
-                    </div>
-                </div>
-                <div class="col-sm-12 col-md-8 mt-1 pt-4">
-                    <div class="col mt-2">
-                        <label for="StockCode">Product Stock Code</label>
-                        <input disabled type="text" id="StockCode" name="StockCode" class="form-control bg-white" required placeholder="Stockcode">
-                    </div>
-                    <div class="col mt-2">
-                        <label for="priceWithVat">Product Price</label>
-                        <input disabled type="number" id="priceWithVat" name="priceWithVat" class="form-control bg-white" required placeholder="Price" min=0>
-                    </div>
-                    <div class="col mt-2">
-                        <label for="Description">Product Description</label>
-                        <input disabled type="text" id="Description" name="Description" class="form-control bg-white" required placeholder="Description">
-                    </div>
-                    
-                </div>
-                <div class="col-12">
-                    <div class="col mt-2">
-                        <label for="Brand">Brand</label>
-                        <input disabled type="text" id="Brand" name="Brand" class="form-control bg-white" required placeholder="Brand">
-                    </div>
-                    <div class="col mt-2">
-                        <label for="AlternateKey1">AlternateKey1</label>
-                        <input disabled type="text" id="AlternateKey1" name="AlternateKey1" class="form-control bg-white" required placeholder="AlternateKey">
-                    </div>
-                    <div class="col mt-2">
-                        <label for="StockCode">Long Description</label>
-                        <textarea id="LongDesc" name="LongDesc" class="form-control bg-white" required placeholder="LongDescription"></textarea>
-                    </div>
-                    <div class="col mt-2">
-                        <label for="StockUom">UOM</label>
-                        <input disabled type="text" id="StockUom" name="StockUom" class="form-control bg-white" required placeholder="UOM">
-                    </div>
-                    <div class="row">
-                        <div class="col mt-2">
-                            <label for="AlternateUom">AlternateUom</label>
-                            <input disabled type="text" id="AlternateUom" name="AlternateUom" class="form-control bg-white" required placeholder="Alternate Uom">
-                        </div>
-                        <div class="col mt-2">
-                            <label for="ConvFactAltUom">ConvFactAltUom</label>
-                            <input disabled type="text" id="ConvFactAltUom" name="ConvFactAltUom" class="form-control bg-white" required placeholder="ConvFactAltUom">
+                        <div class="w-100 d-flex align-items-center justify-content-center">
+                            <button type="button" class="btn btn-sm btn-primary text-white" id="uploadImage" type="file">Choose Image</button>
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="col-sm-12 col-md-8">
                         <div class="col mt-2">
-                            <label for="OtherUom">OtherUom</label>
-                            <input disabled type="text" id="OtherUom" name="OtherUom" class="form-control bg-white" required placeholder="OtherUom">
+                            <label for="StockCode">Product Stock Code</label>
+                            <input disabled type="text" id="StockCode" name="StockCode" class="form-control bg-white" required placeholder="Stockcode">
                         </div>
                         <div class="col mt-2">
-                            <label for="ConvFactOthUom">ConvFactOthUom</label>
-                            <input disabled type="text" id="ConvFactOthUom" name="ConvFactOthUom" class="form-control bg-white" required placeholder="ConvFactOthUom">
+                            <label for="priceWithVat">Product Price</label>
+                            <input disabled type="number" id="priceWithVat" name="priceWithVat" class="form-control bg-white" required placeholder="Price" min=0>
                         </div>
+                        <div class="col mt-2">
+                            <label for="Description">Product Description</label>
+                            <input disabled type="text" id="Description" name="Description" class="form-control bg-white" required placeholder="Description">
+                        </div>
+
                     </div>
-                    <div class="col mt-2">
-                        <label for="Mass">Mass</label>
-                        <input disabled type="text" id="Mass" name="Mass" class="form-control bg-white" required placeholder="Mass">
-                    </div>
-                    <div class="col mt-2">
-                        <label for="Volume">Volume</label>
-                        <input disabled type="text" id="Volume" name="Volume" class="form-control bg-white" required placeholder="Volume">
-                    </div>
-                    <div class="col mt-2">
-                        <label for="ProductClass">ProductClass</label>
-                        <input disabled type="text" id="ProductClass" name="ProductClass" class="form-control bg-white" required placeholder="ProductClass">
-                    </div>
-                    <div class="col mt-2">
-                        <label for="WarehouseToUse">WarehouseToUse</label>
-                        <input disabled type="text" id="WarehouseToUse" name="WarehouseToUse" class="form-control bg-white" required placeholder="WarehouseToUse">
+                    <div class="col-12">
+                        <div class="col mt-2">
+                            <label for="Brand">Brand</label>
+                            <input disabled type="text" id="Brand" name="Brand" class="form-control bg-white" required placeholder="Brand">
+                        </div>
+                        <div class="col mt-2">
+                            <label for="AlternateKey1">AlternateKey1</label>
+                            <input disabled type="text" id="AlternateKey1" name="AlternateKey1" class="form-control bg-white" required placeholder="AlternateKey">
+                        </div>
+                        <div class="col mt-2">
+                            <label for="StockCode">Long Description</label>
+                            <textarea id="LongDesc" name="LongDesc" class="form-control bg-white" required placeholder="LongDescription"></textarea>
+                        </div>
+                        <div class="col mt-2">
+                            <label for="StockUom">UOM</label>
+                            <input disabled type="text" id="StockUom" name="StockUom" class="form-control bg-white" required placeholder="UOM">
+                        </div>
+                        <div class="row">
+                            <div class="col mt-2">
+                                <label for="AlternateUom">AlternateUom</label>
+                                <input disabled type="text" id="AlternateUom" name="AlternateUom" class="form-control bg-white" required placeholder="Alternate Uom">
+                            </div>
+                            <div class="col mt-2">
+                                <label for="ConvFactAltUom">ConvFactAltUom</label>
+                                <input disabled type="text" id="ConvFactAltUom" name="ConvFactAltUom" class="form-control bg-white" required placeholder="ConvFactAltUom">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col mt-2">
+                                <label for="OtherUom">OtherUom</label>
+                                <input disabled type="text" id="OtherUom" name="OtherUom" class="form-control bg-white" required placeholder="OtherUom">
+                            </div>
+                            <div class="col mt-2">
+                                <label for="ConvFactOthUom">ConvFactOthUom</label>
+                                <input disabled type="text" id="ConvFactOthUom" name="ConvFactOthUom" class="form-control bg-white" required placeholder="ConvFactOthUom">
+                            </div>
+                        </div>
+                        <div class="col mt-2">
+                            <label for="Mass">Mass</label>
+                            <input disabled type="text" id="Mass" name="Mass" class="form-control bg-white" required placeholder="Mass">
+                        </div>
+                        <div class="col mt-2">
+                            <label for="Volume">Volume</label>
+                            <input disabled type="text" id="Volume" name="Volume" class="form-control bg-white" required placeholder="Volume">
+                        </div>
+                        <div class="col mt-2">
+                            <label for="ProductClass">ProductClass</label>
+                            <input disabled type="text" id="ProductClass" name="ProductClass" class="form-control bg-white" required placeholder="ProductClass">
+                        </div>
+                        <div class="col mt-2">
+                            <label for="WarehouseToUse">WarehouseToUse</label>
+                            <input disabled type="text" id="WarehouseToUse" name="WarehouseToUse" class="form-control bg-white" required placeholder="WarehouseToUse">
+                        </div>
                     </div>
                 </div>
             </div>

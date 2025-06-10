@@ -4,95 +4,105 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <script src="https://unpkg.com/read-excel-file@5.x/bundle/read-excel-file.min.js"></script>
     <title>Salesman Maintenance</title>
-@endsection 
+@endsection
 
 @section('title_header')
     <x-header title="Salesman Maintenance" />
 @endsection
 
 @section('table')
-<x-table id="salespersonTable">
-    <x-slot:td>
-    </x-slot:td>
-</x-table>
+    <style>
+        #salespersonTable thead tr th{
+            white-space: nowrap;
+        }
+    </style>
+
+    <x-contentButtonDiv addFunc="true" downloadFunc="true" uploadFunc="true"></x-contentButtonDiv>
+
+    <x-table id="salespersonTable">
+        <x-slot:td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 @section('modal')
-    <x-mainModal mainModalTitle="salespersonMainModal" modalDialogClass="modal-lg" modalHeaderTitle="SALESMAN DETAILS" modalSubHeaderTitle="Relevant information about this sales agent.">
+    <x-mainModal mainModalTitle="salespersonMainModal" modalDialogClass="" modalHeaderTitle="SALESMAN DETAILS" modalSubHeaderTitle="Relevant information about this sales agent.">
         <x-slot:form_fields>
-            <div class="row h-100">
-                <div class="row">
-                    <div class="col-6 mb-3" id="EmployeeIDDIV">
-                        <label for="EmployeeID">EmployeeID</label>
-                        <input disabled type="text" id="EmployeeID" name="EmployeeID" class="form-control bg-white" required placeholder="EmployeeID">
-                    </div> 
-                </div>
-                <div class="row">
-                    <div class="col-4 mb-3">
-                        <label for="mdCode">mdCode</label>
-                        <input disabled type="text" id="mdCode" name="mdCode" class="form-control bg-white needField" required placeholder="mdCode" onkeypress="return /[0-9.]/.test(event.key)">
-                    </div> 
-                    <div class="col-4 mb-3">
-                        <label for="Branch">Branch</label>
-                        <input disabled type="text" id="Branch" name="Branch" class="form-control bg-white needField" required placeholder="Branch" maxlength="10">
-                    </div> 
-                    <div class="col-4 mb-3">
-                        <label for="Type">Type</label>
-                        <input disabled type="text" id="Type" name="Type" class="form-control bg-white needField" required placeholder="Type" maxlength="1">
-                    </div> 
-                </div>
-                <div class="row">
-                    <div class="col-3 mb-3">
-                        <label for="Salesperson">Salesperson</label>
-                        <input disabled type="text" id="Salesperson" name="Salesperson" class="form-control bg-white needField" required placeholder="Salesperson" maxlength="10">
+            <div id="itemModalFields">
+                <div class="row h-100">
+                    <div class="row">
+                        <div class="col-6 mb-3" id="EmployeeIDDIV">
+                            <label for="EmployeeID">EmployeeID</label>
+                            <input disabled type="text" id="EmployeeID" name="EmployeeID" class="form-control bg-white" required placeholder="EmployeeID">
+                        </div>
                     </div>
-                    <div class="col-9 mb-3">
-                        <label for="Name">Name</label>
-                        <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="Name">
+                    <div class="row">
+                        <div class="col-4 mb-3">
+                            <label for="mdCode">mdCode</label>
+                            <input disabled type="text" id="mdCode" name="mdCode" class="form-control bg-white needField" required placeholder="mdCode" onkeypress="return /[0-9.]/.test(event.key)">
+                        </div>
+                        <div class="col-4 mb-3">
+                            <label for="Branch">Branch</label>
+                            <input disabled type="text" id="Branch" name="Branch" class="form-control bg-white needField" required placeholder="Branch" maxlength="10">
+                        </div>
+                        <div class="col-4 mb-3">
+                            <label for="Type">Type</label>
+                            <input disabled type="text" id="Type" name="Type" class="form-control bg-white needField" required placeholder="Type" maxlength="1">
+                        </div>
                     </div>
-                    <div class="col-6 mb-3">
-                        <label for="Warehouse">Warehouse</label>
-                        <input disabled type="text" id="Warehouse" name="Warehouse" class="form-control bg-white" required placeholder="Warehouse" maxlength="10">
-                    </div>
-                    <div class="col-6 mb-3">
-                        <label for="SourceWarehouse">Source Warehouse</label>
-                        <input disabled type="text" id="SourceWarehouse" name="SourceWarehouse" class="form-control bg-white" required placeholder="SourceWarehouse" maxlength="10">
-                    </div>
-                    <div class="col-6 mb-3">
-                        <label for="ContactNo">ContactNo</label>
-                        <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required placeholder="ContactNo" onkeypress="return /[0-9]/.test(event.key)">
-                    </div>
-                    <div class="col-6 mb-3">
-                        <label for="ContactHP">ContactHP</label>
-                        <input disabled type="text" id="ContactHP" name="ContactHP" class="form-control bg-white" required placeholder="ContactHP" onkeypress="return /[0-9]/.test(event.key)">
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label for="Addr1">Address1</label>
-                        <input disabled type="text" id="Addr1" name="Addr1" class="form-control bg-white" required placeholder="Addr1">
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label for="Addr2">Address2</label>
-                        <input disabled type="text" id="Addr2" name="Addr2" class="form-control bg-white" required placeholder="Addr2">
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label for="Addr3">Address3</label>
-                        <input disabled type="text" id="Addr3" name="Addr3" class="form-control bg-white" required placeholder="Addr3">
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label for="Addr4">Address4</label>
-                        <input disabled type="text" id="Addr4" name="Addr4" class="form-control bg-white" required placeholder="Addr4">
-                    </div>
-                    <div class="col-4 mb-3">
-                        <label for="Group1">Group1</label>
-                        <input disabled type="text" id="Group1" name="Group1" class="form-control bg-white" required placeholder="Group1" maxlength="15">
-                    </div>
-                    <div class="col-4 mb-3">
-                        <label for="Group2">Group2</label>
-                        <input disabled type="text" id="Group2" name="Group2" class="form-control bg-white" required placeholder="Group2" maxlength="15">
-                    </div>
-                    <div class="col-4 mb-3">
-                        <label for="Group3">Group3</label>
-                        <input disabled type="text" id="Group3" name="Group3" class="form-control bg-white" required placeholder="Group3" maxlength="15">
+                    <div class="row">
+                        <div class="col-3 mb-3">
+                            <label for="Salesperson">Salesperson</label>
+                            <input disabled type="text" id="Salesperson" name="Salesperson" class="form-control bg-white needField" required placeholder="Salesperson" maxlength="10">
+                        </div>
+                        <div class="col-9 mb-3">
+                            <label for="Name">Name</label>
+                            <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="Name">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label for="Warehouse">Warehouse</label>
+                            <input disabled type="text" id="Warehouse" name="Warehouse" class="form-control bg-white" required placeholder="Warehouse" maxlength="10">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label for="SourceWarehouse">Source Warehouse</label>
+                            <input disabled type="text" id="SourceWarehouse" name="SourceWarehouse" class="form-control bg-white" required placeholder="SourceWarehouse" maxlength="10">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label for="ContactNo">ContactNo</label>
+                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required placeholder="ContactNo" onkeypress="return /[0-9]/.test(event.key)">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label for="ContactHP">ContactHP</label>
+                            <input disabled type="text" id="ContactHP" name="ContactHP" class="form-control bg-white" required placeholder="ContactHP" onkeypress="return /[0-9]/.test(event.key)">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="Addr1">Address1</label>
+                            <input disabled type="text" id="Addr1" name="Addr1" class="form-control bg-white" required placeholder="Addr1">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="Addr2">Address2</label>
+                            <input disabled type="text" id="Addr2" name="Addr2" class="form-control bg-white" required placeholder="Addr2">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="Addr3">Address3</label>
+                            <input disabled type="text" id="Addr3" name="Addr3" class="form-control bg-white" required placeholder="Addr3">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="Addr4">Address4</label>
+                            <input disabled type="text" id="Addr4" name="Addr4" class="form-control bg-white" required placeholder="Addr4">
+                        </div>
+                        <div class="col-4 mb-3">
+                            <label for="Group1">Group1</label>
+                            <input disabled type="text" id="Group1" name="Group1" class="form-control bg-white" required placeholder="Group1" maxlength="15">
+                        </div>
+                        <div class="col-4 mb-3">
+                            <label for="Group2">Group2</label>
+                            <input disabled type="text" id="Group2" name="Group2" class="form-control bg-white" required placeholder="Group2" maxlength="15">
+                        </div>
+                        <div class="col-4 mb-3">
+                            <label for="Group3">Group3</label>
+                            <input disabled type="text" id="Group3" name="Group3" class="form-control bg-white" required placeholder="Group3" maxlength="15">
+                        </div>
                     </div>
                 </div>
             </div>

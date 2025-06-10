@@ -11,20 +11,6 @@ var productConFact;
 var userObject;
 var previousVSWarehouseValue = null;
 
-const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2" style="font-size: 12px;">
-                                <div class="btn d-flex justify-content-around px-2 align-items-center me-1" id="addBtn">
-                                    <div class="btnImg me-2" id="addImg">
-                                    </div>
-                                    <span>Add new</span>
-                                </div>
-                                <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvDLBtn">
-                                    <div class="btnImg me-2" id="dlImg">
-                                    </div>
-                                    <span>Download Report</span>
-                                </div>
-                            </div>`;
-
-
 $(document).ready(async function () {
     dayjs.extend(dayjs_plugin_relativeTime);
     const user = localStorage.getItem('user');
@@ -52,11 +38,11 @@ $(document).ready(async function () {
             if(warehouseInv != null){
                 SAdjitemsModal.clear();
                 SAdjitemsModal.enable(true);
-    
+
                 $(".UOMField").addClass("d-none");
                 $("#itemSave").text("Save Item");
                 SAdjitemsModal.show();
-    
+
                 $("#itemEdit").hide();
                 $("#itemSave").show();
                 ItemsTH.column(4).visible(true);
@@ -125,18 +111,18 @@ $(document).ready(async function () {
         const row = $(this).closest("tr");
         const itemStockCode = row.find("td:first").text().trim();
         SAdjitemsModal.enable(true);
-    
+
         $("#CSQuantity").val("");
         $("#IBQuantity").val("");
         $("#PCQuantity").val("");
-    
+
         SAdjitemsModal.show();
-    
+
         const select = document.querySelector("#StockCode");
-    
+
         // Set value programmatically
         select.setValue(itemStockCode);
-    
+
         // Manually trigger the `afterClose` event
         const event = new CustomEvent("afterClose");
         select.dispatchEvent(event);
@@ -145,13 +131,13 @@ $(document).ready(async function () {
     $("#itemCloseBtn").on("click", function () {
         let valid = false;
         const data = SAdjitemsModal.getData();
-    
+
         for (const key in data) {
           if (data[key] === "" || data[key] === null || data[key] === undefined) {
-            valid = true;  
+            valid = true;
           }
         }
-    
+
         if (valid) {
             Swal.fire({
                 title: "Are you sure?",
@@ -192,7 +178,7 @@ $(document).ready(async function () {
                             text: "Please wait... Adjusting Stocks...",
                             timerProgressBar: true,
                             allowOutsideClick: false,
-                            allowEscapeKey: false,  
+                            allowEscapeKey: false,
                             allowEnterKey: false,
                             didOpen: () => {
                                 Swal.showLoading();
@@ -200,7 +186,7 @@ $(document).ready(async function () {
                         });
                     }
                 });
-            } 
+            }
         } else {
             Swal.fire({
                 title: "Missing Required Fields!",
@@ -234,10 +220,10 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 
 const datatables = {
     loadInvAdjData: async () => {
-        const invData = await ajax('api/inv/adjust/stocks', 'GET', null, (response) => {  
+        const invData = await ajax('api/inv/adjust/stocks', 'GET', null, (response) => {
             jsonArr = response.data;
             datatables.initInvAdjDatatable(response);
-        }, (xhr, status, error) => { 
+        }, (xhr, status, error) => {
             console.error('Error:', error);
         });
     },
@@ -250,25 +236,32 @@ const datatables = {
             } else {
                 MainTH = $('#adjTable').DataTable({
                     data: response.data,
-                    layout: {
-                        topStart: function () {
-                            return $(dataTableCustomBtn);
-                        }
+                    language: {
+                        searchPlaceholder: "Search here..."
                     },
                     columns: [
-                        { 
-                            data: 'ENTRY_DATE',  
+                        {
+                            data: 'ENTRY_DATE',
                             title: 'Adjustment Date',
-                            render: function(data, type, row){
+                            render: function (data, type, row) {
                                 if (!data) return '';
 
                                 const dateObj = new Date(data);
-                                return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short',   year: 'numeric'});
+
+                                if (type === 'display' || type === 'filter') {
+                                    return dateObj.toLocaleDateString('en-GB', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    });
+                                }
+
+                                return dateObj.toISOString();
                             }
                         },
                         { data: 'REFERENCE',  title: 'Adjustment Reference' },
-                        { 
-                            data: null,  
+                        {
+                            data: null,
                             title: 'StockCode',
                             render: function(data, type, row){
                                 if (!data) return '';
@@ -304,17 +297,20 @@ const datatables = {
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
                         $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '45px', 'important'); });
+                        $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
                         $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
                         $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
                         const dtlayoutTE = $('.dt-layout-cell.dt-end').first();
                         dtlayoutTE.addClass('d-flex justify-content-end');
-                        dtlayoutTE.prepend('<div id="filterTransfer" name="filter" style="width: 200px" class="form-control bg-white p-0 mx-1">Filter</div>');
+                        dtlayoutTE.prepend('<div id="filterTransfer" name="filter" style="width: 150px" class="bg-white p-0 mx-1">Filter</div>');
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
                         $('.loadingScreen').remove();
                         $('#dattableDiv').removeClass('opacity-0');
+
+                        const tableDiv = $('.dt-layout-row').first();
+                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Stock Adjustment Report</p></div>');
                     }
                 });
             }
@@ -346,12 +342,12 @@ const datatables = {
                     { data: 'Description' },
                     { data: 'OrderQty',
                         render: function (data, type, row){
-                            return parseFloat(data);
+                            return parseFloat(data).toFixed(2);
                         }
                     },
                     { data: 'OrderUom' },
                     {
-                        data: null, 
+                        data: null,
                         render: function (data, type, row) {
                             return ` <div class="d-flex actIcon">
                                         <div class="w-50 d-flex justify-content-center itemUpdateIcon">
@@ -412,15 +408,15 @@ const initVS = {
             ele: '#filterTransfer',                   // Attach to the element
             options: [
                 // { label: "Adjustment", value: 0 },
-            ], 
-            multiple: true, 
-            hideClearButton: true, 
+            ],
+            multiple: true,
+            hideClearButton: true,
             search: false,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded customVS-height',
         });
 
         $("#filterTransfer").on("change", async function () {
@@ -440,7 +436,7 @@ const initVS = {
                     });
                 }
                 datatables.initInvTransferDatatable(filteredData);
-                
+
             }
         });
     },
@@ -448,21 +444,21 @@ const initVS = {
         var selectedWH = $('#VSWarehouse').val();
         await ajax( "api/inv/transfer/warehouse/inventory/"+ selectedWH, "GET", null,
             (response) => {
-                warehouseInv = response; 
+                warehouseInv = response;
                 const products = response.data;
-        
+
                 const newData = products.map((item) => {
                 return {
                     description: item.productdetails.Description,
-                    value: item.StockCode, 
-                    label: item.StockCode, 
+                    value: item.StockCode,
+                    label: item.StockCode,
                 };
                 });
-        
+
                 if (document.querySelector("#StockCode")?.virtualSelect) {
                 document.querySelector("#StockCode").destroy();
                 }
-        
+
                 // Initialize VirtualSelect
                 VirtualSelect.init({
                     ele: "#StockCode", // Attach to the element
@@ -471,8 +467,12 @@ const initVS = {
                     autofocus: true,
                     search: true,
                     hasOptionDescription: true,
+                    additionalClasses: 'rounded',
+                    additionalDropboxClasses: 'rounded',
+                    additionalDropboxContainerClasses: 'rounded',
+                    additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
                 });
-        
+
                 $("#StockCode").on("afterClose", async function () {
                     if (this.value) {
                         const stockCode = this.value;
@@ -484,14 +484,14 @@ const initVS = {
                         $("#actualStock").val(findProduct.QtyOnHand + qtyExtension);
 
                         var uomColumn = ["StockUom", "AlternateUom", "OtherUom"];
-        
+
                         var uoms = uomColumn.map((item) => {
                             return {
-                                value: findProduct.productdetails[item], 
-                                label: findProduct.productdetails[item], 
+                                value: findProduct.productdetails[item],
+                                label: findProduct.productdetails[item],
                             };
                         });
-        
+
                         uoms = uoms.filter(
                             (item, index, self) =>
                                 index === self.findIndex((other) => other.value === item.value)
@@ -501,7 +501,7 @@ const initVS = {
                             $(".UOMField").addClass("d-none");
                             $("#itemModalFields").validate().resetForm();
                         }
-        
+
                         const uomMap = {
                             CS: 'inCS',
                             IB: 'inIB',
@@ -518,7 +518,7 @@ const initVS = {
                             $div.removeClass('d-none');
                             $qty.attr('placeholder', findProduct.runningBal[uomKey]);
                         });
-        
+
                         productConFact = {
                             ConvFactAltUom: findProduct.productdetails.ConvFactAltUom,
                             ConvFactOthUom: findProduct.productdetails.ConvFactOthUom
@@ -554,41 +554,41 @@ const initVS = {
                     $("#Decription").val("");
                     $("#PricePerUnit").val("");
                 });
-        
+
             }
         );
     },
     origWHVS: async () => {
-        const invData = await ajax('api/wh/all-warehouse', 'GET', null, (response) => {  
+        const invData = await ajax('api/wh/all-warehouse', 'GET', null, (response) => {
             availWH = response.data;
 
             const warehouses = response.data;
-    
+
             const whData = warehouses.map((wh) => {
               return {
-                value: wh.Warehouse, 
-                label: wh.Warehouse, 
+                value: wh.Warehouse,
+                label: wh.Warehouse,
               };
             });
-    
+
             if (document.querySelector("#VSWarehouse")?.virtualSelect) {
               document.querySelector("#VSWarehouse").destroy();
             }
 
             VirtualSelect.init({
-                ele: '#VSWarehouse',   
-                options: whData, 
-                multiple: false, 
-                hideClearButton: false, 
+                ele: '#VSWarehouse',
+                options: whData,
+                multiple: false,
+                hideClearButton: false,
                 search: true,
-                maxWidth: '100%', 
+                maxWidth: '100%',
                 additionalClasses: 'rounded',
                 additionalDropboxClasses: 'rounded',
                 additionalDropboxContainerClasses: 'rounded',
-                additionalToggleButtonClasses: 'rounded',
+                additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
             });
             // datatables.initInvTransferDatatable(response);
-        }, (xhr, status, error) => { 
+        }, (xhr, status, error) => {
             console.error('Error:', error);
         });
 
@@ -646,15 +646,15 @@ const initVS = {
                 { label: "Return to Stock", value: "Return to Stock" },
                 { label: "Stock Take", value: "Stock Take" },
                 { label: "Write-Off", value: "Write-Off" },
-            ], 
-            multiple: false, 
-            hideClearButton: true, 
+            ],
+            multiple: false,
+            hideClearButton: true,
             search: false,
-            maxWidth: '100%', 
+            maxWidth: '100%',
             additionalClasses: 'rounded',
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
-            additionalToggleButtonClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
         });
     },
 }
@@ -669,7 +669,7 @@ const SAdjModal = {
         } else {
             return false;
         }
-    }, 
+    },
     show: () => {
         $('#stockAdjMainModal').modal('show');
     },
@@ -702,10 +702,10 @@ const SAdjModal = {
     SAdjSave: async () => {
         let SAdjData = SAdjModal.getData();
         SAdjData.Items = itemTmpSave.map((item, index) => ({
-          ...item,  
-          PRD_INDEX: index + 1, 
+          ...item,
+          PRD_INDEX: index + 1,
         }));
-    
+
         SAdjData.LastOperator = userObject.name;
         console.log("SAdjData:", SAdjData);
         await ajax("api/inv/warehouse-movement-adjust", "POST", JSON.stringify({ data: SAdjData }),
@@ -742,13 +742,13 @@ const SAdjitemsModal = {
                 var csQuantity = $("#CSQuantity").val();
                 var ibQuantity = $("#IBQuantity").val();
                 var pcQuantity = $("#PCQuantity").val();
-        
+
                 // Check if at least one has a value
                 return csQuantity !== "" || ibQuantity !== "" || pcQuantity !== "";
           },
           "At least one quantity field is required."
         ); // Custom error message
-    
+
         $("#itemModalFields").validate({
             rules: {
                 CSQuantity: {
@@ -838,18 +838,18 @@ const SAdjitemsModal = {
           IB: $("#IBQuantity").val(),
           PC: $("#PCQuantity").val(),
         };
-    
+
         UomAndQuantity = Object.fromEntries(
           Object.entries(UomAndQuantity).filter(([_, value]) => value)
         );
-    
+
         return UomAndQuantity;
     },
     getTotalQuantity: (UomAndQuantity) => {
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
         let totalInPieces = 0;
-    
+
         Object.entries(UomAndQuantity).forEach(([key, uom]) => {
           if (key.toUpperCase() === "PC") {
             totalInPieces += Number(uom);
@@ -863,7 +863,7 @@ const SAdjitemsModal = {
     },
     itemEditMode: (uoms, isAlreadyExist) => {
         console.log(isAlreadyExist);
-        
+
         if (!isAlreadyExist.UomAndQuantity) {
             // console.log(isAlreadyExist.TrnQty);
             isAlreadyExist.UomAndQuantity = SAdjitemsModal.reverseItemCalculateUOM(
@@ -872,39 +872,39 @@ const SAdjitemsModal = {
             );
         //   console.log(isAlreadyExist.UomAndQuantity);
         }
-    
+
         Object.entries(isAlreadyExist.UomAndQuantity).forEach(([key, value]) => {
           $(`#${key}Quantity`).val(value);
         });
-    
+
         $("#itemSave").text("Update Item");
     },
     reverseItemCalculateUOM: (uoms, totalInPieces) => {
         let UomAndQuantity = {};
         let moduloResult = totalInPieces % productConFact.ConvFactAltUom;
-    
+
         const { ConvFactAltUom, ConvFactOthUom } = productConFact;
-    
+
         uoms.forEach((element) => {
             switch (element.value) {
                 case "CS":
                     UomAndQuantity.CS = Math.floor(totalInPieces / ConvFactAltUom);
                     break;
-    
+
                 case "IB":
                     const conFact = ConvFactAltUom / ConvFactOthUom;
                     UomAndQuantity.IB = Math.floor((moduloResult === 0 ? totalInPieces : moduloResult) / conFact);
                     break;
-    
+
                 case "PC":
                     const hasIB = uoms.some(item => item.value === "IB");
                     let remainingForPC = hasIB ? moduloResult % (ConvFactAltUom / ConvFactOthUom) : totalInPieces % ConvFactOthUom;
-    
+
                     UomAndQuantity.PC = remainingForPC;
                     break;
             }
         });
-    
+
         // console.log(UomAndQuantity);
         return UomAndQuantity;
     },
@@ -920,13 +920,13 @@ const SAdjitemsModal = {
             OrderQty: $("#Quantity").val(),
             ActualQty: parseInt(actualStockQty)
         };
-        
+
     },
     itemCalculateUOM: (getItem) => {
         const uomsAndQty = getItem.UomAndQuantity;
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
-    
+
         const totalInPieces = SAdjitemsModal.getTotalQuantity(uomsAndQty);
         if (uomsAndQty.CS) {
             getItem.OrderUom = "CS";
@@ -947,7 +947,7 @@ const SAdjitemsModal = {
         itemTmpSave = itemTmpSave.filter(
           (item) => item.StockCode != skuCode.text()
         );
-    
+
         datatables.initSAdjItemsDatatable(itemTmpSave);
     },
 }
@@ -958,13 +958,13 @@ function invStockChecker(item) {
     for (const value of invStockList) {
         if (value.StockCode === item.StockCode) {
             if (parseInt(value.QtyOnHand) >= parseInt(item.TrnQty)) {
-                return true; 
+                return true;
             } else {
-                return false; 
+                return false;
             }
         }
     }
- 
+
     return false;
 }
 

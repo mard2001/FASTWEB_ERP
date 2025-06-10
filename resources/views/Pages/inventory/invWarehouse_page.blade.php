@@ -10,52 +10,54 @@
 @endsection
 
 @section('table')
-<style>
-    .secBtns .selected {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-    }
+    <style>
+        .secBtns .selected {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+        }
 
-    .secBtns button {
-        border-bottom: 2px solid transparent;
-        border-top: 1px solid transparent;
-        border-left: 1px solid transparent;
-        border-right: 1px solid transparent;
-    }
+        .secBtns button {
+            border-bottom: 2px solid transparent;
+            border-top: 1px solid transparent;
+            border-left: 1px solid transparent;
+            border-right: 1px solid transparent;
+        }
 
-    .secBtns button:hover {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-        border-top: 0.5px solid #0275d8;
-        border-left: 0.5px solid #0275d8;
-        border-right: 0.5px solid #0275d8;
-    }
+        .secBtns button:hover {
+            background-color: rgba(23, 162, 184, 0.10);
+            border-bottom: 2px solid #0275d8;
+            border-top: 0.5px solid #0275d8;
+            border-left: 0.5px solid #0275d8;
+            border-right: 0.5px solid #0275d8;
+        }
 
-    .autocompleteHover:hover {
-        background-color: #3B71CA;
-        cursor: pointer;
-    }
+        .autocompleteHover:hover {
+            background-color: #3B71CA;
+            cursor: pointer;
+        }
 
-    .ui-autocomplete {
-        z-index: 9999 !important;
-    }
+        .ui-autocomplete {
+            z-index: 9999 !important;
+        }
 
-    .fs15 * {
-        font-size: 15px;
-    }
-</style>
+        .fs15 * {
+            font-size: 15px;
+        }
+    </style>
 
-<x-table id="invTable">
-    <x-slot:td>
-        <td class="col">Warehouse</td>
-        <td class="col">StockCode</td>
-        <td class="col">Brand</td>
-        <td class="col">ProductClass</td>
-        <td class="col">Brand</td>
-        <td class="col">Quantity</td>
-        <td class="col">DateLastStockMove</td>
-    </x-slot:td>
-</x-table>
+    <x-contentButtonDiv downloadFunc="true"></x-contentButtonDiv>
+
+    <x-table id="invTable">
+        <x-slot:td>
+            <td class="col">Warehouse</td>
+            <td class="col">StockCode</td>
+            <td class="col">Brand</td>
+            <td class="col">ProductClass</td>
+            <td class="col">Brand</td>
+            <td class="col">Quantity</td>
+            <td class="col">DateLastStockMove</td>
+        </x-slot:td>
+    </x-table>
 @endsection
 
 @section('modal')
