@@ -12,6 +12,83 @@
     <ul class="sidebar-nav">
         <li class="">
             <button class="dropdown-btn d-flex align-items-center" onclick="toggleSubMenu(this)">
+                <span class="mdi mdi-truck-fast-outline"></span>
+                <span>Transactions</span>
+                <span class="mdi mdi-menu-down-outline ms-auto"></span>
+            </button>
+            <ul class="sub-menu">
+                <div>
+                    <li class="">
+                        <a href="{{ route('purchase-order') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Purchase Order</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('receiving-report') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Receiving Report</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('sales-order') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Sales Order</span>
+                        </a>
+                    </li>
+                </div>
+            </ul>
+        </li>
+        <li class="">
+            <button class="dropdown-btn d-flex align-items-center" onclick="toggleSubMenu(this)">
+                <span class="mdi mdi-notebook-edit-outline"></span>
+                <span>Inventory</span>
+                <span class="mdi mdi-menu-down-outline ms-auto"></span>
+            </button>
+            <ul class="sub-menu">
+                <div>
+                    <li class="">
+                        <a href="{{ route('invWarehouse') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Inventory Warehouse</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('invMovements') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Inventory Movements</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('invWarehouseMovements') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Warehouse Movements</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('stockadjustment') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Stock Adjustment</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('stockcount') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Stock Count</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('invStockTransfer') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Stock Transfer</span>
+                        </a>
+                    </li>
+                    
+                </div>
+            </ul>
+        </li>
+        <li class="">
+            <button class="dropdown-btn d-flex align-items-center" onclick="toggleSubMenu(this)">
                 <span class="mdi mdi-package-variant"></span>
                 <span>Master Data</span>
                 <span class="mdi mdi-menu-down-outline ms-auto"></span>
@@ -46,83 +123,6 @@
                         <a href="{{ route('warehouse') }}" class="sidebar-link">
                             <span class="mdi mdi-ray-start-arrow"></span>
                             <span class="ms-2 px-1">Warehouse</span>
-                        </a>
-                    </li>
-                </div>
-            </ul>
-        </li>
-        <li class="">
-            <button class="dropdown-btn d-flex align-items-center" onclick="toggleSubMenu(this)">
-                <span class="mdi mdi-notebook-edit-outline"></span>
-                <span>Inventory</span>
-                <span class="mdi mdi-menu-down-outline ms-auto"></span>
-            </button>
-            <ul class="sub-menu">
-                <div>
-                    <li class="">
-                        <a href="{{ route('invWarehouse') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Inventory Warehouse</span>
-                        </a>
-                    </li>
-                    <li class="">
-                        <a href="{{ route('invMovements') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Inventory Movements</span>
-                        </a>
-                    </li>
-                    <li class="">
-                        <a href="{{ route('stockadjustment') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Stock Adjustment</span>
-                        </a>
-                    </li>
-                    <li class="">
-                        <a href="{{ route('stockcount') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Stock Count</span>
-                        </a>
-                    </li>
-                    <li class="">
-                        <a href="{{ route('invStockTransfer') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Stock Transfer</span>
-                        </a>
-                    </li>
-                    <li class="">
-                        <a href="{{ route('invWarehouseMovements') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Warehouse Movements</span>
-                        </a>
-                    </li>
-                    
-                </div>
-            </ul>
-        </li>
-        <li class="">
-            <button class="dropdown-btn d-flex align-items-center" onclick="toggleSubMenu(this)">
-                <span class="mdi mdi-truck-fast-outline"></span>
-                <span>Transactions</span>
-                <span class="mdi mdi-menu-down-outline ms-auto"></span>
-            </button>
-            <ul class="sub-menu">
-                <div>
-                    <li class="">
-                        <a href="{{ route('purchase-order') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Purchase Order</span>
-                        </a>
-                    </li>
-                    <li class="">
-                        <a href="{{ route('receiving-report') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Receiving Report</span>
-                        </a>
-                    </li>
-                    <li class="">
-                        <a href="{{ route('sales-order') }}" class="sidebar-link">
-                            <span class="mdi mdi-ray-start-arrow"></span>
-                            <span class="ms-2 px-1">Sales Order</span>
                         </a>
                     </li>
                 </div>

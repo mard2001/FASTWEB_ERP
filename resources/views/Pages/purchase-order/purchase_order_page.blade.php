@@ -166,7 +166,7 @@
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="">
                             <label for="requisitioner" class="form-label">REQUISITIONER</label>
-                            <input type="text" disabled id="requisitioner" name="requisitioner" class="form-control" required>
+                            <input type="text" disabled id="requisitioner" name="requisitioner" class="form-control" readonly>
                         </div>
                     </div>
                     <div class="col-12 col-sm-6 col-md-3">
@@ -344,13 +344,13 @@
             <div class="col-6">
                 <div class="">
                     <label for="PricePerUnit" class="form-label">Price Per Unit</label>
-                    <input disabled type="text" id="PricePerUnit" name="PricePerUnit" class="form-control" required placeholder="Price Per Unit">
+                    <input disabled type="text" id="PricePerUnit" name="PricePerUnit" class="form-control" required placeholder="Price Per Unit" readonly>
                 </div>
             </div>
             <div class="col-6">
                 <div class="">
                     <label for="TotalPrice" class="form-label">Total Price</label>
-                    <input disabled type="text" id="TotalPrice" name="TotalPrice" class="form-control" required placeholder="Total Price">
+                    <input disabled type="text" id="TotalPrice" name="TotalPrice" class="form-control" required placeholder="Total Price" readonly>
                 </div>
             </div>
         </x-slot:customFields>

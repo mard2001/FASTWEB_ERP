@@ -307,6 +307,23 @@ $(document).ready(async function () {
     });
 
     $("#addItems").on("click", function () {
+        // Check if required fields are filled
+        const shippedToName = $("#shippedToName").val();
+        const branch = $("#Branch").val();
+        const warehouse = $("#Warehouse").val();
+        const orderDate = $("#OrderDate").val();
+        const reqShipDate = $("#ReqShipDate").val();
+        
+        if (!shippedToName || !branch || !warehouse || !orderDate || !reqShipDate) {
+            Swal.fire({
+                title: "Missing Required Information!",
+                text: "Please fill in the Ship To, Branch, Warehouse, Order Date, and Request Ship Date fields before adding items.",
+                icon: "warning",
+                confirmButtonText: "OK"
+            });
+            return;
+        }
+        
         SOItemsModal.clear();
         SOItemsModal.enable(true);
 

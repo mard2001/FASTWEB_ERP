@@ -160,7 +160,7 @@
 
             <div class="field my-1">
                 <span class="font-weight-bold">Fullname</span>
-                <input type="text" class="form-control bg-white border-white" name="account" aria-label="account" disabled required>
+                <input type="text" class="form-control bg-white border-white" name="fullname" aria-label="fullname" disabled required>
             </div>
 
             <div class="field my-1">
@@ -221,14 +221,6 @@
         <form id="serverForm">
             <div class="d-flex justify-content-between formSaveBtn" style="margin: -10px 0; height: 45px">
 
-                <div class="py-3">
-                    <div class="w-100 d-flex align-items-center">
-                        <span>Status:</span>
-                        <span class="px-2 align-middle" id="conStatus">Disconnected</span>
-                        <div id="connResult" class="mx-2 h-100 d-flex align-items-center"></div>
-                    </div>
-                </div>
-
                 <svg id="conTestBtn" class="d-none" width="150" height="100%" viewBox="0 0 208 55" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
                     <rect x="25" y="9" width="183" height="35" rx="3" fill="url(#paint0_linear_340_77)" />
                     <g filter="url(#filter0_i_340_77)">
@@ -260,7 +252,11 @@
 
             </div>
             <div class="field my-1">
-                <span class="font-weight-bold">ServerIp</span>
+                <span class="font-weight-bold">Status</span>
+                <input type="text" id="status" class="form-control bg-white border-white" name="status" aria-label="status" disabled required>
+            </div>
+            <div class="field my-1">
+                <span class="font-weight-bold">Server IP</span>
                 <input type="text" id="serverIp" class="form-control bg-white border-white" name="serverip" aria-label="serverip" disabled required>
             </div>
             <div class="field my-1">
@@ -298,6 +294,7 @@
 <script>
     $(document).ready(async function() {
         fillcondetails();
+        fillUserDetails();
 
         $(".iconbg").click(function() {
             var childSpan = $(this).find('span');
@@ -439,19 +436,43 @@
     });
 
     function fillcondetails() {
+        // Fill server details from .env file
+        $('#serverIp').val('{{ env("DB_HOST") }}' + ({{ env("DB_PORT") }} ? ',{{ env("DB_PORT") }}' : ''));
+        $('#serverDb').val('{{ env("DB_DATABASE") }}');
+        $('#serverUser').val('{{ env("DB_USERNAME") }}');
+        
+        // Temporary static "Connected" text in Status input field
+        $('#status').val('Connected');
+        
+        // Also check localStorage for any saved connection
         var retrievedConn = localStorage.getItem('dbcon');
         if (retrievedConn) {
             retrievedConn = JSON.parse(retrievedConn);
             $('#companyname').val(retrievedConn.company);
-            $('#serverIp').val(retrievedConn.host + ',' + retrievedConn.port);
-            $('#serverDb').val(retrievedConn.database);
-            $('#serverUser').val(retrievedConn.username);
             $('#serverPass').val(retrievedConn.password);
 
             $('#conStatus').addClass('text-success').html(`Connected!`);
             $('#connResult').html('<span class="mdi mdi-check-circle text-success"></span>');
         }
 
+    }
+
+    function fillUserDetails() {
+        var retrievedUser = localStorage.getItem('user');
+        if (retrievedUser) {
+            retrievedUser = JSON.parse(retrievedUser);
+            
+            // Populate the user form fields
+            $('input[name="fullname"]').val(retrievedUser.name || retrievedUser.fullname || '');
+            
+            // Try multiple possible contact field names
+            var contactValue = retrievedUser.mobile || retrievedUser.phone || retrievedUser.contact || retrievedUser.cell_number || retrievedUser.cellphone || retrievedUser.telephone || '';
+            
+            $('input[name="contact"]').val(contactValue);
+            
+            $('input[name="email"]').val(retrievedUser.email || '');
+            $('input[name="account"]').val('Administrator');
+        }
     }
 
     function generatePassword(length = 12) {

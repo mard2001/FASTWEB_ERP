@@ -137,7 +137,10 @@
                         if (response.success) {        
                             localStorage.setItem('api_token', response.token); // Store the token
 
-                            localStorage.setItem('user', JSON.stringify(response.user));
+                            // Store user data with mobile number
+                            var userData = response.user;
+                            userData.mobile = '0' + $('#mobileNumber').val(); // Add mobile number to user data
+                            localStorage.setItem('user', JSON.stringify(userData));
 
                             // window.location.href = 'https://spc.sfa.w-itsolutions.com/dbconfig';
                             window.location.href = globalApi + 'settings/dbconfig';

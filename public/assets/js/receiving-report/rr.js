@@ -266,6 +266,7 @@ const RRModal = {
             var tr = `
                 <tr>
                     <th scope="row" class="text-center">${index + 1}</th>
+                    <td class="text-center">${item["PO_NUMBER"] || ''}</td>
                     <td>${item["SKU"]}</td>
                     <td>${item.product["Description"]}</td>
                     <td class="text-center">${parseFloat(item.convertedQuantity["convertedToLargestUnit"]).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -283,6 +284,7 @@ const RRModal = {
         var tr = `
                 <tr>
                     <th scope="row" class="text-center" style="border-bottom: 0px !important;"></th>
+                    <td style="border-bottom: 0px !important;"></td>
                     <td style="border-bottom: 0px !important;"></td>
                     <td style="border-bottom: 0px !important;"></td>
                     <td class="text-center" style="border-bottom: 0px !important;"></td>

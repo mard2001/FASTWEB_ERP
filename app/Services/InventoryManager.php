@@ -208,7 +208,7 @@ class InventoryManager
                     'ENTRY_DATE' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
                     'PREV_QTY' => $productData['ActualQty'],
                     'NEW_QTY' => $productData['TrnQty'],
-                    'ADJUSTED_QTY' => (float)$productData['ActualQty'] - (float)$productData['TrnQty'],
+                    'ADJUSTED_QTY' => (float)$productData['TrnQty'] - (float)$productData['ActualQty'],
                     'ADJUSTMENT_TYPE' => $headerDetails['Type'],
                     'REASON' => '',
                     'HANDLED_BY' => $headerDetails['LastOperator']

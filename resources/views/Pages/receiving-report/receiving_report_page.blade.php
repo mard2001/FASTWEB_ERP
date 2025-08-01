@@ -132,6 +132,7 @@
                 <thead>
                     <tr>
                         <th scope="col" class="text-center">No.</th>
+                        <th scope="col" class="text-center">PO Number</th>
                         <th scope="col" class="text-center">Item</th>
                         <th scope="col" class="text-center">Description</th>
                         <th scope="col" class="text-center">Quantity</th>

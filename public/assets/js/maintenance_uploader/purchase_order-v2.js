@@ -141,6 +141,13 @@ $(document).ready(async function () {
     itemTmpSave = [];
     selectedMain = null;
 
+    // Auto-fill requisitioner with logged-in user
+    const user = localStorage.getItem('user');
+    if (user) {
+      const userObject = JSON.parse(user);
+      $("#requisitioner").val(userObject.name || '');
+    }
+
     datatables.initPOItemsDatatable(null);
     $("#confirmPO").hide();
     $("#addItems").show();
@@ -277,6 +284,21 @@ $(document).ready(async function () {
   });
 
   $("#addItems").on("click", function () {
+    // Check if required fields are filled
+    const vendorName = $("#vendorName").val();
+    const shippedToName = $("#shippedToName").val();
+    const fob = $("#fob").val();
+    
+    if (!vendorName || !shippedToName || !fob) {
+      Swal.fire({
+        title: "Missing Required Information!",
+        text: "Please fill in the Supplier, Ship To, and F.O.B. fields before adding items.",
+        icon: "warning",
+        confirmButtonText: "OK"
+      });
+      return;
+    }
+    
     POItemsModal.clear();
     POItemsModal.enable(true);
 
