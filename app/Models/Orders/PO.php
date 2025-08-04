@@ -46,7 +46,10 @@ class PO extends Model
         'SpecialInstruction',
         'EncoderID',
         'FileName',
-        'TermsCode'
+        'TermsCode',
+        'ConfirmedBy',
+        'EditedBy',
+        'DateUpdated'
     ];
 
     protected static function boot()
@@ -66,7 +69,7 @@ class PO extends Model
     {
         $subTotal = $this->POItems()->sum('TotalPrice');
         $this->subTotal = $subTotal;
-
+        
         // comment as of now because there is no discount on po items
         // $totalDiscount = $this->POItems()->sum('TotalDiscount');
         $this->totalCost = $subTotal;

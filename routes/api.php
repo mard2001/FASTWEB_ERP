@@ -140,6 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/v2/confirm-rr', [RRController::class, 'approveRR']);
 
         Route::apiResource('/v2/countsheet', CountController::class);
+        Route::post('/v2/countsheet/confirm/{headerID}', [CountController::class, 'confirm']);
     });
 
     Route::prefix('inv')->group(function () {

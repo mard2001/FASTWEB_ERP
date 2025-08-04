@@ -21,7 +21,7 @@ class CountController extends Controller
     {
         try {
             
-            $data = CSHeader::orderBy('DATECREATED','desc')->with('user')->where('STATUS', '1')->get();
+            $data = CSHeader::orderBy('DATECREATED','desc')->with('user')->whereIn('STATUS', [1, 2])->get();
             
             if (count($data) == 0) {
                 return response()->json([
@@ -122,12 +122,7 @@ class CountController extends Controller
     {
         try {
             $productCalculator = new ProductCalculator();
-            $data = CSHeader::with(['details', 'user', 'details.proddetails' => function ($productQuery) {
-                $productQuery->select('StockCode', 'Description', 'StockUom', 'AlternateUom', 'OtherUom', 'ConvFactAltUom')
-                    ->whereIn('StockCode', function ($subQuery) {
-                        $subQuery->selectRaw("CAST(StockCode AS VARCHAR) FROM TBLINVCOUNT_DETAILS");
-                    });
-            }])->where('CNTHEADER_ID', $id)->firstOrFail();
+            $data = CSHeader::with(['details', 'user'])->where('CNTHEADER_ID', $id)->firstOrFail();
             
             $productStockCodes = $data->details->pluck('STOCKCODE')->unique()->toArray();
             $products = Product::whereIn('StockCode', $productStockCodes)->get()->keyBy('StockCode'); 
@@ -146,6 +141,9 @@ class CountController extends Controller
                         $detail->altUOM = $calculation['altUOM'];
                         $detail->othUOM = $calculation['othUOM'];
                     }
+                    
+                    // Add product details to the detail object
+                    $detail->proddetails = $product;
                 }
         
                 return $detail;
@@ -253,6 +251,63 @@ class CountController extends Controller
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage(),
             ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
+    /**
+     * Confirm the inventory count
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $headerID
+     * @return \Illuminate\Http\Response
+     */
+    public function confirm(Request $request, string $headerID)
+    {
+        try {
+            // Check if the inventory count exists
+            $countHeader = CSHeader::where('CNTHEADER_ID', $headerID)->first();
+            
+            if (!$countHeader) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inventory Count not found',
+                ], 404);
+            }
+
+            // Check if already confirmed
+            if ($countHeader->STATUS == 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inventory Count is already confirmed',
+                ], 400);
+            }
+
+            // Update status to confirmed (2)
+            CSHeader::where('CNTHEADER_ID', $headerID)->update([
+                'STATUS' => 2,
+                'CONFIRMEDBY' => $request->input('data.userID'),
+                'DATEUPDATED' => now()->setTimezone('Asia/Manila'),
+            ]);
+
+            // Log the confirmation action
+            CSLog::create([
+                'PROCESSID' => $headerID,
+                'PROCESSEDBY' => $request->input('data.userID'),
+                'ACTION' => "Confirm",
+                'DATECREATED' => now()->setTimezone('Asia/Manila'),
+                'STATUS' => 1,
+            ]);
+
+            return response()->json([
+                'message' => 'Inventory Count confirmed successfully',
+                'headerID' => $headerID,
+                'success' => true,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
         }
     }
 

@@ -19,7 +19,7 @@ class POController
     public function index()
     {
         try {
-            $purchaseOrders = PO::orderBy('DateUploaded', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus')->get();
+            $purchaseOrders = PO::orderBy('DateUploaded', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus', 'ConfirmedBy', 'EditedBy', 'DateUpdated')->get();
 
             if ($purchaseOrders->isEmpty()) {
                 return response()->json([
@@ -49,7 +49,7 @@ class POController
             // return response()->json(gettype($status));
             // $status =  $request->input('status');
 
-            $query = PO::orderBy('DateUploaded', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus')->whereIn('POStatus', $status);
+            $query = PO::orderBy('DateUploaded', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus', 'ConfirmedBy', 'EditedBy', 'DateUpdated')->whereIn('POStatus', $status);
 
             if (in_array(null, $status->json()->all(), true)) {
                 $query->orWhereNull('POStatus');
@@ -149,6 +149,8 @@ class POController
             if ($found->POStatus == null) {
                 $found->fill($data);
                 if ($found->isDirty()) {
+                    $found->EditedBy = $request->user()->name ?? $request->user()->email ?? 'Admin';
+                    $found->DateUpdated = now();
                     $found->save();
                 }
 
@@ -221,7 +223,7 @@ class POController
         }
     }
 
-    public function POConfirm(string $poid)
+    public function POConfirm(Request $request, string $poid)
     {
         try {
 
@@ -242,6 +244,8 @@ class POController
             }
 
             $data->POStatus = 1;
+            $data->ConfirmedBy = $request->user()->name ?? $request->user()->email ?? 'Admin';
+            $data->DateUpdated = now();
             $data->save();
 
             return response()->json([

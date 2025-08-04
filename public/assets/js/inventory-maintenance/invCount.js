@@ -160,6 +160,68 @@ $(document).ready(async function () {
         isEditable = false;
     })
 
+    $('#confirmIC').on('click', function () {
+        Swal.fire({
+            title: "Confirm Inventory Count",
+            text: "Are you sure you want to confirm this inventory count? This action cannot be undone.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, confirm it!"
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                let userData = localStorage.getItem('user');
+                let user = JSON.parse(userData);
+                
+                Swal.fire({
+                    text: "Please wait... Confirming inventory count...",
+                    timerProgressBar: true,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    allowEnterKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                });
+                
+                await ajax('api/report/v2/countsheet/confirm/' + selectedMain.CNTHEADER_ID, 'POST', JSON.stringify({
+                    data: {
+                        userID: user.name
+                    }
+                }), (response) => {
+                    Swal.close();
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Confirmed!",
+                            text: response.message,
+                            icon: "success"
+                        }).then(() => {
+                            // Refresh the main table and close modal
+                            datatables.loadCountData();
+                            $('#invCountMainModal').modal('hide');
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error!",
+                            text: response.message,
+                            icon: "error"
+                        });
+                    }
+                }, (xhr, status, error) => {
+                    Swal.close();
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        Swal.fire({
+                            title: "Error!",
+                            text: xhr.responseJSON.message,
+                            icon: "error"
+                        });
+                    }
+                });
+            }
+        });
+    })
+
 });
 
 async function ajax(endpoint, method, data, successCallback = () => { }, errorCallback = () => { }) {
@@ -209,19 +271,34 @@ const datatables = {
                         { data: 'CNTHEADER_ID',  title: 'Count ID' },
                         { data: 'STATUS',  title: 'Status',
                             render: function(data, type, row) {
-                                if (!data || isNaN(data)) return '-1';
-                                return parseFloat(data) != 0 ? "<span class='statusBadge1'>Active</span>" : "<span class='statusBadge2'>Deleted</span>";
+                                if (!data || isNaN(data)) return "<span class='statusBadge3'>Pending</span>";
+                                const status = parseFloat(data);
+                                if (status == 0) return "<span class='statusBadge2'>Deleted</span>";
+                                if (status == 1) return "<span class='statusBadge3'>Pending</span>";
+                                if (status == 2) return "<span class='statusBadge1'>Confirmed</span>";
+                                return "<span class='statusBadge3'>Pending</span>";
                             }
                         },
                         { data: 'user.FULLNAME',  title: 'User' },
                         { data: 'MOTATION',  title: 'Motation' },
                         { data: 'DATECREATED',  title: 'Date Created' },
+                        { data: 'DATEUPDATED',  title: 'Date Updated',
+                            render: function(data, type, row) {
+                                return data || '-';
+                            }
+                        },
+                        { data: 'CONFIRMEDBY',  title: 'Confirmed By',
+                            render: function(data, type, row) {
+                                return data || '-';
+                            }
+                        },
                     ],
                     columnDefs: [
                         // { className: "text-start", targets: [ 0, 1, 2, 6 ] },
                         { className: "text-center", targets: [ 1 ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-uppercase", targets: [ 2 ] },
+                        { className: "text-center", targets: [ 4, 5, 6 ] },
                     ],
                     scrollCollapse: true,
                     scrollY: '100%',
@@ -360,7 +437,19 @@ const ICModal = {
         $('#addICBtn').hide();
         $('#editICBtn').show();
         $("#editICBtn").text('Edit Sheet').removeClass('btn-primary').addClass('btn-info');
-        $('#confirmIC').hide();
+        
+        // Show/hide confirm button based on status
+        const status = parseFloat(InvCountData.STATUS || 1);
+        if (status == 2) {
+            // Already confirmed
+            $('#confirmIC').hide();
+            $('#editICBtn').hide();
+            $('#deleteICBtn').hide();
+        } else {
+            // Pending status - show confirm button
+            $('#confirmIC').show();
+        }
+        
         $('#deleteICBtn').text('Delete Sheet');
         $('#rePrintPage').show();
         $('#cancelEditICBtn').hide();

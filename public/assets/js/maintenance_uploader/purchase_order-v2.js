@@ -767,6 +767,7 @@ const initVS = {
               (item) => item.cID == this.value
             );
 
+            selecteddShippedTo = findSupplier;
             $("#shippedToContactName").val(findSupplier.ContactPerson.trim());
             $("#shippedToAddress").val(findSupplier.CompleteAddress.trim());
 
@@ -787,6 +788,7 @@ const initVS = {
         });
 
         $("#shippedToName").on("reset", function () {
+          selecteddShippedTo = null;
           $("#shippedToContactName").val("");
           $("#shippedToAddress").val("");
           $("#shippedToPhone").val("");
@@ -958,6 +960,15 @@ const POModal = {
     $("#editXmlDataModal").modal("show");
   },
   fill: async (POData) => {
+    // Show ORDER DETAILS section for Edit mode
+    $("#orderDetailsSection").show();
+    
+    // Fill ORDER DETAILS section
+    $("#orderNumber").val(POData.OrderNumber);
+    $("#poNumber").val(POData.PONumber);
+    $("#status").val(POData.POStatus ? "Confirmed" : "Pending");
+    $("#poDate").val(POData.PODate);
+    
     const findVendor = vendordata.find(
       (item) => item.SupplierCode.trim() == POData.SupplierCode.trim()
     );
@@ -969,8 +980,20 @@ const POModal = {
 
     $("#shippedToContactName").val(POData.contactPerson);
     $("#shippedToAddress").val(POData.deliveryAddress);
-    $("#shippedToName").val(POData.deliveryAddress);
-    document.querySelector("#shippedToName").setValue(POData.deliveryAddress);
+    
+    // Find the correct shippedTo record by matching the delivery address
+    const findShippedTo = shippedToData.find(
+      (item) => item.CompleteAddress.trim() == POData.deliveryAddress.trim()
+    );
+    
+    if (findShippedTo) {
+      selecteddShippedTo = findShippedTo;
+      document.querySelector("#shippedToName").setValue(findShippedTo.cID);
+    } else {
+      // If no match found, reset the virtual select
+      selecteddShippedTo = null;
+      document.querySelector("#shippedToName").reset();
+    }
 
     $("#shippedToPhone").val(POData.contactNumber);
     $("#deliveryMethod").val(POData.deliveryMethod);
@@ -998,10 +1021,16 @@ const POModal = {
       document.querySelector("#shippedToName").reset();
     }
 
+    selectedVendor = null;
+    selecteddShippedTo = null;
+
     $("#subTotal").text(formatMoney(0));
     $("#taxCost").text(formatMoney(0));
     $("#totalItemsLabel").text("0");
     $("#grandTotal").text(formatMoney(0));
+    
+    // Hide ORDER DETAILS section for Add New mode
+    $("#orderDetailsSection").hide();
   },
   enable: (enable) => {
     $('#modalFields input[type="text"]').prop("disabled", !enable);
@@ -1510,6 +1539,24 @@ const datatables = {
                     { data: "SupplierName" },
                     { data: "PODate" },
                     { data: "orderPlacer" },
+                    { 
+                        data: "ConfirmedBy",
+                        render: function (data, type, row) {
+                            return data || '-';
+                        }
+                    },
+                    { 
+                        data: "EditedBy",
+                        render: function (data, type, row) {
+                            return data || '-';
+                        }
+                    },
+                    { 
+                        data: "DateUpdated",
+                        render: function (data, type, row) {
+                            return data ? new Date(data).toLocaleDateString() : '-';
+                        }
+                    },
                     {
                         data: "totalDiscount",
                         render: function (data, type, row) {
@@ -1524,8 +1571,8 @@ const datatables = {
                     },
                 ],
                 columnDefs: [
-                    { className: "text-center", targets: [2] },
-                    { className: "text-end", targets: [5, 6] }
+                    { className: "text-center", targets: [2, 6, 7, 8] },
+                    { className: "text-end", targets: [9, 10] }
                 ],
                 scrollCollapse: true,
                 scrollY: "100%",

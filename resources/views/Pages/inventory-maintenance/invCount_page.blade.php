@@ -75,6 +75,8 @@
             <td class="col">User</td>
             <td class="col">Motation</td>
             <td class="col">DATECREATED</td>
+            <td class="col">Date Updated</td>
+            <td class="col">Confirmed By</td>
         </x-slot:td>
     </x-table>
 @endsection

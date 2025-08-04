@@ -149,26 +149,26 @@
         <x-slot:form_fields>
             <div class="sAdjheaderform">
                 <div class="row">
-                    <div class="col-6">
-                        <div class="">
+                    {{-- <div class="col-4">
+                        <div class="" hidden>
                             <label for="REFERENCE" class="form-label">ADJUSTMENT REFERENCE</label>
                             <input type="text" disabled class="form-control" id="REFERENCE" name="REFERENCE">
                         </div>
-                    </div>
-                    <div class="col-6">
+                    </div> --}}
+                    <div class="col-4">
                         <div class="">
                             <label for="ENTRY_DATE" class="form-label">ADJUSTMENT DATE</label>
                             <input type="date" disabled id="ENTRY_DATE" name="ENTRY_DATE" class="form-control" required>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="">
                             <label for="WAREHOUSE" class="form-label">WAREHOUSE LOCATED</label>
                             {{-- <input type="text" class="form-control" id="Warehouse" name="Warehouse"> --}}
                             <div id="VSWarehouse" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="">
                             <label for="ADJUSTMENT_TYPE" class="form-label">ADJUSTMENT REASON</label>
                             {{-- <input type="text" class="form-control" id="Warehouse" name="Warehouse"> --}}

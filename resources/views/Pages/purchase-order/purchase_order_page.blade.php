@@ -145,6 +145,9 @@
             <td class="col">POAccount</td>
             <td class="col">PODate</td>
             <td class="col">OrderPlacer</td>
+            <td class="col">Confirmed By</td>
+            <td class="col">Edited By</td>
+            <td class="col">Date Updated</td>
             <td class="col">Discount</td>
             <td class="col">TotalCost</td>
 
@@ -157,6 +160,39 @@
     <x-mainModal mainModalTitle="editXmlDataModal" modalDialogClass="modal-xl" modalHeaderTitle="PURCHASE ORDER" modalSubHeaderTitle="All key details related to this purchase order.">
         <x-slot:form_fields>
             <div class="poheaderform">
+                <div id="orderDetailsSection">
+                    <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                        <div style="width:100%;"><hr></div>
+                        <div class="poheaderSectionTitle">ORDER DETAILS:</div>
+                        <div style="width:100%;"><hr></div>
+                    </div>
+                    <div class="row mb-2">
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="orderNumber" class="form-label">ORDER NUMBER</label>
+                            <input type="text" disabled id="orderNumber" name="orderNumber" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="poNumber" class="form-label">PO NUMBER</label>
+                            <input type="text" disabled id="poNumber" name="poNumber" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="status" class="form-label">STATUS</label>
+                            <input type="text" disabled id="status" name="status" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="">
+                            <label for="poDate" class="form-label">PO DATE</label>
+                            <input type="text" disabled id="poDate" name="poDate" class="form-control" readonly>
+                        </div>
+                    </div>
+                </div>
+                </div>
                 <div class="d-flex align-items-center" style="margin-bottom:-10px;">
                     <div style="width:100%;"><hr></div>
                     <div class="poheaderSectionTitle">REQUISITIONER INFORMATION:</div>
