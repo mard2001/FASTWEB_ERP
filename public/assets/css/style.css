@@ -7,6 +7,10 @@ table tbody tr:hover {
     cursor: pointer;
 }
 
+/* Override cursor for purchase order table since it has no row click functionality */
+#itemTables tbody tr:hover {
+    cursor: default;
+}
 
 /* Exclude specific columns (e.g., column 3) from hover effect */
 table tbody tr:hover td.nhover {

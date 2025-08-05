@@ -13,10 +13,10 @@ PHAddressInit(['Region', 'Province', 'CityMunicipality', 'Barangay']);
 export function PHAddressInit(InputElements) {
 
     Promise.all([
-        loadJSON('./assets/js/PH_Address/region.json'),
-        loadJSON('./assets/js/PH_Address/province.json'),
-        loadJSON('./assets/js/PH_Address/city.json'),
-        loadJSON('./assets/js/PH_Address/barangay.json')
+        loadJSON('/assets/js/PH_Address/region.json'),
+        loadJSON('/assets/js/PH_Address/province.json'),
+        loadJSON('/assets/js/PH_Address/city.json'),
+        loadJSON('/assets/js/PH_Address/barangay.json')
     ])
         .then(([region, province, city, barangay]) => {
 

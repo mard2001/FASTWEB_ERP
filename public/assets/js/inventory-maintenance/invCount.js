@@ -309,6 +309,7 @@ const datatables = {
 
                     "pageLength": 15,
                     "lengthChange": false,
+                    order: [[ 4, "desc" ]], // Sort by Date Created column (index 4) in descending order
 
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');

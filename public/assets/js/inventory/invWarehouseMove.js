@@ -219,7 +219,7 @@ const datatables = {
 
                     "pageLength": 10,
                     "lengthChange": false,
-                    order: [],
+                    order: [[ 0, "desc" ]], // Sort by EntryDate column (index 0) in descending order
                     initComplete: function () {
                         $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
                         $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');

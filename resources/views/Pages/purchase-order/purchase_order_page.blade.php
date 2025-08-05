@@ -244,14 +244,14 @@
                     </div>
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="">
-                            <label for="vendorAddress" class="form-label">SUPPLIER ADDRESS</label>
-                            <input type="text" disabled id="vendorAddress" name="vendorAddress" class="form-control" required >
+                            <label for="vendorPhone" class="form-label">SUPPLIER CONTACT NUMBER</label>
+                            <input type="text" disabled id="vendorPhone" name="vendorPhone" class="form-control" required>
                         </div>
                     </div>
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="">
-                            <label for="vendorPhone" class="form-label">SUPPLIER CONTACT NUMBER</label>
-                            <input type="text" disabled id="vendorPhone" name="vendorPhone" class="form-control" required>
+                            <label for="vendorAddress" class="form-label">SUPPLIER ADDRESS</label>
+                            <input type="text" disabled id="vendorAddress" name="vendorAddress" class="form-control" required >
                         </div>
                     </div>
                 </div>
@@ -275,14 +275,14 @@
                     </div>
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="">
-                            <label for="shippedToAddress" class="form-label">CONSIGNEE ADDRESS</label>
-                            <input type="text" disabled id="shippedToAddress" name="shippedToAddress" class="form-control" required >
+                            <label for="shippedToPhone" class="form-label">CONTACT NUMBER</label>
+                            <input type="text" disabled id="shippedToPhone" name="shippedToPhone" class="form-control" required>
                         </div>
                     </div>
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="">
-                            <label for="shippedToPhone" class="form-label">CONTACT NUMBER</label>
-                            <input type="text" disabled id="shippedToPhone" name="shippedToPhone" class="form-control" required>
+                            <label for="shippedToAddress" class="form-label">CONSIGNEE ADDRESS</label>
+                            <input type="text" disabled id="shippedToAddress" name="shippedToAddress" class="form-control" required >
                         </div>
                     </div>
                 </div>
