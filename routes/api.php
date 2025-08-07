@@ -45,6 +45,7 @@ use App\Http\Controllers\api\MasterData\InventoryController;
 use App\Http\Controllers\api\Salesman\SalespersonController;
 use App\Http\Controllers\api\MasterData\PAMasterListController;
 use App\Http\Controllers\api\Warehouse\WHTaggingController;
+use App\Http\Controllers\api\ActivityLog\ActivityLogController;
 
 Route::middleware(['auth:sanctum', DynamicDatabase::class])->group(function () {
 
@@ -184,6 +185,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/vendors', SupplierController::class);
     Route::apiResource('/supplier-shipped-to', SupplierShipToController::class);
 
+    // Activity Log routes
+    Route::prefix('activity-log')->group(function () {
+        Route::get('/', [ActivityLogController::class, 'index']);
+        Route::get('/statistics', [ActivityLogController::class, 'statistics']);
+        Route::get('/export', [ActivityLogController::class, 'export']);
+        Route::get('/{id}', [ActivityLogController::class, 'show']);
+        Route::delete('/cleanup', [ActivityLogController::class, 'cleanup']);
+        Route::get('/test-ip', [ActivityLogController::class, 'testIpCapture']); // Test route
+    });
+
     Route::post('/testcon', [DynamicSQLHelper::class, 'testConnection']);
     Route::post('/registerConn', [DBConsManager::class, 'saveDbconPassword']);
 
@@ -194,6 +205,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::post('/auth/force-logout', [AuthController::class, 'forceLogout']); // No auth required
 Route::post('/sendOTP', [OtpController::class, 'generateAndSend']);
 Route::post('/verifyOTP', [OtpController::class, 'verifyOtp']);
 Route::get('transactions/api/print/po/{poid}', [POController::class, 'generatePDF']);

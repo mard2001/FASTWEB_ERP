@@ -145,6 +145,12 @@
                             <span class="ms-2 px-1">Database Connection</span>
                         </a>
                     </li>
+                    <li class="">
+                        <a href="{{ route('activity-logs') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Activity Logs</span>
+                        </a>
+                    </li>
                 </div>
             </ul>
         </li>

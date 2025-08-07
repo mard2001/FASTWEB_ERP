@@ -8,7 +8,11 @@ use App\Observers\SOItemsObserver;
 use App\Models\SalesOrder\SODetail;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use App\Listeners\InvWarehouseListener;
+use App\Listeners\LogSuccessfulLogin;
+use App\Listeners\LogSuccessfulLogout;
 use App\Events\Inventory\InventoryMovement;
 use App\Events\Inventory\InventoryWarehouse;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -24,6 +28,12 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+        ],
+        Login::class => [
+            LogSuccessfulLogin::class,
+        ],
+        Logout::class => [
+            LogSuccessfulLogout::class,
         ],
     ];
 

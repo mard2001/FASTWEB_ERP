@@ -224,7 +224,10 @@ Route::get('/master-data/warehouse', function () {
     return page_view('warehouse/warehouse_page');
 })->name('warehouse');
 
-
+// ACTIVITY LOGS MODULE
+Route::get('/reports/activity-logs', function () {
+    return view('Pages.activity-log.activity_log');
+})->name('activity-logs');
 
 Route::get('/register', function () {
     return page_view('register');

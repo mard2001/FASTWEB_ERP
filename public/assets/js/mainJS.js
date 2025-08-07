@@ -3,16 +3,20 @@ var globalApi = "http://127.0.0.1:8000/";
 
 
 $(document).ready(function() {
-  const user = localStorage.getItem('user');
+  try {
+    const user = localStorage.getItem('user');
 
-  if (user) {
-    const userObject = JSON.parse(user);
-    $('#userName').text(userObject.name);
-    $('#userEmail').text(userObject.email);
+    if (user) {
+      const userObject = JSON.parse(user);
+      $('#userName').text(userObject.name);
+      $('#userEmail').text(userObject.email);
+    }
+
+    isTokenExist();
+    GlobalUX();
+  } catch (error) {
+    console.error('Error in document ready:', error);
   }
-
-  isTokenExist();
-  GlobalUX();
 
   $(document).on('click', function (e) {
     const sidebar = $('#sidebar');
@@ -58,21 +62,31 @@ function GlobalUX() {
     //UI
     const hamBurger = document.querySelector(".btn-toggle");
 
-    hamBurger.addEventListener("click", async function () {
-      document.querySelector("#sidebar").classList.toggle("expand");
-      
-      if (!$('#sidebar').hasClass('expand')) {
-        Array.from($('.showdropdown')).forEach(ul => {
-          ul.classList.remove('showdropdown');
-          ul.previousElementSibling.classList.remove('rotate');
-        })
-      }
-    });
+    // Check if hamburger menu exists before adding event listener
+    if (hamBurger) {
+        hamBurger.addEventListener("click", async function () {
+          document.querySelector("#sidebar").classList.toggle("expand");
+          
+          if (!$('#sidebar').hasClass('expand')) {
+            Array.from($('.showdropdown')).forEach(ul => {
+              ul.classList.remove('showdropdown');
+              ul.previousElementSibling.classList.remove('rotate');
+            })
+          }
+        });
+    }
 
     // Get the pathname part of the URL
     var path = window.location.pathname;
     // Split the path by "/" and get the last segment
     var lastSegment = path.substring(path.lastIndexOf('/') + 1);
+    
+    function returnSideBarItemBaseOnIndex(i) {
+        var sidebar = $('.sidebar-item').eq(i);
+        sidebar.addClass('selectedlink');
+        sidebar.find('span').addClass('selectedlinkSpan');
+    }
+    
     switch (lastSegment.toLocaleLowerCase()) {
       case 'product':
         returnSideBarItemBaseOnIndex(0);
@@ -107,12 +121,6 @@ function GlobalUX() {
       case 'sales-order':
         returnSideBarItemBaseOnIndex(10);
         break;
-
-      function returnSideBarItemBaseOnIndex(i) {
-        var sidebar = $('.sidebar-item').eq(i);
-        sidebar.addClass('selectedlink');
-        sidebar.find('span').addClass('selectedlinkSpan');
-      }
     }
 }
 
@@ -8815,9 +8823,88 @@ function toggleSubMenu(button){
   button.classList.toggle('rotate');
 }
 
-function logoutDeleteStorageTokens(){
-  // localStorage.removeItem('api_token');
-  // localStorage.removeItem('user');
+// Function to get cookie by name (native JavaScript)
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
 
-  window.location.href = globalApi;
+// Function to delete cookie by name (native JavaScript)
+function deleteCookie(name) {
+  document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
+// Make sure logout function is available globally
+window.logoutDeleteStorageTokens = function(){
+  // Prevent multiple executions
+  if (window.logoutInProgress) {
+    return;
+  }
+  
+  window.logoutInProgress = true;
+  
+  // Disable the logout button to prevent multiple clicks
+  $('button[onclick*="logoutDeleteStorageTokens"]').prop('disabled', true);
+  
+  try {
+    // Prevent any default behavior
+    if (typeof event !== 'undefined') {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    }
+    
+    // Get the token from cookies using native JavaScript
+    const authToken = getCookie('auth_token');
+    
+    // Also check localStorage as backup
+    const localStorageToken = localStorage.getItem('api_token');
+    
+    // Use localStorage token if cookie token is not found
+    const finalToken = authToken || localStorageToken;
+    
+    // If no token exists, just redirect (user is already logged out)
+    if (!finalToken) {
+      localStorage.removeItem('api_token');
+      localStorage.removeItem('user');
+      window.logoutInProgress = false;
+      window.location.href = globalApi;
+      return;
+    }
+  
+  // Use force logout for better reliability
+  $.ajax({
+    url: globalApi + 'api/auth/force-logout',
+    type: 'POST',
+    timeout: 5000,
+    headers: {
+      'Authorization': 'Bearer ' + finalToken,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    },
+    complete: function() {
+      // Always clear tokens and redirect regardless of API success/failure
+      deleteCookie('auth_token');
+      localStorage.removeItem('api_token');
+      localStorage.removeItem('user');
+      window.logoutInProgress = false;
+      window.location.href = globalApi;
+    }
+  });
+  
+  } catch (error) {
+    // Even if there's an error, try to redirect to login
+    window.location.href = globalApi;
+  } finally {
+    // Reset the flag when function completes
+    window.logoutInProgress = false;
+  }
+}
+
+// Also keep the original function name for backward compatibility
+function logoutDeleteStorageTokens(){
+  return window.logoutDeleteStorageTokens();
 }

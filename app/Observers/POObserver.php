@@ -23,19 +23,14 @@ class POObserver
 
     public function updated(PO $po)
     {
-
-        // Prevent infinite loop
-        PO::withoutEvents(function () use ($po) {
-            $po->updateTotalCost();
-        });
+        // Update total cost after PO is updated
+        $po->updateTotalCost();
     }
 
     public function created(PO $po)
     {
-        // Prevent infinite loop
-        PO::withoutEvents(function () use ($po) {
-            $po->updateTotalCost();
-        });
+        // Update total cost after PO is created
+        $po->updateTotalCost();
     }
 
     public function deleted(PO $po)

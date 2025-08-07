@@ -1527,7 +1527,7 @@ const datatables = {
                 language: {
                     searchPlaceholder: "Search here..."
                 },
-                order: [[ 4, "desc" ]], // Sort by PODate column (index 4) in descending order
+                order: [], // Disable initial ordering to maintain API order (newest first)
                 columns: [
                     { data: "OrderNumber" },
                     { data: "PONumber" },
