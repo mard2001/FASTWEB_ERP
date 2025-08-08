@@ -16,11 +16,6 @@ use App\Events\Inventory\InventoryWarehouse;
 
 class SOMasterController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
         try {
@@ -110,6 +105,24 @@ class SOMasterController extends Controller
                 'LastOperator' => $data['LastOperator'],
             ]);
             $so->sodetails()->createMany($items);
+
+            // Log the activity
+            activity('sales_order')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'sales_order_number' => $so->SalesOrder,
+                    'customer_name' => $data['CustomerInfo']['Contact'],
+                    'total_items' => count($items),
+                    'warehouse' => $data['Warehouse'],
+                    'branch' => $data['Branch'],
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $so->SalesOrder,
+                    'event' => 'created'
+                ])
+                ->log("Created new sales order #{$so->SalesOrder} for customer {$data['CustomerInfo']['Contact']} with " . count($items) . " items");
 
             return response()->json([
                 'success' => true,
@@ -319,6 +332,25 @@ class SOMasterController extends Controller
                 ->delete();
         }
 
+        // Log the activity
+        activity('sales_order')
+            ->withProperties([
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'sales_order_number' => $salesOrderId,
+                'customer_name' => $customerDetails->Contact,
+                'updated_items' => count($commonItems),
+                'new_items' => count($newItems),
+                'deleted_items' => count($deletedItems),
+                'warehouse' => $request->data['Warehouse'],
+                'branch' => $request->data['Branch'],
+                'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                'subject_id' => $salesOrderId,
+                'event' => 'updated'
+            ])
+            ->log("Updated sales order #{$salesOrderId} - modified " . count($commonItems) . " items, added " . count($newItems) . " items, removed " . count($deletedItems) . " items");
 
         return response()->json([
             'success' => true,
@@ -357,6 +389,24 @@ class SOMasterController extends Controller
                 'LastOperator' => $request->lastOperator
             ]);
 
+            // Log the activity
+            activity('sales_order')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'sales_order_number' => $data->SalesOrder,
+                    'old_status' => '1',
+                    'new_status' => '4',
+                    'status_description' => 'Available (In Warehouse)',
+                    'operator' => $request->lastOperator,
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $data->SalesOrder,
+                    'event' => 'status_changed'
+                ])
+                ->log("Marked sales order #{$data->SalesOrder} as Available (In Warehouse)");
+
             $safe = [
                 'SalesOrder' => $data->SalesOrder,
                 'OrderStatus' => $data->OrderStatus,
@@ -390,6 +440,24 @@ class SOMasterController extends Controller
                 'OrderStatus' => '2',
                 'LastOperator' => $request->lastOperator
             ]);
+
+            // Log the activity
+            activity('sales_order')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'sales_order_number' => $data->SalesOrder,
+                    'old_status' => '1',
+                    'new_status' => '2',
+                    'status_description' => 'Not Available (Open Back Order)',
+                    'operator' => $request->lastOperator,
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $data->SalesOrder,
+                    'event' => 'status_changed'
+                ])
+                ->log("Marked sales order #{$data->SalesOrder} as Not Available (Open Back Order)");
 
             $safe = [
                 'SalesOrder' => $data->SalesOrder,
@@ -425,6 +493,24 @@ class SOMasterController extends Controller
                 'LastOperator' => $request->lastOperator
             ]);
 
+            // Log the activity
+            activity('sales_order')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'sales_order_number' => $data->SalesOrder,
+                    'old_status' => '2',
+                    'new_status' => '3',
+                    'status_description' => 'Restocked (Release Back Order)',
+                    'operator' => $request->lastOperator,
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $data->SalesOrder,
+                    'event' => 'status_changed'
+                ])
+                ->log("Marked sales order #{$data->SalesOrder} as Restocked (Release Back Order)");
+
             $safe = [
                 'SalesOrder' => $data->SalesOrder,
                 'OrderStatus' => $data->OrderStatus,
@@ -459,6 +545,24 @@ class SOMasterController extends Controller
                 'LastOperator' => $request->lastOperator
             ]);
 
+            // Log the activity
+            activity('sales_order')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'sales_order_number' => $data->SalesOrder,
+                    'old_status' => '4',
+                    'new_status' => 'S',
+                    'status_description' => 'Suspense Order',
+                    'operator' => $request->lastOperator,
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $data->SalesOrder,
+                    'event' => 'status_changed'
+                ])
+                ->log("Marked sales order #{$data->SalesOrder} as Suspense Order");
+
             $safe = [
                 'SalesOrder' => $data->SalesOrder,
                 'OrderStatus' => $data->OrderStatus,
@@ -492,6 +596,24 @@ class SOMasterController extends Controller
                 'OrderStatus' => '8',
                 'LastOperator' => $request->lastOperator
             ]);
+
+            // Log the activity
+            activity('sales_order')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'sales_order_number' => $data->SalesOrder,
+                    'old_status' => '4',
+                    'new_status' => '8',
+                    'status_description' => 'Proceed to Invoice',
+                    'operator' => $request->lastOperator,
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $data->SalesOrder,
+                    'event' => 'status_changed'
+                ])
+                ->log("Marked sales order #{$data->SalesOrder} to Proceed to Invoice");
 
             $safe = [
                 'SalesOrder' => $data->SalesOrder,
@@ -551,6 +673,25 @@ class SOMasterController extends Controller
                     $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "OUT", null);
                     $InventoryManager->InvMovement($soHeaderDetails,  $detail, 'S', null);
                 }
+
+                // Log the activity
+                activity('sales_order')
+                    ->withProperties([
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->header('User-Agent'),
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                        'sales_order_number' => $data->SalesOrder,
+                        'old_status' => '8',
+                        'new_status' => '9',
+                        'status_description' => 'Completed Order',
+                        'operator' => $request->lastOperator,
+                        'inventory_movements' => count($details),
+                        'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                        'subject_id' => $data->SalesOrder,
+                        'event' => 'status_changed'
+                    ])
+                    ->log("Completed sales order #{$data->SalesOrder} with inventory movements for " . count($details) . " items");
             } else {
                 return response()->json([
                     'success' => false,
@@ -579,10 +720,39 @@ class SOMasterController extends Controller
     public function SOStatus_Delete(Request $request)
     {   
         try{
+            // Get the sales order data before updating
+            $salesOrder = SOMaster::where('SalesOrder', $request->salesOrder)->first();
+            if(!$salesOrder){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The sales order was not found.',
+                    'data' => null
+                ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+            }
+
+            $oldStatus = $salesOrder->OrderStatus;
             $data = SOMaster::where('SalesOrder', $request->salesOrder)->update([
                 'OrderStatus' => '\\',
                 'LastOperator' => $request->lastOperator
             ]);
+
+            // Log the activity
+            activity('sales_order')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'sales_order_number' => $request->salesOrder,
+                    'old_status' => $oldStatus,
+                    'new_status' => '\\',
+                    'status_description' => 'Deleted Order',
+                    'operator' => $request->lastOperator,
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $request->salesOrder,
+                    'event' => 'deleted'
+                ])
+                ->log("Deleted sales order #{$request->salesOrder}");
 
             return response()->json([
                 'success' => true,
