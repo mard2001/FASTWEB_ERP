@@ -53,10 +53,15 @@ class OtpController
             ]);
         }
 
-        return response()->json([
-            'otp' => $otpRecord,
-            'success' => true,
-        ], 200);
+        // Development mode - return OTP for testing
+        if (env('APP_ENV') === 'local') {
+            return response()->json([
+                'message' => 'OTP sent to your mobile. (Dev mode - OTP: ' . $otp . ')',
+                'otp_expires_at' => $otpRecord->otp_expires_at,
+                'otp' => $otp, // Only in development
+                'success' => true,
+            ], 200);
+        }
 
         $otpResult = $this->sendOTPtoSender($otp, $user->mobile);
 
@@ -122,10 +127,10 @@ class OtpController
             60 * 24,  // Cookie duration (1 day)
             '/',
             null,
-            false,  // Secure = false for HTTP
+            request()->secure(),  // Secure based on request protocol
             true,   // HttpOnly
             false,  // SameSite
-            null    // No SameSite restriction
+            'Lax'    // SameSite policy for mobile compatibility
         );
     }
 

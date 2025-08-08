@@ -350,23 +350,28 @@ class SOMasterController extends Controller
                     'success' => false,
                     'message' => 'The sales order was not found or has been modified. Please refresh your data.',
                     'data' => $data
-                ], 200);
+                ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
             }
             $data->update([
                 'OrderStatus' => '4',
                 'LastOperator' => $request->lastOperator
             ]);
 
+            $safe = [
+                'SalesOrder' => $data->SalesOrder,
+                'OrderStatus' => $data->OrderStatus,
+            ];
+
             return response()->json([
                 'success' => true,
                 'message' => 'Sales Order set status to "In Warehouse"',
-                'data' => $data
-            ], 200);  // HTTP 200 OK
+                'data' => $safe
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);  // HTTP 200 OK
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
+            ], 500, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         }
     }
 
@@ -379,23 +384,28 @@ class SOMasterController extends Controller
                     'success' => false,
                     'message' => 'The sales order was not found or has been modified. Please refresh your data.',
                     'data' => $data
-                ], 200);
+                ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
             }
             $data->update([
                 'OrderStatus' => '2',
                 'LastOperator' => $request->lastOperator
             ]);
 
+            $safe = [
+                'SalesOrder' => $data->SalesOrder,
+                'OrderStatus' => $data->OrderStatus,
+            ];
+
             return response()->json([
                 'success' => true,
                 'message' => 'Sales Order set status to "Not Available"',
-                'data' => $data
-            ], 200);  // HTTP 200 OK
+                'data' => $safe
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);  // HTTP 200 OK
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
+            ], 500, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         }
     }
 
@@ -408,23 +418,28 @@ class SOMasterController extends Controller
                     'success' => false,
                     'message' => 'The sales order was not found or has been modified. Please refresh your data.',
                     'data' => $data
-                ], 200);
+                ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
             }
             $data->update([
                 'OrderStatus' => '3',
                 'LastOperator' => $request->lastOperator
             ]);
 
+            $safe = [
+                'SalesOrder' => $data->SalesOrder,
+                'OrderStatus' => $data->OrderStatus,
+            ];
+
             return response()->json([
                 'success' => true,
                 'message' => 'Sales Order set status to "Release Back Order"',
-                'data' => $data
-            ], 200);  // HTTP 200 OK
+                'data' => $safe
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);  // HTTP 200 OK
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
+            ], 500, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         }
     }
     
@@ -437,23 +452,28 @@ class SOMasterController extends Controller
                     'success' => false,
                     'message' => 'The sales order was not found or has been modified. Please refresh your data.',
                     'data' => $data
-                ], 200);
+                ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
             }
             $data->update([
                 'OrderStatus' => 'S',
                 'LastOperator' => $request->lastOperator
             ]);
 
+            $safe = [
+                'SalesOrder' => $data->SalesOrder,
+                'OrderStatus' => $data->OrderStatus,
+            ];
+
             return response()->json([
                 'success' => true,
                 'message' => 'Sales Order set status to "In Suspense"',
-                'data' => $data
-            ], 200);  // HTTP 200 OK
+                'data' => $safe
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);  // HTTP 200 OK
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
+            ], 500, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         }
     }
 
@@ -466,23 +486,28 @@ class SOMasterController extends Controller
                     'success' => false,
                     'message' => 'The sales order was not found or has been modified. Please refresh your data.',
                     'data' => $data
-                ], 200);
+                ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
             }
             $data->update([
                 'OrderStatus' => '8',
                 'LastOperator' => $request->lastOperator
             ]);
 
+            $safe = [
+                'SalesOrder' => $data->SalesOrder,
+                'OrderStatus' => $data->OrderStatus,
+            ];
+
             return response()->json([
                 'success' => true,
                 'message' => 'Sales Order set status "To Invoice"',
-                'data' => $data
-            ], 200);  // HTTP 200 OK
+                'data' => $safe
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);  // HTTP 200 OK
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
+            ], 500, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         }
     }
 
@@ -533,16 +558,21 @@ class SOMasterController extends Controller
                 ], 200);  // HTTP 200 OK
             }
 
+            $safe = $data ? [
+                'SalesOrder' => $data->SalesOrder,
+                'OrderStatus' => $data->OrderStatus,
+            ] : null;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Sales Order set status "To Completed"',
-                'data' => $data
-            ], 200);  // HTTP 200 OK
+                'data' => $safe
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);  // HTTP 200 OK
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
+            ], 500, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         }
     }
 
@@ -558,12 +588,12 @@ class SOMasterController extends Controller
                 'success' => true,
                 'message' => 'Sales Order set status to "Deleted"',
                 'data' => $data
-            ], 200);  // HTTP 200 OK
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);  // HTTP 200 OK
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
+            ], 500, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         }
     }
 }

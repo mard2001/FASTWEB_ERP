@@ -1,5 +1,19 @@
-// var globalApi = "https://spc.sfa2.w-itsolutions.com/";
-var globalApi = "http://127.0.0.1:8000/";
+// Dynamic API URL configuration for mobile compatibility
+function getMobileApiUrl() {
+    const currentHost = window.location.hostname;
+    const currentProtocol = window.location.protocol;
+    const currentPort = window.location.port;
+    
+    // For mobile devices accessing via IP or domain
+    if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+        return `${currentProtocol}//${currentHost}${currentPort ? ':' + currentPort : ''}/`;
+    }
+    
+    // Default fallback for local development
+    return "http://127.0.0.1:8000/";
+}
+
+var globalApi = getMobileApiUrl();
 
 
 $(document).ready(function() {

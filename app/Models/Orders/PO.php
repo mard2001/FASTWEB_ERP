@@ -93,10 +93,10 @@ class PO extends Model
     protected function getLogDescription(string $eventName): string
     {
         $descriptions = [
-            'created' => "created Purchase Order #{$this->PONumber}",
-            'updated' => "updated Purchase Order #{$this->PONumber}",
-            'deleted' => "deleted Purchase Order #{$this->PONumber}",
-            'confirmed' => "confirmed Purchase Order #{$this->PONumber}",
+            'created' => "Created Purchase Order #{$this->PONumber}",
+            'updated' => "Updated Purchase Order #{$this->PONumber}",
+            'deleted' => "Deleted Purchase Order #{$this->PONumber}",
+            'confirmed' => "Confirmed Purchase Order #{$this->PONumber}",
         ];
 
         return $descriptions[$eventName] ?? "{$eventName} Purchase Order #{$this->PONumber}";

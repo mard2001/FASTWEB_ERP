@@ -246,7 +246,20 @@ class POController
             $data->POStatus = 1;
             $data->ConfirmedBy = $request->user()->name ?? $request->user()->email ?? 'Admin';
             $data->DateUpdated = now();
-            $data->save();
+            // Save without triggering automatic 'updated' activity logging
+            $data->saveQuietly();
+
+            // Log activity as Confirmed (event: confirmed)
+            // Ensure description matches: "Confirmed Purchase Order #SO-250000033"
+            try {
+                $data->logActivity(
+                    "Confirmed Purchase Order #{$data->PONumber}",
+                    [],
+                    'confirmed'
+                );
+            } catch (\Throwable $e) {
+                // Non-blocking: if logging fails, continue response
+            }
 
             return response()->json([
                 'success' => true,

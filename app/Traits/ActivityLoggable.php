@@ -39,10 +39,10 @@ trait ActivityLoggable
         $modelName = class_basename($this);
         
         $descriptions = [
-            'created' => "created a new {$modelName}",
-            'updated' => "updated {$modelName}",
-            'deleted' => "deleted {$modelName}",
-            'confirmed' => "confirmed {$modelName}",
+            'created' => "Created a new {$modelName}",
+            'updated' => "Updated {$modelName}",
+            'deleted' => "Deleted {$modelName}",
+            'confirmed' => "Confirmed {$modelName}",
         ];
 
         return $descriptions[$eventName] ?? "{$eventName} {$modelName}";

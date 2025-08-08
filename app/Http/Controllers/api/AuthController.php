@@ -146,7 +146,7 @@ class AuthController extends Controller
                                         'user_id' => $user->id,
                                         'user_name' => $user->name
                                     ])
-                                    ->log('User force logged out of the system');
+                                    ->log('User logged out of the system');
                             } catch (\Exception $e) {
                                 Log::error('Failed to log force logout activity: ' . $e->getMessage());
                             }

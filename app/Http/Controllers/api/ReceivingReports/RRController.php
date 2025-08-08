@@ -322,6 +322,28 @@ class RRController extends Controller
                         });
                     }
 
+                // Log printing activity when data is available
+                try {
+                    if ($data) {
+                        activity('receiving_report')
+                            ->performedOn($data)
+                            ->causedBy(auth()->user())
+                            ->withProperties([
+                                'ip' => request()->ip(),
+                                'user_agent' => request()->userAgent(),
+                                'url' => request()->fullUrl(),
+                                'method' => request()->method(),
+                                'rr_no' => $RRNum,
+                                'status' => $data->Status ?? null,
+                                'total' => $data->Total ?? null,
+                            ])
+                            ->event('printed')
+                            ->log("Printed Receiving Report #{$RRNum}");
+                    }
+                } catch (\Throwable $e) {
+                    // Non-blocking: ignore logging failures
+                }
+
                 return view('Pages.Printing.RR_printing', ['report' => $data]);
             };
 
@@ -347,15 +369,21 @@ class RRController extends Controller
             $rrHeaderDetails = $request->data;
             unset($rrHeaderDetails['rrData']['rrdetails'], $rrHeaderDetails['rrData']['poincluded']);
 
-            $isPresent = ReceivingRHeader::where('RRNo', $rrNo)
-                ->update([
-                    'status' => 2,  // Confirmed
-                    'ApprovedBy' => $user,
-                    'CheckedBy' => $user,
-                    'DATEUPDATED' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
-                ]);
+            // Fetch header first for logging/subject reference
+            $header = ReceivingRHeader::where('RRNo', $rrNo)->first();
 
-            if(!$isPresent){
+            $isPresent = false;
+            if ($header) {
+                $isPresent = ReceivingRHeader::where('RRNo', $rrNo)
+                    ->update([
+                        'status' => 2,  // Confirmed
+                        'ApprovedBy' => $user,
+                        'CheckedBy' => $user,
+                        'DATEUPDATED' => now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                    ]);
+            }
+
+            if(!$isPresent || !$header){
                 return response()->json([
                     'success' => false,
                     'message' => 'Receiving Report not found',
@@ -369,6 +397,25 @@ class RRController extends Controller
                 $qty = $detail['Quantity'];
                 $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "IN", null);
                 $InventoryManager->InvMovement($rrHeaderDetails,  $detail, 'I', 'R');
+            }
+
+            // Log confirmation activity
+            try {
+                activity('receiving_report')
+                    ->performedOn($header)
+                    ->causedBy($request->user())
+                    ->withProperties([
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                        'rr_no' => $rrNo,
+                        'items' => is_array($details) ? count($details) : null,
+                    ])
+                    ->event('confirmed')
+                    ->log("Confirmed Receiving Report #{$rrNo}");
+            } catch (\Throwable $e) {
+                // Non-blocking: ignore logging failures
             }
 
             return response()->json([

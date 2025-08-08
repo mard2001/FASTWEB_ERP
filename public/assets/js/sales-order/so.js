@@ -509,14 +509,18 @@ const datatables = {
         // console.log(response.data);
         if (response.success) {
             if (MainTH) {
-                MainTH.clear().draw();
-                MainTH.rows.add(response.data).draw();
+                // Refresh data and enforce latest-first ordering on Order Date
+                MainTH.clear();
+                MainTH.rows.add(response.data);
+                MainTH.order([[0, 'desc']]).draw();
             } else {
                 MainTH = $('#soTable').DataTable({
                     data: response.data,
                     language: {
                         searchPlaceholder: "Search here..."
                     },
+                    // Default to latest first by Order Date
+                    order: [[0, 'desc']],
                     columns: [
                         {
                             data: 'OrderDate',
@@ -534,6 +538,7 @@ const datatables = {
                                     });
                                 }
 
+                                // Provide a stable value for ordering/searching
                                 return dateObj.toISOString();
                             }
                         },
@@ -1912,38 +1917,44 @@ function setDate(){
 
 const SOStatus = {
     ChangeSOStatus: async (status, salesOrder, lastOperator, sodata = null) => {
-        await ajax("api/sales-order/orderstatus/"+status, "POST", JSON.stringify({ salesOrder, lastOperator, sodata }),
-            (response) => {
-            // Success callback
-                if (response.success) {
-                    Swal.fire({
-                        title: "Success!",
-                        text: response.message,
-                        icon: "success",
-                    });
+        try {
+            await ajax(
+                "api/sales-order/orderstatus/" + status,
+                "POST",
+                JSON.stringify({ salesOrder, lastOperator, sodata }),
+                (response) => {
+                    // Success callback
+                    if (response.success) {
+                        Swal.fire({
+                            title: "Success!",
+                            text: response.message,
+                            icon: "success",
+                        });
 
-                    SOModal.hide();
-                    datatables.loadSOData();
-                } else{
-                    Swal.fire({
-                        title: "Warning!",
-                        text: response.message,
-                        icon: "warning",
-                    });
+                        SOModal.hide();
+                        datatables.loadSOData();
+                    } else {
+                        Swal.fire({
+                            title: "Warning!",
+                            text: response.message,
+                            icon: "warning",
+                        });
+                    }
+                },
+                (xhr, status, error) => {
+                    // Error callback - show server message if available
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        Swal.fire({
+                            title: "Opppps..",
+                            text: xhr.responseJSON.message,
+                            icon: "error",
+                        });
+                    }
                 }
-            },
-            (xhr, status, error) => {
-            // Error callback
-
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                Swal.fire({
-                title: "Opppps..",
-                text: xhr.responseJSON.message,
-                icon: "error",
-                });
-            }
-            }
-        );
+            );
+        } catch (e) {
+            // Promise rejection already handled by error callback; swallow to avoid Uncaught (in promise)
+        }
     },
 }
 

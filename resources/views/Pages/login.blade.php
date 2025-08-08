@@ -14,6 +14,18 @@
 <script>
     var otpCountdown = 299; //5 minutes
     var interval;
+    
+    // Simple mobile detection (UA + small screen heuristic)
+    function isMobileClient() {
+        try {
+            const ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+            const isMobileUA = /android|iphone|ipad|ipod|iemobile|blackberry|opera mini|mobile/i.test(ua);
+            const smallScreen = Math.min(window.screen.width, window.screen.height) <= 800;
+            return isMobileUA || smallScreen;
+        } catch (e) {
+            return false;
+        }
+    }
     // To Page 2 (Next button click)
     $(document).on('click', '#loginBtn', function() {
         sendOTPtoLogin();
@@ -25,39 +37,61 @@
 
 
     function sendOTPtoLogin(){
+        console.log('Sending OTP to:', '0' + $('#mobileNumber').val());
+        console.log('API URL:', globalApi);
+        
+        // Show loading state
+        $('#loginBtn').prop('disabled', true).text('Sending...');
+        
         $.ajax({
             url: globalApi + 'api/sendOTP',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
                 mobile: '0' + $('#mobileNumber').val()
-            }), // Convert the data to JSON format
+            }),
             success: function(response) {
+                console.log('OTP Response:', response);
+                
                 if (response.success) {
-                    $('#mobileField').hide(); // Show Page 2
-                    // Slide in Page 2
-                    $('#verifyField').show(); // Show Page 2
+                    $('#mobileField').hide();
+                    $('#verifyField').show();
                     anime({
                         targets: '#verifyField',
                         translateX: ['100%', '0%'],
                         duration: 500,
                         easing: 'easeInOutQuad',
                         complete: function() {
-
                             $('#sendOtpMobile').text('+63' + $('#mobileNumber').val());
                             otpCountdown = 299;
                             $('#otpConfirm').find('input').val('');
                             interval = !interval && setInterval(updateCountdown, 1000);
                         }
                     });
+                    
+                    // Show OTP in development mode ONLY on mobile
+                    if (response.otp && isMobileClient()) {
+                        alert('Development Mode - OTP: ' + response.otp);
+                    }
+                } else {
+                    alert('Login failed: ' + (response.message || 'Unknown error'));
                 }
             },
-            error: async function(xhr, status, error) {
-                alert('login failed');
-
-                console.log(xhr, status, error)
-
-                return xhr, status, error;
+            error: function(xhr, status, error) {
+                console.error('Login error:', xhr, status, error);
+                
+                let errorMessage = 'Login failed';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseText) {
+                    errorMessage = xhr.responseText;
+                }
+                
+                alert(errorMessage);
+            },
+            complete: function() {
+                // Reset button state
+                $('#loginBtn').prop('disabled', false).text('Continue');
             }
         });
     }
@@ -121,7 +155,8 @@
             });
 
             if (allFilled) {
-                console.log('+63' + $('#mobileNumber').val());
+                console.log('Verifying OTP for:', '+63' + $('#mobileNumber').val());
+                console.log('OTP:', inputedOTP);
 
                 $.ajax({
                     url: globalApi + 'api/verifyOTP',
@@ -130,28 +165,39 @@
                     data: JSON.stringify({
                         mobile: '0' + $('#mobileNumber').val(),
                         otp: inputedOTP
-
-                    }), // Convert the data to JSON format
+                    }),
                     success: function(response) {
+                        console.log('OTP Verify Response:', response);
 
                         if (response.success) {        
-                            localStorage.setItem('api_token', response.token); // Store the token
+                            localStorage.setItem('api_token', response.token);
 
                             // Store user data with mobile number
                             var userData = response.user;
-                            userData.mobile = '0' + $('#mobileNumber').val(); // Add mobile number to user data
+                            userData.mobile = '0' + $('#mobileNumber').val();
                             localStorage.setItem('user', JSON.stringify(userData));
 
-                            // window.location.href = 'https://spc.sfa.w-itsolutions.com/dbconfig';
+                            // Redirect to dbconfig
                             window.location.href = globalApi + 'settings/dbconfig';
-
+                        } else {
+                            alert('OTP verification failed: ' + (response.message || 'Invalid OTP'));
+                            
+                            // Clear OTP inputs
+                            $('#otpConfirm').find('input').val('');
                         }
                     },
-                    error: async function(xhr, status, error) {
-
-                        console.log(xhr, status, error)
-
-                        return xhr, status, error;
+                    error: function(xhr, status, error) {
+                        console.error('OTP Verify error:', xhr, status, error);
+                        
+                        let errorMessage = 'OTP verification failed';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        alert(errorMessage);
+                        
+                        // Clear OTP inputs
+                        $('#otpConfirm').find('input').val('');
                     }
                 });
             }

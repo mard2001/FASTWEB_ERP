@@ -15,6 +15,7 @@ $(document).ready(function() {
                 {label: 'Created', value: 'created'},
                 {label: 'Updated', value: 'updated'},
                 {label: 'Deleted', value: 'deleted'},
+                {label: 'Confirmed', value: 'confirmed'},
                 {label: 'Login', value: 'login'},
                 {label: 'Logout', value: 'logout'}
             ],
@@ -32,7 +33,8 @@ $(document).ready(function() {
                 {label: 'Sales Orders', value: 'App\\Models\\SalesOrder\\SO'},
                 {label: 'User Management', value: 'App\\Models\\User'},
                 {label: 'Customers', value: 'App\\Models\\Customer\\Customer'},
-                {label: 'Suppliers', value: 'App\\Models\\Supplier'}
+                {label: 'Suppliers', value: 'App\\Models\\Supplier'},
+                {label: 'Receiving Report', value: 'App\\Models\\ReceivingReports\\ReceivingRHeader'}
             ],
             placeholder: 'Select Module',
             search: true,
@@ -305,6 +307,7 @@ $(document).ready(function() {
             'created': 'statusBadge1',     // Green - success/created
             'updated': 'statusBadge3',     // Orange - warning/updated  
             'deleted': 'statusBadge2',     // Red - danger/deleted
+            'confirmed': 'statusBadge1',   // Green - success/confirmed
             'login': 'statusBadge4',       // Blue - info/login
             'logout': 'statusBadge3'       // Orange - warning/logout
         };
@@ -320,7 +323,8 @@ $(document).ready(function() {
             'App\\Models\\Customer\\Customer': 'Customers',
             'App\\Models\\Supplier': 'Suppliers',
             'App\\Models\\Inventory\\Product': 'Products',
-            'App\\Models\\Warehouse\\Warehouse': 'Warehouses'
+            'App\\Models\\Warehouse\\Warehouse': 'Warehouses',
+            'App\\Models\\ReceivingReports\\ReceivingRHeader': 'Receiving Report'
         };
         return moduleMap[subjectType] || subjectType.split('\\').pop();
     }
