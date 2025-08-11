@@ -291,7 +291,7 @@ const datatables = {
                         { data: null,  title: 'Movement',
                             render: function(data, type, row) {
                                 var res = '';
-                                if(row.NewWarehouse == ' '){
+                                if(row.NewWarehouse == " "){
                                     res = "<span class='statusBadge1 align-middle' style='width:38.3167px;'><span class='mdi mdi-package-variant-plus'> IN </span></span>";
                                 } else{
                                     res = "<span class='statusBadge2 align-middle'><span class='mdi mdi-package-variant-minus'> OUT </span></span>";
@@ -789,8 +789,11 @@ const STModal = {
                     Swal.close();
                     Swal.fire({
                         title: "Success!",
-                        text: response.message,
+                        html: `${response.message}<br><small class="text-muted">Activity has been logged for tracking purposes.</small>`,
                         icon: "success",
+                        timer: 3000,
+                        showConfirmButton: false,
+                        timerProgressBar: true
                     });
                 }
             },

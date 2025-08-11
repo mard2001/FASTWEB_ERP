@@ -579,6 +579,10 @@ public function getSKUMovement(string $StockCode, string $Warehouse)
             $mainDetails = $request->data;
             unset($mainDetails['Items']);
 
+            // Generate transfer reference for tracking
+            $timestamp = now()->setTimezone('Asia/Manila')->format('Ymd_His');
+            $transferRef = 'TRF' . $mainDetails['Warehouse'] . '_TO_' . $mainDetails['NewWarehouse'] . '_' . $timestamp;
+
             foreach ($items as $item) {
                 $sku = $item['StockCode'];
                 $warehouse = $mainDetails['Warehouse'];
@@ -587,6 +591,32 @@ public function getSKUMovement(string $StockCode, string $Warehouse)
                 $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "TRANSFER", $newWarehouse);
                 $InventoryManager->InvMovement($mainDetails,  $item, 'I', 'T');
             }
+
+            // Log the stock transfer activity
+            activity('stock_transfer')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'transfer_reference' => $transferRef,
+                    'origin_warehouse' => $mainDetails['Warehouse'],
+                    'destination_warehouse' => $mainDetails['NewWarehouse'],
+                    'transfer_date' => $mainDetails['EntryDate'] ?? date('Y-m-d'),
+                    'total_items' => count($items),
+                    'operator' => $mainDetails['LastOperator'] ?? 'System',
+                    'items_transferred' => array_map(function($item) {
+                        return [
+                            'stock_code' => $item['StockCode'],
+                            'quantity' => $item['TrnQty'],
+                            'description' => $item['Description'] ?? ''
+                        ];
+                    }, $items),
+                    'subject_type' => 'App\\Models\\Inventory\\InvMovements',
+                    'subject_id' => $transferRef,
+                    'event' => 'transferred'
+                ])
+                ->log("Stock transfer #{$transferRef} from {$mainDetails['Warehouse']} to {$mainDetails['NewWarehouse']} with " . count($items) . " items transferred");
 
             return response()->json([
                 'success' => true,
@@ -640,6 +670,32 @@ public function getSKUMovement(string $StockCode, string $Warehouse)
                 $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "ADJUST", null);
                 $InventoryManager->InvMovement($mainDetails,  $item, 'I', 'A');
             }
+
+            // Log the activity
+            activity('inventory_adjustment')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'adjustment_reference' => $ref,
+                    'warehouse' => $mainDetails['Warehouse'],
+                    'adjustment_type' => $mainDetails['AdjustmentType'] ?? 'Stock Adjustment',
+                    'adjustment_date' => $mainDetails['EntryDate'] ?? date('Y-m-d'),
+                    'total_items' => count($items),
+                    'operator' => $mainDetails['LastOperator'] ?? 'System',
+                    'items_adjusted' => array_map(function($item) {
+                        return [
+                            'stock_code' => $item['StockCode'],
+                            'quantity' => $item['TrnQty'],
+                            'description' => $item['Description'] ?? ''
+                        ];
+                    }, $items),
+                    'subject_type' => 'App\\Models\\Inventory\\InvAdjustmentLogs',
+                    'subject_id' => $ref,
+                    'event' => 'created'
+                ])
+                ->log("Stock adjustment #{$ref} adjusted for warehouse {$mainDetails['Warehouse']} with " . count($items) . " items adjusted");
 
             return response()->json([
                 'success' => true,

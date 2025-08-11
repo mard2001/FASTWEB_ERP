@@ -18,6 +18,8 @@ $(document).ready(function() {
                 {label: 'Confirmed', value: 'confirmed'},
                 {label: 'Login', value: 'login'},
                 {label: 'Logout', value: 'logout'},
+                {label: '--- Stock Transfer ---', value: '', disabled: true},
+                {label: 'Stock Transferred', value: 'transferred'},
                 {label: '--- Sales Orders ---', value: '', disabled: true},
                 {label: 'SO Created', value: 'so_created'},
                 {label: 'SO Updated', value: 'so_updated'},
@@ -39,6 +41,7 @@ $(document).ready(function() {
             ele: '#subjectType_VS',
             options: [
                 {label: 'All Modules', value: ''},
+                {label: 'Stock Transfer', value: 'App\\Models\\Inventory\\InvMovements'},
                 {label: 'Purchase Orders', value: 'App\\Models\\Orders\\PO'},
                 {label: 'Sales Orders', value: 'App\\Models\\SalesOrder\\SO'},
                 {label: 'User Management', value: 'App\\Models\\User'},
@@ -90,7 +93,6 @@ $(document).ready(function() {
                             data: 'causer_name', 
                             title: 'User',
                             render: function (data, type, row) {
-                                console.log('User column data:', data, 'Full row:', row); // Debug log
                                 if (!data || data === null || data === undefined) {
                                     return '<span style="font-size:10px; color:#808080;">System</span>';
                                 }
@@ -103,12 +105,34 @@ $(document).ready(function() {
                             render: function (data, type, row) {
                                 // If no event, try to detect from description for Sales Orders
                                 if (!data || data === null || data === undefined || data === '') {
+                                    // Check if this is a stock transfer activity
+                                    if (row.log_name === 'stock_transfer' && row.description) {
+                                        const detectedEvent = detectStockTransferEvent(row.description);
+                                        if (detectedEvent) {
+                                            const badgeClass = getActivityBadgeClass(detectedEvent.event);
+                                            return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
+                                        }
+                                    }
                                     // Check if this is a sales order activity by looking at log_name or description
                                     if (row.log_name === 'sales_order' && row.description) {
-                                        console.log('Detecting SO event for:', row.description); // Debug log
                                         const detectedEvent = detectSalesOrderEvent(row.description);
                                         if (detectedEvent) {
-                                            console.log('Detected event:', detectedEvent); // Debug log
+                                            const badgeClass = getActivityBadgeClass(detectedEvent.event);
+                                            return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
+                                        }
+                                    }
+                                    // Check if this is an inventory adjustment activity
+                                    if (row.log_name === 'inventory_adjustment' && row.description) {
+                                        const detectedEvent = detectInventoryEvent(row.description);
+                                        if (detectedEvent) {
+                                            const badgeClass = getActivityBadgeClass(detectedEvent.event);
+                                            return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
+                                        }
+                                    }
+                                    // Check if this is a stock count activity
+                                    if (row.log_name === 'stock_count' && row.description) {
+                                        const detectedEvent = detectStockCountEvent(row.description);
+                                        if (detectedEvent) {
                                             const badgeClass = getActivityBadgeClass(detectedEvent.event);
                                             return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
                                         }
@@ -123,9 +147,21 @@ $(document).ready(function() {
                             data: 'subject_type', 
                             title: 'Module',
                             render: function (data, type, row) {
+                                // If no subject_type but it's a stock transfer activity, show Stock Transfer
+                                if (!data && row.log_name === 'stock_transfer') {
+                                    return 'Stock Transfer';
+                                }
                                 // If no subject_type but it's a sales order activity, show Sales Orders
                                 if (!data && row.log_name === 'sales_order') {
                                     return 'Sales Orders';
+                                }
+                                // If no subject_type but it's an inventory adjustment activity, show Stock Adjustment
+                                if (!data && row.log_name === 'inventory_adjustment') {
+                                    return 'Stock Adjustment';
+                                }
+                                // If no subject_type but it's a stock count activity, show Stock Count
+                                if (!data && row.log_name === 'stock_count') {
+                                    return 'Stock Count';
                                 }
                                 if (!data) return '<span style="font-size:10px; color:#808080;">---</span>';
                                 return getModuleName(data);
@@ -240,7 +276,6 @@ $(document).ready(function() {
             type: 'GET',
             data: filters,
             success: function(response) {
-                console.log('API Response:', response); // Debug log
                 // Update statistics if provided
                 if (response.statistics) {
                     updateStatistics(response.statistics);
@@ -336,6 +371,10 @@ $(document).ready(function() {
             'login': 'statusBadge4',        // Blue - info/login
             'logout': 'statusBadge3',       // Orange - warning/logout
             
+            // Stock Transfer specific activities
+            'transferred': 'statusBadge4',    // Blue - Stock Transferred
+            'transfer_activity': 'statusBadge4', // Blue - General Transfer activity
+            
             // Sales Order specific activities
             'so_created': 'statusBadge1',     // Green - SO created
             'so_updated': 'statusBadge3',     // Orange - SO updated  
@@ -346,7 +385,19 @@ $(document).ready(function() {
             'so_invoice': 'statusBadge4',     // Blue - To Invoice
             'so_completed': 'statusBadge1',   // Green - Completed
             'so_deleted': 'statusBadge2',     // Red - Deleted
-            'so_activity': 'statusBadge4'     // Blue - General SO activity
+            'so_activity': 'statusBadge4',    // Blue - General SO activity
+            
+            // Inventory Adjustment specific activities
+            'inv_adjustment': 'statusBadge3', // Orange - Stock Adjusted
+            'inv_activity': 'statusBadge4',   // Blue - General Inventory activity
+            
+            // Stock Count specific activities
+            'sc_confirmed': 'statusBadge1',   // Green - Count Confirmed
+            'sc_updated': 'statusBadge3',     // Orange - Count Updated
+            'sc_deleted': 'statusBadge2',     // Red - Count Deleted
+            'sc_created': 'statusBadge1',     // Green - Count Created
+            'sc_printed': 'statusBadge4',     // Blue - Sheet Printed
+            'sc_activity': 'statusBadge4'     // Blue - General Stock Count activity
         };
         return badgeMap[event] || 'statusBadge4';  // Default to blue
     }
@@ -361,6 +412,9 @@ $(document).ready(function() {
             'App\\Models\\Customer\\Customer': 'Customers',
             'App\\Models\\Supplier': 'Suppliers',
             'App\\Models\\Inventory\\Product': 'Products',
+            'App\\Models\\Inventory\\InvMovements': 'Stock Transfer',
+            'App\\Models\\Inventory\\InvAdjustmentLogs': 'Stock Adjustment',
+            'App\\Models\\Inventory\\CSHeader': 'Stock Count',
             'App\\Models\\Warehouse\\Warehouse': 'Warehouses',
             'App\\Models\\ReceivingReports\\ReceivingRHeader': 'Receiving Report'
         };
@@ -373,6 +427,21 @@ $(document).ready(function() {
             return 'Unknown';
         }
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Detect Stock Transfer event type from description
+    function detectStockTransferEvent(description) {
+        if (!description) return null;
+        
+        const desc = description.toLowerCase();
+        
+        // Check for different Stock Transfer activities
+        if (desc.includes('stock transfer') && (desc.includes('from') || desc.includes('to'))) {
+            return { event: 'transferred', label: 'Transferred' };
+        }
+        
+        // Default for stock transfer activities
+        return { event: 'transfer_activity', label: 'Transfer Activity' };
     }
 
     // Detect Sales Order event type from description
@@ -412,6 +481,48 @@ $(document).ready(function() {
         
         // Default for sales order activities
         return { event: 'so_activity', label: 'SO Activity' };
+    }
+
+    // Detect Inventory Adjustment event type from description
+    function detectInventoryEvent(description) {
+        if (!description) return null;
+        
+        const desc = description.toLowerCase();
+        
+        // Check for different Inventory activities
+        if (desc.includes('stock adjustment') && desc.includes('created')) {
+            return { event: 'inv_adjustment', label: 'Stock Adjusted' };
+        }
+        
+        // Default for inventory activities
+        return { event: 'inv_activity', label: 'Inventory Activity' };
+    }
+
+    // Detect Stock Count event type from description
+    function detectStockCountEvent(description) {
+        if (!description) return null;
+        
+        const desc = description.toLowerCase();
+        
+        // Check for different Stock Count activities
+        if (desc.includes('stock count') && desc.includes('confirmed')) {
+            return { event: 'sc_confirmed', label: 'Count Confirmed' };
+        }
+        if (desc.includes('stock count') && desc.includes('deleted')) {
+            return { event: 'sc_deleted', label: 'Count Deleted' };
+        }
+        if (desc.includes('stock count') && desc.includes('updated')) {
+            return { event: 'sc_updated', label: 'Count Updated' };
+        }
+        if (desc.includes('stock count') && desc.includes('created')) {
+            return { event: 'sc_created', label: 'Count Created' };
+        }
+        if (desc.includes('stock count') && desc.includes('printed')) {
+            return { event: 'sc_printed', label: 'Sheet Printed' };
+        }
+        
+        // Default for stock count activities
+        return { event: 'sc_activity', label: 'Stock Count Activity' };
     }
 
     // Parse user agent to detect OS and Browser

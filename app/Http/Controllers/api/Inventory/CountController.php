@@ -209,6 +209,29 @@ class CountController extends Controller
                 'DATECREATED' => now()->setTimezone('Asia/Manila'),
                 'STATUS' => 1,
             ]);
+
+            // Log the activity
+            activity('stock_count')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'count_header_id' => $cntHeaderId,
+                    'updated_by' => $request->input('data.userID'),
+                    'total_items_updated' => count($updates),
+                    'action_type' => 'update',
+                    'updated_items' => array_map(function($item) {
+                        return [
+                            'stock_code' => $item['STOCKCODE'],
+                            'manual_count' => $item['convMNLCOUNT']
+                        ];
+                    }, $updates),
+                    'subject_type' => 'App\\Models\\Inventory\\CSHeader',
+                    'subject_id' => $cntHeaderId,
+                    'event' => 'updated'
+                ])
+                ->log("Stock count #{$cntHeaderId} has been updated by {$request->input('data.userID')} with " . count($updates) . " items modified");
     
             return response()->json([
                 'success' => true,
@@ -232,6 +255,9 @@ class CountController extends Controller
     public function destroy(Request $request, string $headerID)
     {
         try {
+            // Get count header info before deletion
+            $countHeader = CSHeader::where('CNTHEADER_ID', $headerID)->first();
+            
             // CSHeader::where('CNTHEADER_ID', $headerID)->update(['STATUS' => 0]);
             CSLog::create([
                 'PROCESSID' => $headerID,
@@ -240,6 +266,23 @@ class CountController extends Controller
                 'DATECREATED' => now()->setTimezone('Asia/Manila'),
                 'STATUS' => 1,
             ]);
+
+            // Log the activity
+            activity('stock_count')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'count_header_id' => $headerID,
+                    'deleted_by' => $request->input('data.userID'),
+                    'previous_status' => $countHeader ? $countHeader->STATUS : 'unknown',
+                    'action_type' => 'delete',
+                    'subject_type' => 'App\\Models\\Inventory\\CSHeader',
+                    'subject_id' => $headerID,
+                    'event' => 'deleted'
+                ])
+                ->log("Stock count #{$headerID} has been deleted by {$request->input('data.userID')}");
 
             return response()->json([
                 'message' => 'Inventory Count deleted successfully',
@@ -298,6 +341,24 @@ class CountController extends Controller
                 'STATUS' => 1,
             ]);
 
+            // Log the activity
+            activity('stock_count')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'count_header_id' => $headerID,
+                    'confirmed_by' => $request->input('data.userID'),
+                    'previous_status' => $countHeader->STATUS,
+                    'new_status' => 2,
+                    'action_type' => 'confirm',
+                    'subject_type' => 'App\\Models\\Inventory\\CSHeader',
+                    'subject_id' => $headerID,
+                    'event' => 'confirmed'
+                ])
+                ->log("Stock count #{$headerID} has been confirmed by {$request->input('data.userID')}");
+
             return response()->json([
                 'message' => 'Inventory Count confirmed successfully',
                 'headerID' => $headerID,
@@ -316,6 +377,27 @@ class CountController extends Controller
         Cache::put('CNTHeader', $request->CNTHeader, now()->addMinutes(1)); 
 
         $CNTHeaderID = Cache::get('CNTHeader');
+
+        // Get count header info for logging
+        $countHeader = CSHeader::where('CNTHEADER_ID', $request->CNTHeader)->first();
+        
+        // Log the print activity
+        activity('stock_count')
+            ->withProperties([
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'count_header_id' => $request->CNTHeader,
+                'action_type' => 'print',
+                'print_type' => 'count_sheet',
+                'count_status' => $countHeader ? $countHeader->STATUS : 'unknown',
+                'subject_type' => 'App\\Models\\Inventory\\CSHeader',
+                'subject_id' => $request->CNTHeader,
+                'event' => 'printed'
+            ])
+            ->log("Stock count #{$request->CNTHeader} sheet has been printed");
+        
         return response()->json([
             'success' => true,
             'originalData' => $request->CNTHeader,

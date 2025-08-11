@@ -47,6 +47,7 @@ use App\Http\Controllers\api\MasterData\PAMasterListController;
 use App\Http\Controllers\api\Warehouse\WHTaggingController;
 use App\Http\Controllers\api\ActivityLog\ActivityLogController;
 
+
 Route::middleware(['auth:sanctum', DynamicDatabase::class])->group(function () {
 
     Route::post('/upload-po-pdf', [PDFUploaderController::class, 'store']);
