@@ -73,20 +73,19 @@ $(document).ready(function() {
                             title: 'Date & Time',
                             render: function (data, type, row) {
                                 if (!data) return '';
-                                // Convert UTC time to local time
-                                const dateObj = new Date(data + (data.includes('Z') ? '' : 'Z'));
                                 if (type === 'display' || type === 'filter') {
+                                    // Backend already sends Asia/Manila timezone, so just format it nicely
+                                    const dateObj = new Date(data);
                                     return dateObj.toLocaleString('en-GB', {
                                         day: '2-digit',
                                         month: 'short',
                                         year: 'numeric',
                                         hour: '2-digit',
                                         minute: '2-digit',
-                                        hour12: false,
-                                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                                        hour12: true
                                     });
                                 }
-                                return dateObj.toISOString();
+                                return data;
                             }
                         },
                         { 
@@ -137,6 +136,14 @@ $(document).ready(function() {
                                             return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
                                         }
                                     }
+                                    // Check if this is a customer activity
+                                    if (row.log_name === 'customer_maintenance' && row.description) {
+                                        const detectedEvent = detectCustomerEvent(row.description);
+                                        if (detectedEvent) {
+                                            const badgeClass = getActivityBadgeClass(detectedEvent.event);
+                                            return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
+                                        }
+                                    }
                                     return '<span style="font-size:10px; color:#808080;">Activity</span>';
                                 }
                                 const badgeClass = getActivityBadgeClass(data);
@@ -162,6 +169,10 @@ $(document).ready(function() {
                                 // If no subject_type but it's a stock count activity, show Stock Count
                                 if (!data && row.log_name === 'stock_count') {
                                     return 'Stock Count';
+                                }
+                                // If no subject_type but it's a customer activity, show Customers
+                                if (!data && row.log_name === 'customer_maintenance') {
+                                    return 'Customers';
                                 }
                                 if (!data) return '<span style="font-size:10px; color:#808080;">---</span>';
                                 return getModuleName(data);
@@ -397,7 +408,13 @@ $(document).ready(function() {
             'sc_deleted': 'statusBadge2',     // Red - Count Deleted
             'sc_created': 'statusBadge1',     // Green - Count Created
             'sc_printed': 'statusBadge4',     // Blue - Sheet Printed
-            'sc_activity': 'statusBadge4'     // Blue - General Stock Count activity
+            'sc_activity': 'statusBadge4',    // Blue - General Stock Count activity
+            
+            // Customer specific activities
+            'customer_created': 'statusBadge1',  // Green - Customer Created
+            'customer_updated': 'statusBadge3',  // Orange - Customer Updated
+            'customer_deleted': 'statusBadge2',  // Red - Customer Deleted
+            'customer_activity': 'statusBadge4' // Blue - General Customer activity
         };
         return badgeMap[event] || 'statusBadge4';  // Default to blue
     }
@@ -523,6 +540,26 @@ $(document).ready(function() {
         
         // Default for stock count activities
         return { event: 'sc_activity', label: 'Stock Count Activity' };
+    }
+
+    // Detect customer events from description
+    function detectCustomerEvent(description) {
+        if (!description) return { event: 'customer_activity', label: 'Customer Activity' };
+        
+        const desc = description.toLowerCase();
+        
+        if (desc.includes('created new customer') || desc.includes('new customer')) {
+            return { event: 'customer_created', label: 'Created' };
+        }
+        if (desc.includes('updated customer') || desc.includes('edited customer')) {
+            return { event: 'customer_updated', label: 'Updated' };
+        }
+        if (desc.includes('deleted customer') || desc.includes('customer deleted')) {
+            return { event: 'customer_deleted', label: 'Deleted' };
+        }
+        
+        // Default for customer activities
+        return { event: 'customer_activity', label: 'Customer Activity' };
     }
 
     // Parse user agent to detect OS and Browser
@@ -711,7 +748,8 @@ $(document).ready(function() {
                             <tr>
                                 <td style="white-space: nowrap;">Date & Time:</td>
                                 <th class="px-2"><span style="font-weight: 550">${(() => {
-                                    const dateObj = new Date(activity.created_at + (activity.created_at.includes('Z') ? '' : 'Z'));
+                                    // Backend already sends Asia/Manila timezone, so just format it nicely
+                                    const dateObj = new Date(activity.created_at);
                                     return dateObj.toLocaleString('en-US', {
                                         year: 'numeric',
                                         month: 'short', 
@@ -719,8 +757,7 @@ $(document).ready(function() {
                                         hour: '2-digit',
                                         minute: '2-digit',
                                         second: '2-digit',
-                                        hour12: false,
-                                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                                        hour12: true
                                     });
                                 })()}</span></th>
                             </tr>

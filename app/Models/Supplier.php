@@ -31,7 +31,8 @@ class Supplier extends Model
         'Municipality' ,
         'Barangay' ,
         'PriceCode',
-        'holdStatus'
+        'holdStatus',
+        'lastUpdated'
     ];
     
     protected $attributes = [

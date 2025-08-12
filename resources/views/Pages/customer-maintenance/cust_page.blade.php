@@ -81,25 +81,25 @@
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="custCode">CustCode</label>
-                            <input disabled type="text" id="custCode" name="custCode" class="form-control bg-white needField" required placeholder="custCode">
+                            <input disabled type="text" id="custCode" name="custCode" class="form-control bg-white needField" required placeholder="custCode" maxlength="7">
                         </div>
                     </div>
                     <div class="col-9">
                         <div class="mb-3">
                             <label for="Name">Name</label>
-                            <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="custName">
+                            <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="custName" maxlength="25">
                         </div>
                     </div>
                     <div class="col-7">
                         <div class="mb-3">
                             <label for="Contact">Contact Person</label>
-                            <input disabled type="text" id="Contact" name="Contact" class="form-control bg-white" required placeholder="contactPerson">
+                            <input disabled type="text" id="Contact" name="Contact" class="form-control bg-white" required placeholder="contactPerson" maxlength="18">
                         </div>
                     </div>
                     <div class="col-5">
                         <div class="mb-3">
                             <label for="Telephone">Contact Cell Number</label>
-                            <input disabled type="text" id="Telephone" name="Telephone" class="form-control bg-white" required placeholder="contactCellNumber">
+                            <input disabled type="text" id="Telephone" name="Telephone" class="form-control bg-white" required placeholder="contactCellNumber" maxlength="11">
                         </div>
                     </div>
                     <div class="col-4">
@@ -135,7 +135,7 @@
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="CustomerClass">Customer Class</label>
-                            <input disabled type="text" id="CustomerClass" name="CustomerClass" class="form-control bg-white needField" required placeholder="CustomerClass">
+                            <input disabled type="text" id="CustomerClass" name="CustomerClass" class="form-control bg-white needField" required placeholder="CustomerClass" maxlength="7">
                         </div>
                     </div>
                 </div>

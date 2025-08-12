@@ -68,6 +68,8 @@ class SupplierController
     {
         try {
             $data = $request->data;
+            // Add current timestamp to lastUpdated field with Asia/Manila timezone
+            $data['lastUpdated'] = now()->setTimezone('Asia/Manila');
             $res = Supplier::create($data);
 
             return response()->json( [
@@ -122,6 +124,9 @@ class SupplierController
     {
         try {
             $data = $request['data'];
+            // Add current timestamp to lastUpdated field with Asia/Manila timezone
+            $data['lastUpdated'] = now()->setTimezone('Asia/Manila');
+            
             $found = Supplier::where('SupplierCode', $supplierCode)->first();
             // dd($found);
             if (!$found) {

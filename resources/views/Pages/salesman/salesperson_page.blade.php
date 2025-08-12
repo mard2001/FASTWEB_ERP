@@ -39,7 +39,7 @@
                     <div class="row">
                         <div class="col-4 mb-3">
                             <label for="mdCode">mdCode</label>
-                            <input disabled type="text" id="mdCode" name="mdCode" class="form-control bg-white needField" required placeholder="mdCode" onkeypress="return /[0-9.]/.test(event.key)">
+                            <input disabled type="text" id="mdCode" name="mdCode" class="form-control bg-white needField" required placeholder="mdCode" onkeypress="return /[0-9.]/.test(event.key)" maxlength="20">
                         </div>
                         <div class="col-4 mb-3">
                             <label for="Branch">Branch</label>
@@ -57,7 +57,7 @@
                         </div>
                         <div class="col-9 mb-3">
                             <label for="Name">Name</label>
-                            <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="Name">
+                            <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="Name" maxlength="50">
                         </div>
                         <div class="col-6 mb-3">
                             <label for="Warehouse">Warehouse</label>
@@ -69,27 +69,31 @@
                         </div>
                         <div class="col-6 mb-3">
                             <label for="ContactNo">ContactNo</label>
-                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required placeholder="ContactNo" onkeypress="return /[0-9]/.test(event.key)">
+                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required placeholder="ContactNo" onkeypress="return /[0-9]/.test(event.key)" maxlength="11">
                         </div>
                         <div class="col-6 mb-3">
                             <label for="ContactHP">ContactHP</label>
-                            <input disabled type="text" id="ContactHP" name="ContactHP" class="form-control bg-white" required placeholder="ContactHP" onkeypress="return /[0-9]/.test(event.key)">
+                            <input disabled type="text" id="ContactHP" name="ContactHP" class="form-control bg-white" required placeholder="ContactHP" onkeypress="return /[0-9]/.test(event.key)" maxlength="11">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="ContacteMail">Contact Email</label>
+                            <input disabled type="email" id="ContacteMail" name="ContacteMail" class="form-control bg-white" required placeholder="ContacteMail" maxlength="50">
                         </div>
                         <div class="col-12 mb-3">
                             <label for="Addr1">Address1</label>
-                            <input disabled type="text" id="Addr1" name="Addr1" class="form-control bg-white" required placeholder="Addr1">
+                            <input disabled type="text" id="Addr1" name="Addr1" class="form-control bg-white" required placeholder="Addr1" maxlength="100">
                         </div>
                         <div class="col-12 mb-3">
                             <label for="Addr2">Address2</label>
-                            <input disabled type="text" id="Addr2" name="Addr2" class="form-control bg-white" required placeholder="Addr2">
+                            <input disabled type="text" id="Addr2" name="Addr2" class="form-control bg-white" required placeholder="Addr2" maxlength="100">
                         </div>
                         <div class="col-12 mb-3">
                             <label for="Addr3">Address3</label>
-                            <input disabled type="text" id="Addr3" name="Addr3" class="form-control bg-white" required placeholder="Addr3">
+                            <input disabled type="text" id="Addr3" name="Addr3" class="form-control bg-white" required placeholder="Addr3" maxlength="100">
                         </div>
                         <div class="col-12 mb-3">
                             <label for="Addr4">Address4</label>
-                            <input disabled type="text" id="Addr4" name="Addr4" class="form-control bg-white" required placeholder="Addr4">
+                            <input disabled type="text" id="Addr4" name="Addr4" class="form-control bg-white" required placeholder="Addr4" maxlength="100">
                         </div>
                         <div class="col-4 mb-3">
                             <label for="Group1">Group1</label>

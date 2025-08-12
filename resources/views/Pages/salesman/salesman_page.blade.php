@@ -63,7 +63,7 @@
                 <div class="col mt-2">
                     <label for="ImmediateHead">Immediate Head</label>
                     <input disabled type="text" id="ImmediateHead" name="ImmediateHead" class="form-control bg-white"
-                        required placeholder="Immediate Head">
+                        required placeholder="Immediate Head" maxlength="50">
                 </div>
 
                 <div class="col mt-2">
@@ -72,13 +72,13 @@
 
                             <label for="SalesmanType">Salesman Type</label>
                             <input disabled type="text" id="SalesmanType" name="SalesmanType" class="form-control bg-white"
-                                required placeholder="Salesman Type">
+                                required placeholder="Salesman Type" maxlength="1">
                         </div>
                         <div class="col">
 
                             <label for="WarehouseCode">Warehouse Code</label>
                             <input disabled type="text" id="WarehouseCode" name="WarehouseCode" class="form-control bg-white"
-                                required placeholder="WarehouseCode">
+                                required placeholder="WarehouseCode" maxlength="10">
                         </div>
                     </div>
                 </div>
@@ -124,7 +124,7 @@
                 <div class="col mt-2">
                     <label for="PhoneSN">PhoneSN</label>
                     <input disabled type="text" id="PhoneSN" name="PhoneSN" class="form-control bg-white"
-                        required placeholder="PhoneSN">
+                        required placeholder="PhoneSN" maxlength="11">
                 </div>
 
             </div>
@@ -132,13 +132,13 @@
                 <div class="col mt-2">
                     <label for="mdCode">MDCode</label>
                     <input disabled type="number" id="mdCode" name="mdCode" class="form-control bg-white"
-                        required placeholder="mdCode">
+                        required placeholder="mdCode" maxlength="20">
                 </div>
 
                 <div class="col mt-2">
                     <label for="mdName">Name</label>
                     <input disabled type="text" id="mdName" name="mdName" class="form-control bg-white"
-                        required placeholder="Name">
+                        required placeholder="Name" maxlength="50">
                 </div>
 
                 <div class="col mt-2">
@@ -150,7 +150,7 @@
                 <div class="col mt-2">
                     <label for="contactCellNumber">Contact Mobile</label>
                     <input disabled type="number" id="contactCellNumber" name="contactCellNumber" class="form-control bg-white"
-                        required placeholder="Contact Mobile">
+                        required placeholder="Contact Mobile" maxlength="11">
                 </div>
 
                 <div class="col mt-2">
@@ -173,13 +173,13 @@
 
                             <label for="mdSalesmancode">Salesman Code</label>
                             <input disabled type="text" id="mdSalesmancode" name="mdSalesmancode" class="form-control bg-white"
-                                required placeholder="Salesman Code">
+                                required placeholder="Salesman Code" maxlength="10">
                         </div>
                         <div class="col">
 
                             <label for="siteCode">Site Code</label>
                             <input disabled type="text" id="siteCode" name="siteCode" class="form-control bg-white"
-                                required placeholder="Site Code">
+                                required placeholder="Site Code" maxlength="10">
                         </div>
                     </div>
                 </div>

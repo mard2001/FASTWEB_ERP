@@ -401,7 +401,51 @@ const datatables = {
 
 const SupplierModal = {
     isValid: () => {
-        return $('#modalFields').valid();
+        let isFormValid = $('#modalFields').valid();
+        let isRegionValid = true;
+        let isProvinceValid = true;
+        let isMunicipalityValid = true;
+        
+        // Validate Region
+        const regionValue = document.querySelector('#VSregion')?.value;
+        if (!regionValue || regionValue === '') {
+            isRegionValid = false;
+            // Remove existing error message
+            $('#VSregion').siblings('.validation-error').remove();
+            // Add error message
+            $('#VSregion').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
+        } else {
+            // Remove error message if valid
+            $('#VSregion').siblings('.validation-error').remove();
+        }
+        
+        // Validate Province
+        const provinceValue = document.querySelector('#VSprovince')?.value;
+        if (!provinceValue || provinceValue === '') {
+            isProvinceValid = false;
+            // Remove existing error message
+            $('#VSprovince').siblings('.validation-error').remove();
+            // Add error message
+            $('#VSprovince').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
+        } else {
+            // Remove error message if valid
+            $('#VSprovince').siblings('.validation-error').remove();
+        }
+        
+        // Validate Municipality
+        const municipalityValue = document.querySelector('#VSmunicipality')?.value;
+        if (!municipalityValue || municipalityValue === '') {
+            isMunicipalityValid = false;
+            // Remove existing error message
+            $('#VSmunicipality').siblings('.validation-error').remove();
+            // Add error message
+            $('#VSmunicipality').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
+        } else {
+            // Remove error message if valid
+            $('#VSmunicipality').siblings('.validation-error').remove();
+        }
+        
+        return isFormValid && isRegionValid && isProvinceValid && isMunicipalityValid;
     },
     hide: () => {
         $('#supplierMainModal').modal('hide');
@@ -589,7 +633,10 @@ const initVS = {
         });
 
         $('#VSregion').on('afterClose', function () {
+            // Clear validation error when user selects a value
             if (this.value) {
+                $('#VSregion').siblings('.validation-error').remove();
+                
                 filteredProvince = Province.filter(prov => prov.region_id == this.value)
                     .map(prov => {
                         return {
@@ -610,6 +657,9 @@ const initVS = {
                 initVS.provinceVS();
                 filteredMunicipality=[];
                 initVS.municipalityVS();
+            } else {
+                // Clear validation error when user selects a value
+                $('#VSregion').siblings('.validation-error').remove();
             }
         });
     },
@@ -634,6 +684,9 @@ const initVS = {
 
         $('#VSprovince').on('afterClose', function () {
             if (this.value) {
+                // Clear validation error when user selects a value
+                $('#VSprovince').siblings('.validation-error').remove();
+                
                 filteredMunicipality = Municipality.filter(mul => mul.province_id == this.value)
                     .map(mul => {
                         return {
@@ -650,6 +703,9 @@ const initVS = {
             if (!this.value) {
                 filteredMunicipality=[];
                 initVS.municipalityVS();
+            } else {
+                // Clear validation error when user selects a value
+                $('#VSprovince').siblings('.validation-error').remove();
             }
         });
     },
@@ -671,6 +727,21 @@ const initVS = {
             additionalDropboxClasses: 'rounded',
             additionalDropboxContainerClasses: 'rounded',
             additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
+        });
+
+        // Add validation event listeners for municipality
+        $('#VSmunicipality').on('afterClose', function () {
+            if (this.value) {
+                // Clear validation error when user selects a value
+                $('#VSmunicipality').siblings('.validation-error').remove();
+            }
+        });
+
+        $('#VSmunicipality').on('change', function () {
+            if (this.value) {
+                // Clear validation error when user selects a value
+                $('#VSmunicipality').siblings('.validation-error').remove();
+            }
         });
 
         // $('#VSprovince').on('afterClose', function () {

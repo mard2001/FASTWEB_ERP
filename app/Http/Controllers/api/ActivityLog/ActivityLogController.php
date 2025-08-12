@@ -67,7 +67,7 @@ class ActivityLogController extends Controller
                     'subject_id' => $log->subject_id,
                     'causer_name' => $log->causer ? $log->causer->name : 'System',
                     'properties' => $properties,
-                    'created_at' => $log->created_at->format('Y-m-d H:i:s'),
+                    'created_at' => $log->created_at->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
                 ];
             });
 
@@ -132,8 +132,8 @@ class ActivityLogController extends Controller
                 'causer_data' => $activityLog->causer,
                 'properties' => $properties,
                 'batch_uuid' => $activityLog->batch_uuid,
-                'created_at' => $activityLog->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $activityLog->updated_at->format('Y-m-d H:i:s'),
+                'created_at' => $activityLog->created_at->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
+                'updated_at' => $activityLog->updated_at->setTimezone('Asia/Manila')->format('Y-m-d H:i:s'),
             ];
 
             return response()->json([
@@ -402,7 +402,7 @@ class ActivityLogController extends Controller
                         'id' => $latestLog->id,
                         'description' => $latestLog->description,
                         'properties' => $latestLog->properties,
-                        'created_at' => $latestLog->created_at->format('Y-m-d H:i:s')
+                        'created_at' => $latestLog->created_at->setTimezone('Asia/Manila')->format('Y-m-d H:i:s')
                     ]
                 ]
             ], 200);

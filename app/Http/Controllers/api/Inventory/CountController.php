@@ -257,8 +257,27 @@ class CountController extends Controller
         try {
             // Get count header info before deletion
             $countHeader = CSHeader::where('CNTHEADER_ID', $headerID)->first();
-            
-            // CSHeader::where('CNTHEADER_ID', $headerID)->update(['STATUS' => 0]);
+
+            if (!$countHeader) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inventory Count not found',
+                ], 404);
+            }
+
+            // Prevent deleting already confirmed sheets (STATUS = 2)
+            if ((int) $countHeader->STATUS === 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Confirmed inventory counts cannot be deleted',
+                ], 400);
+            }
+
+            // Perform logical delete by setting STATUS to 0
+            CSHeader::where('CNTHEADER_ID', $headerID)->update([
+                'STATUS' => 0,
+                'DATEUPDATED' => now()->setTimezone('Asia/Manila'),
+            ]);
             CSLog::create([
                 'PROCESSID' => $headerID,
                 'PROCESSEDBY' => $request->input('data.userID'),

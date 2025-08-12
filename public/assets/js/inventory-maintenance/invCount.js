@@ -76,17 +76,22 @@ $(document).ready(async function () {
             if (result.isConfirmed) {
                 let userData = localStorage.getItem('user');
                 let user = JSON.parse(userData);
-                ajax('api/report/v2/countsheet/' + selectedMain.CNTHEADER_ID, 'POST', JSON.stringify({
+                ajax('api/report/v2/countsheet/' + selectedMain.CNTHEADER_ID, 'DELETE', JSON.stringify({
                     data: {
                         userID: user.name
-                    },
-                    _method: 'DELETE'
+                    }
                 }), (response) => { // Success callback
                     if(response.success){
                         Swal.fire({
                             title: "Deleted!",
                             text: response.message,
                             icon: "success"
+                        }).then(() => {
+                            // Refresh data and close modal
+                            datatables.loadCountData();
+                            $('#invCountMainModal').modal('hide');
+                            selectedMain = null;
+                            originalSelected = [];
                         });
                     } else{
                         Swal.fire({
@@ -96,7 +101,12 @@ $(document).ready(async function () {
                         });
                     }
                 }, (xhr, status, error) => { // Error callback
-                    console.error('Error:', error);
+                    let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Unable to delete sheet.';
+                    Swal.fire({
+                        title: "Error",
+                        text: msg,
+                        icon: "error"
+                    });
                 });
 
 
@@ -173,7 +183,7 @@ $(document).ready(async function () {
             if (result.isConfirmed) {
                 let userData = localStorage.getItem('user');
                 let user = JSON.parse(userData);
-                
+
                 Swal.fire({
                     text: "Please wait... Confirming inventory count...",
                     timerProgressBar: true,
