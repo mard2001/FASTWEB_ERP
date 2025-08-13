@@ -39,6 +39,22 @@ class Salesperson extends Model
         "lastUpdated",
     ];
 
+    /**
+     * Get the identifier for activity logging
+     */
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        $salesmanName = $this->Name ?? $this->Salesperson ?? 'Unknown';
+        $salesmanCode = $this->Salesperson ?? 'N/A';
+        
+        return match($eventName) {
+            'created' => "created new salesman: {$salesmanName} (Code: {$salesmanCode})",
+            'updated' => "updated salesman: {$salesmanName} (Code: {$salesmanCode})",
+            'deleted' => "deleted salesman: {$salesmanName} (Code: {$salesmanCode})",
+            default => "{$eventName} salesman: {$salesmanName} (Code: {$salesmanCode})"
+        };
+    }
+
     // protected static function boot()
     // {
     //     parent::boot();

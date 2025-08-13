@@ -272,23 +272,21 @@ class CustController extends Controller
             $enableActivityLogging = true; // Set to true to enable logging
             
             if ($enableActivityLogging) {
-                // Create a minimal changes summary to avoid JSON encoding issues
-                $changesSummary = [];
+                // Prepare old and new values for change tracking
+                $oldValues = [];
+                $newValues = [];
                 $changedFields = [];
+                
                 foreach ($data as $field => $newValue) {
                     $oldValue = $originalData[$field] ?? null;
                     if ($oldValue !== $newValue) {
                         $changedFields[] = $field;
-                        // Only store safe, basic change information
-                        $changesSummary[$field] = [
-                            'changed' => true,
-                            'has_old_value' => !empty($oldValue),
-                            'has_new_value' => !empty($newValue)
-                        ];
+                        $oldValues[$field] = $oldValue;
+                        $newValues[$field] = $newValue;
                     }
                 }
                 
-                // Log the activity with minimal, safe data
+                // Log the activity with old and new values for change tracking
                 try {
                     activity('customer_maintenance')
                         ->withProperties([
@@ -302,10 +300,12 @@ class CustController extends Controller
                             'salesperson' => $this->sanitizeForJson($data['Salesperson'] ?? $originalData['Salesperson'] ?? 'N/A'),
                             'action_type' => 'update',
                             'updated_fields' => $changedFields,
-                            'changes_summary' => $changesSummary,
                             'subject_type' => 'App\\Models\\Customer\\Customer',
                             'subject_id' => $custID,
-                            'event' => 'updated'
+                            'event' => 'updated',
+                            // Add old and attributes for change tracking (same format as salesman)
+                            'old' => $oldValues,
+                            'attributes' => $newValues
                         ])
                         ->log("Updated customer: " . $this->sanitizeForJson($data['Name'] ?? $originalData['Name'] ?? 'N/A'));
                 } catch (\Exception $e) {

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\api\Salesman;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Salesman\Salesperson;
+use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Auth;
 
 class SalespersonController extends Controller
 {
@@ -60,7 +62,31 @@ class SalespersonController extends Controller
     {
         try {
             $data = $request->data;
-            Salesperson::create($data);
+            $salesperson = Salesperson::create($data);
+            
+            // Create activity log entry directly
+            ActivityLog::create([
+                'log_name' => 'salesman',
+                'description' => "created new salesman: {$salesperson->Name} (Code: {$salesperson->Salesperson})",
+                'subject_type' => 'App\\Models\\Salesman\\Salesperson',
+                'subject_id' => null, // Keep as null to avoid bigint conversion error
+                'event' => 'created',
+                'causer_type' => 'App\\Models\\User',
+                'causer_id' => Auth::id(),
+                'properties' => [
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'url' => $request->url(),
+                    'method' => $request->method(),
+                    'module' => 'Salesman Management',
+                    'action_type' => 'create',
+                    'salesman_data' => $data,
+                    'employee_id' => $salesperson->EmployeeID,
+                    'salesperson_code' => $salesperson->Salesperson
+                ],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -205,8 +231,38 @@ class SalespersonController extends Controller
                 //break to reserve server resouces
                 return response()->json($response);
             }
-            // dd($data, $found);
+            
+            // Store original data for activity log
+            $originalData = $found->toArray();
+            
+            // Update the salesperson
             $found->update($data);
+            
+            // Create activity log entry directly
+            ActivityLog::create([
+                'log_name' => 'salesman',
+                'description' => "updated salesman: {$found->Name} (Code: {$found->Salesperson})",
+                'subject_type' => 'App\\Models\\Salesman\\Salesperson',
+                'subject_id' => null, // Keep as null to avoid bigint conversion error
+                'event' => 'updated',
+                'causer_type' => 'App\\Models\\User',
+                'causer_id' => Auth::id(),
+                'properties' => [
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'url' => $request->url(),
+                    'method' => $request->method(),
+                    'module' => 'Salesman Management',
+                    'action_type' => 'update',
+                    'attributes' => $data,
+                    'old' => $originalData,
+                    'employee_id' => $found->EmployeeID,
+                    'salesperson_code' => $found->Salesperson
+                ],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            
             return response()->json([
                 'success' => true,
                 'message' =>  "Salesman updated successfully!",
@@ -230,7 +286,7 @@ class SalespersonController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
             
@@ -244,6 +300,36 @@ class SalespersonController extends Controller
 
                 return response()->json($response);
             }
+
+            // Store salesperson data before deletion for activity log
+            $salesmanName = $data->Name;
+            $salesmanCode = $data->Salesperson;
+            $salesmanData = $data->toArray();
+            $employeeID = $data->EmployeeID;
+            
+            // Create activity log entry directly
+            ActivityLog::create([
+                'log_name' => 'salesman',
+                'description' => "deleted salesman: {$salesmanName} (Code: {$salesmanCode})",
+                'subject_type' => 'App\\Models\\Salesman\\Salesperson',
+                'subject_id' => null, // Keep as null to avoid bigint conversion error
+                'event' => 'deleted',
+                'causer_type' => 'App\\Models\\User',
+                'causer_id' => Auth::id(),
+                'properties' => [
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'url' => $request->url(),
+                    'method' => $request->method(),
+                    'module' => 'Salesman Management',
+                    'action_type' => 'delete',
+                    'deleted_data' => $salesmanData,
+                    'employee_id' => $employeeID,
+                    'salesperson_code' => $salesmanCode
+                ],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
             $data->delete();
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\MasterData;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\Product;
 use App\Http\Controllers\helpers\DynamicSQLHelper;
@@ -23,10 +24,32 @@ class ProductController extends DynamicSQLHelper
         
     }
 
+    /**
+     * Sanitize data for UTF-8 encoding to prevent JSON encoding errors
+     */
+    private function sanitizeForJson($data)
+    {
+        if (is_array($data)) {
+            return array_map([$this, 'sanitizeForJson'], $data);
+        } elseif (is_string($data)) {
+            // More aggressive UTF-8 cleaning
+            $sanitized = @iconv('UTF-8', 'UTF-8//IGNORE', $data);
+            if ($sanitized === false) {
+                $sanitized = mb_convert_encoding($data, 'UTF-8', 'auto');
+            }
+            // Remove control characters and non-printable characters
+            $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $sanitized);
+            // Additional safety: remove any remaining invalid sequences (strip low/high ASCII)
+            $sanitized = preg_replace('/[^\P{C}\n]+/u', '', $sanitized);
+            return $sanitized ?: (string)$data; // Fallback to original if all cleaning fails
+        }
+        return $data;
+    }
+
     private function convert_from_latin1_to_utf8_recursively($dat)
     {
         if (is_string($dat)) {
-            return utf8_encode($dat);
+            return mb_convert_encoding($dat, 'UTF-8', 'auto');
         } elseif (is_array($dat)) {
             $ret = [];
             foreach ($dat as $i => $d) $ret[$i] = self::convert_from_latin1_to_utf8_recursively($d);
@@ -134,6 +157,42 @@ class ProductController extends DynamicSQLHelper
             $data['Supplier'] = "";
 
             Product::insert($data);
+
+            // Log the activity with error handling
+            try {
+                $sanitizedData = $this->sanitizeForJson($data);
+                activity('product_maintenance')
+                    ->withProperties([
+                        'ip' => $request->ip(),
+                        'user_agent' => substr($request->header('User-Agent', ''), 0, 100),
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                        'product_code' => $sanitizedData['StockCode'] ?? 'N/A',
+                        'product_description' => $sanitizedData['Description'] ?? 'N/A',
+                        'product_brand' => $sanitizedData['Brand'] ?? 'N/A',
+                        'product_uom' => $sanitizedData['StockUom'] ?? 'N/A',
+                        'action_type' => 'create',
+                        'product_data' => $sanitizedData,
+                        'subject_type' => 'App\\Models\\Product',
+                        'subject_id' => $sanitizedData['StockCode'] ?? 'N/A',
+                        'event' => 'created'
+                    ])
+                    ->log("Created new product: " . ($sanitizedData['Description'] ?? 'N/A') . " (Code: " . ($sanitizedData['StockCode'] ?? 'N/A') . ") - Brand: " . ($sanitizedData['Brand'] ?? 'N/A'));
+            } catch (\Exception $e) {
+                // Simple fallback logging if detailed logging fails
+                try {
+                    activity('product_maintenance')
+                        ->withProperties([
+                            'action_type' => 'create',
+                            'product_code' => $data['StockCode'] ?? 'N/A',
+                            'event' => 'created'
+                        ])
+                        ->log("Product created (Code: " . ($data['StockCode'] ?? 'N/A') . ")");
+                } catch (\Exception $e2) {
+                    // Last resort - basic log without properties
+                    activity('product_maintenance')->log("Product creation operation performed");
+                }
+            }
 
             $response = [
                 'response' => 'Items updated succesfully!',
@@ -253,6 +312,9 @@ class ProductController extends DynamicSQLHelper
                 return response()->json($response);
             }
 
+            // Store original data for logging
+            $originalData = $this->sanitizeForJson($found->toArray());
+
             $data = $this->convertFormData($request);
 
             // Handle file upload
@@ -266,6 +328,60 @@ class ProductController extends DynamicSQLHelper
             //return response()->json($data);
 
             $found->update($data);
+
+            // Log the activity with error handling
+            try {
+                $sanitizedData = $this->sanitizeForJson($data);
+                
+                // Prepare old and new values for change tracking
+                $oldValues = [];
+                $newValues = [];
+                $changedFields = [];
+                foreach ($data as $field => $newValue) {
+                    $oldValue = $originalData[$field] ?? null;
+                    if ($oldValue !== $newValue) {
+                        $changedFields[] = $field;
+                        $oldValues[$field] = $oldValue;
+                        $newValues[$field] = $newValue;
+                    }
+                }
+
+                activity('product_maintenance')
+                    ->withProperties([
+                        'ip' => $request->ip(),
+                        'user_agent' => substr($request->header('User-Agent', ''), 0, 100),
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                        'product_id' => $id,
+                        'product_code' => $sanitizedData['StockCode'] ?? $originalData['StockCode'] ?? 'N/A',
+                        'product_description' => $sanitizedData['Description'] ?? $originalData['Description'] ?? 'N/A',
+                        'product_brand' => $sanitizedData['Brand'] ?? $originalData['Brand'] ?? 'N/A',
+                        'action_type' => 'update',
+                        'updated_fields' => $changedFields,
+                        'subject_type' => 'App\\Models\\Product',
+                        'subject_id' => $id,
+                        'event' => 'updated',
+                        // Add old and attributes for change tracking (same format as salesman and customer)
+                        'old' => $oldValues,
+                        'attributes' => $newValues
+                    ])
+                    ->log("Updated product: " . ($sanitizedData['Description'] ?? $originalData['Description'] ?? 'N/A') . " (Code: " . ($sanitizedData['StockCode'] ?? $originalData['StockCode'] ?? 'N/A') . ") - Brand: " . ($sanitizedData['Brand'] ?? $originalData['Brand'] ?? 'N/A'));
+            } catch (\Exception $e) {
+                // Simple fallback logging if detailed logging fails
+                try {
+                    activity('product_maintenance')
+                        ->withProperties([
+                            'action_type' => 'update',
+                            'product_id' => $id,
+                            'product_code' => $data['StockCode'] ?? $originalData['StockCode'] ?? 'N/A',
+                            'event' => 'updated'
+                        ])
+                        ->log("Product updated (ID: {$id})");
+                } catch (\Exception $e2) {
+                    // Last resort - basic log without properties
+                    activity('product_maintenance')->log("Product update operation performed");
+                }
+            }
 
             $response = [
                 'response' => 'Items updated succesfully!',
@@ -302,7 +418,47 @@ class ProductController extends DynamicSQLHelper
                 return response()->json($response);
             }
 
+            // Store product data for logging before deletion
+            $productData = $this->sanitizeForJson($data->toArray());
+
             $data->delete();
+
+            // Log the activity with error handling
+            try {
+                activity('product_maintenance')
+                    ->withProperties([
+                        'ip' => $request->ip(),
+                        'user_agent' => substr($request->header('User-Agent', ''), 0, 100),
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                        'product_id' => $id,
+                        'product_code' => $productData['StockCode'] ?? 'N/A',
+                        'product_description' => $productData['Description'] ?? 'N/A',
+                        'product_brand' => $productData['Brand'] ?? 'N/A',
+                        'product_uom' => $productData['StockUom'] ?? 'N/A',
+                        'action_type' => 'delete',
+                        'deleted_data' => $productData,
+                        'subject_type' => 'App\\Models\\Product',
+                        'subject_id' => $id,
+                        'event' => 'deleted'
+                    ])
+                    ->log("Deleted product: " . ($productData['Description'] ?? 'N/A') . " (Code: " . ($productData['StockCode'] ?? 'N/A') . ") - Brand: " . ($productData['Brand'] ?? 'N/A'));
+            } catch (\Exception $e) {
+                // Simple fallback logging if detailed logging fails
+                try {
+                    activity('product_maintenance')
+                        ->withProperties([
+                            'action_type' => 'delete',
+                            'product_id' => $id,
+                            'product_code' => $productData['StockCode'] ?? 'N/A',
+                            'event' => 'deleted'
+                        ])
+                        ->log("Product deleted (ID: {$id})");
+                } catch (\Exception $e2) {
+                    // Last resort - basic log without properties
+                    activity('product_maintenance')->log("Product deletion operation performed");
+                }
+            }
 
             $response = [
                 'response' => 'Item deleted succesfully!',

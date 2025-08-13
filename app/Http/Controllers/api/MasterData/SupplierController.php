@@ -72,6 +72,27 @@ class SupplierController
             $data['lastUpdated'] = now()->setTimezone('Asia/Manila');
             $res = Supplier::create($data);
 
+            // Log the activity
+            activity('supplier')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'supplier_code' => $data['SupplierCode'],
+                    'supplier_name' => $data['SupplierName'],
+                    'supplier_type' => $data['SupplierType'],
+                    'contact_person' => $data['ContactPerson'],
+                    'region' => $data['Region'],
+                    'province' => $data['Province'],
+                    'municipality' => $data['Municipality'],
+                    'subject_type' => 'App\\Models\\Supplier',
+                    'subject_id' => $data['SupplierCode'],
+                    'event' => 'created',
+                    'attributes' => $data
+                ])
+                ->log("Created new supplier '{$data['SupplierName']}' with code '{$data['SupplierCode']}'");
+
             return response()->json( [
                 'message' => 'Supplier inserted succesfully!',
                 'success' => true,
@@ -138,7 +159,28 @@ class SupplierController
                 return response()->json($response);
             }
 
+            // Store old data for logging
+            $oldData = $found->toArray();
+            
             $found->update($data);
+
+            // Log the activity
+            activity('supplier')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'supplier_code' => $supplierCode,
+                    'supplier_name' => $data['SupplierName'],
+                    'subject_type' => 'App\\Models\\Supplier',
+                    'subject_id' => $supplierCode,
+                    'event' => 'updated',
+                    'attributes' => $data,
+                    'old' => $oldData
+                ])
+                ->log("Updated supplier '{$data['SupplierName']}' (Code: {$supplierCode})");
+
             $response = [
                 'message' => 'Supplier details updated succesfully!',
                 'success' => true,
@@ -161,10 +203,10 @@ class SupplierController
     public function destroy(string $id)
     {
         try {
+            // Get supplier data before deletion for logging
+            $supplier = Supplier::where('SupplierCode', $id)->first();
             
-            $data = Supplier::where('SupplierCode', $id)->delete();
-
-            if (!$data) {
+            if (!$supplier) {
                 $response = [
                     'message' => 'Supplier data not found',
                     'success' => false
@@ -173,6 +215,28 @@ class SupplierController
                 //break to reserve server resouces
                 return response()->json($response);
             }
+
+            // Store supplier data for logging
+            $supplierData = $supplier->toArray();
+            
+            $data = Supplier::where('SupplierCode', $id)->delete();
+
+            // Log the activity
+            activity('supplier')
+                ->withProperties([
+                    'ip' => request()->ip(),
+                    'user_agent' => request()->header('User-Agent'),
+                    'url' => request()->fullUrl(),
+                    'method' => request()->method(),
+                    'supplier_code' => $id,
+                    'supplier_name' => $supplierData['SupplierName'],
+                    'subject_type' => 'App\\Models\\Supplier',
+                    'subject_id' => $id,
+                    'event' => 'deleted',
+                    'old' => $supplierData
+                ])
+                ->log("Deleted supplier '{$supplierData['SupplierName']}' (Code: {$id})");
+
             $response = [
                 'message' => 'Supplier deleted succesfully!',
                 'success' => true
