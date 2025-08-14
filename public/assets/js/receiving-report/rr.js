@@ -143,13 +143,22 @@ const datatables = {
             if (MainTH) {
                 MainTH.clear().draw();
                 MainTH.rows.add(response.data).draw();
+                MainTH.order([0, 'desc']).draw(); // Order by date column (index 0) in descending order
             } else {
                 MainTH = $('#rrTable').DataTable({
                     data: response.data,
                     language: {
                         searchPlaceholder: "Search here..."
                     },
+                    order: [[0, 'desc']], // Order by date column (index 0) in descending order
                     columns: [
+                        { data: 'RRDATE', title: 'Date', type: 'date',
+                            render: function (data, type, row) {
+                                if (!data) return '';
+                                const dateObj = new Date(data);
+                                return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'});
+                            }
+                        },
                         {
                             data: 'RRDATE',
                             title: 'Date',

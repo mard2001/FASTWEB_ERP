@@ -32,6 +32,9 @@ $(document).ready(async function () {
     initVS.municipalityVS();
     initVS.barangayVS();
 
+    // Initialize character counter for address field using the global helper
+    window.CharacterCounterHelper.initAddressField('#address', '#addressCharCount', '#customerMainModal');
+
     $("#customerTable").on("click", "tbody tr", async function () {
         const selectedCustCode = $(this).attr('id');
         $('#modalFields #mdCode').show();

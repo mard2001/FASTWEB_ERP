@@ -77,7 +77,7 @@
                         </div>
                         <div class="col-12 mb-3">
                             <label for="ContacteMail">Contact Email</label>
-                            <input disabled type="email" id="ContacteMail" name="ContacteMail" class="form-control bg-white needField" required placeholder="ContacteMail" maxlength="50">
+                            <input disabled type="email" id="ContacteMail" name="ContacteMail" class="form-control bg-white" required placeholder="ContacteMail" maxlength="50">
                         </div>
                         <div class="col-12 mb-3">
                             <label for="Addr1">Address1</label>

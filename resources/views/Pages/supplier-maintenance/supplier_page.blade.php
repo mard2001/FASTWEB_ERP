@@ -119,6 +119,7 @@
                         <div class="mb-3">
                             <label for="CompleteAddress">Home # / Street / Bldg.</label>
                             <input disabled type="text" id="CompleteAddress" name="CompleteAddress" class="form-control bg-white needField" required placeholder="address" maxlength="100">
+                            <small class="text-muted" style="font-size: 8px;"><span id="completeAddressCharCount">0</span>/100 characters</small>
                         </div>
                     </div>
                     <div class="col-3">

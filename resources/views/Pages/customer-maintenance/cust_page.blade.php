@@ -130,6 +130,7 @@
                         <div class="mb-3">
                             <label for="address">Home # / Street / Bldg.</label>
                             <input disabled type="text" id="address" name="address" class="form-control bg-white needField" required placeholder="address" maxlength="100">
+                            <small class="text-muted" style="font-size: 8px;"><span id="addressCharCount">0</span>/100 characters</small>
                         </div>
                     </div>
                     <div class="col-3">

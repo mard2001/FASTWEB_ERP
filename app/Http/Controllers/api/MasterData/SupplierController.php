@@ -10,7 +10,9 @@ class SupplierController
     public function index()
     {
         try {
-            $data = Supplier::get();
+            $data = Supplier::orderBy('lastUpdated', 'desc')
+                           ->orderBy('SupplierCode', 'desc')
+                           ->get();
 
             if (count($data) == 0) {
                 return response()->json([

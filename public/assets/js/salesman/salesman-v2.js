@@ -287,12 +287,14 @@ const datatables = {
             if (MainTH) {
                 MainTH.clear().draw();
                 MainTH.rows.add(response.data).draw();
+                MainTH.order([0, 'desc']).draw(); // Order by EmployeeID (index 0) in descending order
             } else {
                 MainTH = $('#salespersonTable').DataTable({
                     data: response.data,
                     language: {
                         searchPlaceholder: "Search here..."
                     },
+                    order: [[0, 'desc']], // Order by EmployeeID (index 0) in descending order
                     columns: [
                         { data: 'EmployeeID',  title: 'Employee ID' },
                         {

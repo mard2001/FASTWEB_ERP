@@ -120,6 +120,99 @@ window.PhilippineLocationHelpers = {
     }
 };
 
+// Global Character Counter Helper
+window.CharacterCounterHelper = {
+    /**
+     * Initialize character counter for an input field
+     * @param {string} inputSelector - jQuery selector for the input field
+     * @param {string} counterSelector - jQuery selector for the counter display element
+     * @param {number} maxLength - Maximum character length (defaults to input's maxlength attribute)
+     * @param {Object} options - Optional configuration
+     */
+    init: function(inputSelector, counterSelector, maxLength = null, options = {}) {
+        const defaultOptions = {
+            warningThreshold: 0.50, // 50% of max length
+            dangerThreshold: 0.9,   // 90% of max length
+            warningColor: '#fd7e14', // Orange
+            dangerColor: '#dc3545',  // Red
+            normalColor: '#6c757d',  // Gray
+            updateOnModalShow: false, // Whether to update when modal is shown
+            modalSelector: null       // Modal selector if updateOnModalShow is true
+        };
+        
+        const config = Object.assign(defaultOptions, options);
+        const $input = $(inputSelector);
+        const $counter = $(counterSelector);
+        
+        if ($input.length === 0 || $counter.length === 0) {
+            console.warn('CharacterCounter: Input or counter element not found', {
+                inputSelector,
+                counterSelector
+            });
+            return;
+        }
+        
+        // Get max length from input attribute if not provided
+        if (maxLength === null) {
+            maxLength = parseInt($input.attr('maxlength')) || 100;
+        }
+        
+        // Update counter function
+        function updateCounter() {
+            const currentLength = $input.val().length;
+            $counter.text(currentLength);
+            
+            // Calculate thresholds
+            const warningThreshold = Math.floor(maxLength * config.warningThreshold);
+            const dangerThreshold = Math.floor(maxLength * config.dangerThreshold);
+            
+            // Update color based on length
+            if (currentLength >= dangerThreshold) {
+                $counter.css('color', config.dangerColor);
+            } else if (currentLength >= warningThreshold) {
+                $counter.css('color', config.warningColor);
+            } else {
+                $counter.css('color', config.normalColor);
+            }
+        }
+        
+        // Bind input event
+        $input.on('input', updateCounter);
+        
+        // Bind modal show event if specified
+        if (config.updateOnModalShow && config.modalSelector) {
+            $(config.modalSelector).on('shown.bs.modal', updateCounter);
+        }
+        
+        // Initial update
+        updateCounter();
+        
+        // Return object with utility methods
+        return {
+            update: updateCounter,
+            destroy: function() {
+                $input.off('input', updateCounter);
+                if (config.updateOnModalShow && config.modalSelector) {
+                    $(config.modalSelector).off('shown.bs.modal', updateCounter);
+                }
+            }
+        };
+    },
+    
+    /**
+     * Quick setup for standard address fields with 100 character limit
+     * @param {string} inputSelector - jQuery selector for the address input field
+     * @param {string} counterSelector - jQuery selector for the counter display element
+     * @param {string} modalSelector - Optional modal selector for auto-update
+     */
+    initAddressField: function(inputSelector, counterSelector, modalSelector = null) {
+        return this.init(inputSelector, counterSelector, 100, {
+            updateOnModalShow: modalSelector !== null,
+            modalSelector: modalSelector
+        });
+    }
+};
+
 
 $(document).ready(function() {
   try {

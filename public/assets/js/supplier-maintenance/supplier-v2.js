@@ -51,6 +51,9 @@ $(document).ready(async function () {
     initVS.municipalityVS();
     initVS.barangayVS();
 
+    // Initialize character counter for address field using the global helper
+    window.CharacterCounterHelper.initAddressField('#CompleteAddress', '#completeAddressCharCount', '#supplierMainModal');
+
     // Contact Number validation - only allow numbers
     $('#ContactNo').on('input', function(e) {
         // Remove any non-numeric characters
@@ -363,12 +366,14 @@ const datatables = {
             if (MainTH) {
                 MainTH.clear().draw();
                 MainTH.rows.add(response.data).draw();
+                MainTH.order([10, 'desc']).draw(); // Order by lastUpdated column (index 10) in descending order
             } else {
                 MainTH = $('#supplierTable').DataTable({
                     data: response.data,
                     language: {
                         searchPlaceholder: "Search here..."
                     },
+                    order: [[10, 'desc']], // Order by lastUpdated column (index 10) in descending order
                     columns: [
                         {
                             data: null,
