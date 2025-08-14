@@ -1113,6 +1113,48 @@ $(document).ready(function() {
                 'AbcCumPreProd': 'ABC Cumulative Pre-Production',
                 'AbcCumManuf': 'ABC Cumulative Manufacturing',
                 
+                // Purchase Order fields
+                'PurchaseOrder': 'Purchase Order Number',
+                'Supplier': 'Supplier Code',
+                'SupplierName': 'Supplier Name',
+                'OrderDate': 'Order Date',
+                'ReqDeliveryDate': 'Required Delivery Date',
+                'ActualDeliveryDate': 'Actual Delivery Date',
+                'TermsCode': 'Terms Code',
+                'ShipViaCode': 'Ship Via Code',
+                'Buyer': 'Buyer',
+                'OrderStatus': 'Order Status',
+                'LastGtrReference': 'Last GTR Reference',
+                'EntrySystemDate': 'Entry System Date',
+                'CompletedDate': 'Completed Date',
+                'PrintedFlag': 'Printed Flag',
+                'EmailFlag': 'Email Flag',
+                'ApprovalFlag': 'Approval Flag',
+                'OrderType': 'Order Type',
+                'FixExchangeRate': 'Fixed Exchange Rate',
+                'ExchangeRate': 'Exchange Rate',
+                'LocalCurrencyFlag': 'Local Currency Flag',
+                'GtrCount': 'GTR Count',
+                'UserDef1': 'User Defined 1',
+                'UserDef2': 'User Defined 2',
+                'UserDef3': 'User Defined 3',
+                'TaxStatus': 'Tax Status',
+                'SpecialInstruction': 'Special Instruction',
+                'ShipTo': 'Ship To',
+                'FOB': 'F.O.B',
+                'Fob': 'F.O.B',
+                'DeliveryNote': 'Delivery Note',
+                'Branch': 'Branch',
+                'Area': 'Area',
+                'Currency': 'Currency',
+                'TotalMerchandise': 'Total Merchandise',
+                'DiscountValue': 'Discount Value',
+                'DiscountPercent': 'Discount Percent',
+                'FreightValue': 'Freight Value',
+                'MiscChargeValue': 'Misc Charge Value',
+                'TaxValue': 'Tax Value',
+                'OrderValue': 'Order Value',
+                
                 // Supplier fields
                 'SupplierCode': 'Supplier Code',
                 'SupplierName': 'Supplier Name',
@@ -1186,16 +1228,17 @@ $(document).ready(function() {
                     }
                     
                     // Format currency values
-                    if (['CreditLimit', 'LabourCost', 'MaterialCost', 'FixOverhead', 'VariableOverhead', 'MinPricePct'].includes(key) && (oldValueStr || newValueStr)) {
+                    if (['CreditLimit', 'LabourCost', 'MaterialCost', 'FixOverhead', 'VariableOverhead', 'MinPricePct', 
+                         'TotalMerchandise', 'DiscountValue', 'FreightValue', 'MiscChargeValue', 'TaxValue', 'OrderValue', 'ExchangeRate'].includes(key) && (oldValueStr || newValueStr)) {
                         if (oldValueStr) {
-                            if (key === 'MinPricePct') {
+                            if (key === 'MinPricePct' || key === 'DiscountPercent') {
                                 formattedOldValue = parseFloat(oldValueStr).toFixed(2) + '%';
                             } else {
                                 formattedOldValue = '₱' + parseFloat(oldValueStr).toLocaleString();
                             }
                         }
                         if (newValueStr) {
-                            if (key === 'MinPricePct') {
+                            if (key === 'MinPricePct' || key === 'DiscountPercent') {
                                 formattedNewValue = parseFloat(newValueStr).toFixed(2) + '%';
                             } else {
                                 formattedNewValue = '₱' + parseFloat(newValueStr).toLocaleString();
@@ -1215,6 +1258,32 @@ $(document).ready(function() {
                         };
                         if (oldValueStr) formattedOldValue = oldValueStr + ' ' + units[key];
                         if (newValueStr) formattedNewValue = newValueStr + ' ' + units[key];
+                    }
+                    
+                    // Format date values
+                    if (['OrderDate', 'ReqDeliveryDate', 'ActualDeliveryDate', 'EntrySystemDate', 'CompletedDate'].includes(key) && (oldValueStr || newValueStr)) {
+                        if (oldValueStr) {
+                            try {
+                                const date = new Date(oldValueStr);
+                                formattedOldValue = date.toLocaleDateString();
+                            } catch (e) {
+                                formattedOldValue = oldValueStr;
+                            }
+                        }
+                        if (newValueStr) {
+                            try {
+                                const date = new Date(newValueStr);
+                                formattedNewValue = date.toLocaleDateString();
+                            } catch (e) {
+                                formattedNewValue = newValueStr;
+                            }
+                        }
+                    }
+                    
+                    // Format flag values (Yes/No)
+                    if (['PrintedFlag', 'EmailFlag', 'ApprovalFlag', 'LocalCurrencyFlag'].includes(key)) {
+                        formattedOldValue = (oldValue === 1 || oldValue === '1' || oldValue === true) ? 'Yes' : 'No';
+                        formattedNewValue = (newValue === 1 || newValue === '1' || newValue === true) ? 'Yes' : 'No';
                     }
                     
                     detailsHTML += `

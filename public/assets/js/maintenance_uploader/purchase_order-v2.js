@@ -6,6 +6,9 @@ var vendordata, selectedVendor;
 var productConFact;
 var itemTmpSave = [];
 var priceCodes;
+var originalFormData = {}; // Store original form data for change detection
+var originalItemsData = []; // Store original items data for change detection
+var hasUnsavedChanges = false; // Track if there are unsaved changes
 
 $(document).ready(async function () {
   await datatables.loadPO();
@@ -13,6 +16,21 @@ $(document).ready(async function () {
   await initVS.bigDataVS();
   await getProductPriceCodes();
   POItemsModal.setValidator();
+
+  // Add change detection for form fields
+  $('#modalFields input, #modalFields textarea, #modalFields select').on('input change', function() {
+    checkForChanges();
+  });
+
+  // Add specific change detection for fields that might be set programmatically
+  $('#VendorContactName, #vendorAddress, #vendorPhone, #shippedToContactName, #shippedToAddress, #shippedToPhone, #shippingTerms').on('input', function() {
+    checkForChanges();
+  });
+
+  // Add change detection for virtual selects
+  $('#vendorName, #shippedToName, #shipVia').on('change', function() {
+    checkForChanges();
+  });
 
   $("#POHeaderTable").on("click", "tbody tr", async function () {
     // selectedMain = ajaxMainData.find(item => item.id == $(this).attr('id'));
@@ -86,6 +104,7 @@ $(document).ready(async function () {
 
   $("#modalFields").on("hidden.bs.modal", function () {
     POModal.enable(false);
+    hasUnsavedChanges = false; // Reset changes tracking when modal is hidden
   });
 
   $("#itemTables").on("click", "tbody tr", function (event) {
@@ -207,7 +226,7 @@ $(document).ready(async function () {
       $(this).text("Delete");
 
       $("#editBtn").removeClass("btn-primary").addClass("btn-info");
-      $("#editBtn").text("Edit details");
+      $("#editBtn").text("Edit details").show(); // Show the Edit button again
 
       POModal.fill(selectedMain);
       datatables.initPOItemsDatatable(selectedMain.p_o_items);
@@ -215,6 +234,7 @@ $(document).ready(async function () {
       POModal.enable(false);
       $("#confirmPO").show();
       ItemsTH.column(5).visible(false);
+      hasUnsavedChanges = false; // Reset changes tracking
     } else {
       Swal.fire({
         title: "Are you sure?",
@@ -323,10 +343,15 @@ $(document).ready(async function () {
       //set the selected vendor to the to be edit vendor
       const modalCurrentVendor = $("#vendorName").val().trim();
       selectedVendor = vendordata.find(
-        (item) => (item.id = modalCurrentVendor)
+        (item) => (item.cID == modalCurrentVendor)
       );
       ItemsTH.column(5).visible(true);
       $("#addItems").show();
+
+      // Store original data and hide save button initially
+      storeOriginalData();
+      $(this).hide();
+      hasUnsavedChanges = false;
     } else {
       //save update
       if (POModal.isValid()) {
@@ -370,6 +395,7 @@ $(document).ready(async function () {
                   datatables.loadPO();
 
                   ItemsTH.column(5).visible(false);
+                  hasUnsavedChanges = false;
                 } else {
                   Swal.fire({
                     title: "Opppps..",
@@ -609,6 +635,84 @@ function calculateCost() {
   $("#subTotal").text(formatMoney(grandTotal));
 }
 
+// Function to store original form data when entering edit mode
+function storeOriginalData() {
+  originalFormData = {
+    vendorName: $("#vendorName").val(),
+    VendorContactName: $("#VendorContactName").val(),
+    vendorAddress: $("#vendorAddress").val(),
+    vendorPhone: $("#vendorPhone").val(),
+    shippedToName: $("#shippedToName").val(),
+    shippedToContactName: $("#shippedToContactName").val(),
+    shippedToAddress: $("#shippedToAddress").val(),
+    shippedToPhone: $("#shippedToPhone").val(),
+    shipVia: $("#shipVia").val(),
+    requisitioner: $("#requisitioner").val(),
+    fob: $("#fob").val(),
+    shippingTerms: $("#shippingTerms").val(),
+    poComment: $("#poComment").val(),
+    totalDiscount: $("#totalDiscount").val(),
+    others: $("#others").val()
+  };
+  
+  // Store original items data
+  originalItemsData = JSON.parse(JSON.stringify(itemTmpSave));
+  hasUnsavedChanges = false;
+}
+
+// Function to check if current form data differs from original
+function hasFormChanged() {
+  const currentData = {
+    vendorName: $("#vendorName").val(),
+    VendorContactName: $("#VendorContactName").val(),
+    vendorAddress: $("#vendorAddress").val(),
+    vendorPhone: $("#vendorPhone").val(),
+    shippedToName: $("#shippedToName").val(),
+    shippedToContactName: $("#shippedToContactName").val(),
+    shippedToAddress: $("#shippedToAddress").val(),
+    shippedToPhone: $("#shippedToPhone").val(),
+    shipVia: $("#shipVia").val(),
+    requisitioner: $("#requisitioner").val(),
+    fob: $("#fob").val(),
+    shippingTerms: $("#shippingTerms").val(),
+    poComment: $("#poComment").val(),
+    totalDiscount: $("#totalDiscount").val(),
+    others: $("#others").val()
+  };
+
+  // Check if form fields have changed
+  for (const key in originalFormData) {
+    if (originalFormData[key] !== currentData[key]) {
+      return true;
+    }
+  }
+
+  // Check if items have changed
+  if (JSON.stringify(originalItemsData) !== JSON.stringify(itemTmpSave)) {
+    return true;
+  }
+
+  return false;
+}
+
+// Function to check for changes and show/hide Save Changes button
+function checkForChanges() {
+  // Only check for changes if we're in edit mode
+  if ($("#editBtn").text().toLowerCase() === "save changes") {
+    const hasChanges = hasFormChanged();
+    
+    if (hasChanges && !hasUnsavedChanges) {
+      // Show the Save Changes button
+      $("#editBtn").show();
+      hasUnsavedChanges = true;
+    } else if (!hasChanges && hasUnsavedChanges) {
+      // Hide the Save Changes button if no changes
+      $("#editBtn").hide();
+      hasUnsavedChanges = false;
+    }
+  }
+}
+
 const initVS = {
   liteDataVS: async () => {
     // Initialize VirtualSelect for ship via
@@ -685,6 +789,7 @@ const initVS = {
           $("#vendorName").trigger("reset");
         }
       }
+      checkForChanges(); // Check for changes when vendor is changed
     });
 
     $("#vendorName").on("reset", function () {
@@ -785,6 +890,7 @@ const initVS = {
 
             console.log(this.value);
           }
+          checkForChanges(); // Check for changes when shipped to is changed
         });
 
         $("#shippedToName").on("reset", function () {
@@ -1107,6 +1213,7 @@ const POModal = {
 
     POModal.enable(false);
     POModal.show();
+    hasUnsavedChanges = false; // Reset changes tracking when viewing
   },
   POSave: async () => {
     let POData = POModal.getData();
@@ -1337,6 +1444,7 @@ const POItemsModal = {
     datatables.initPOItemsDatatable(itemTmpSave);
     calculateCost();
     POItemsModal.hide();
+    checkForChanges(); // Check for changes after adding item
   },
   itemTmpUpdate: (editedItem) => {
     // Optionally, if you want to reflect the change in currentItems
@@ -1349,6 +1457,7 @@ const POItemsModal = {
 
     datatables.initPOItemsDatatable(itemTmpSave);
     POItemsModal.hide();
+    checkForChanges(); // Check for changes after updating item
   },
   itemEditMode: (uoms, isAlreadyExist) => {
     console.log(isAlreadyExist);
@@ -1374,6 +1483,7 @@ const POItemsModal = {
 
     datatables.initPOItemsDatatable(itemTmpSave);
     calculateCost();
+    checkForChanges(); // Check for changes after deleting item
   },
 
   itemApiUpdate: async (editedItem) => {

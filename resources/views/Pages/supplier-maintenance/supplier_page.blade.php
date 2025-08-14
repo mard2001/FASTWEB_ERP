@@ -58,37 +58,37 @@
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="SupplierCode">SupplierCode</label>
-                            <input disabled type="text" id="SupplierCode" name="SupplierCode" class="form-control bg-white needField" required>
+                            <input disabled type="text" id="SupplierCode" name="SupplierCode" class="form-control bg-white needField" required maxlength="10">
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="SupplierName">Supplier Name</label>
-                            <input disabled type="text" id="SupplierName" name="SupplierName" class="form-control bg-white needField" required>
+                            <input disabled type="text" id="SupplierName" name="SupplierName" class="form-control bg-white needField" required maxlength="100">
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="SupplierType">Supplier Type</label>
-                            <input disabled type="text" id="SupplierType" name="SupplierType" class="form-control bg-white" required>
+                            <input disabled type="text" id="SupplierType" name="SupplierType" class="form-control bg-white" required maxlength="10">
                         </div>
                     </div>
                     <div class="col-5">
                         <div class="mb-3">
                             <label for="ContactPerson">Contact Person</label>
-                            <input disabled type="text" id="ContactPerson" name="ContactPerson" class="form-control bg-white" required>
+                            <input disabled type="text" id="ContactPerson" name="ContactPerson" class="form-control bg-white" required maxlength="100">
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="mb-3">
                             <label for="ContactNo">Contact Number</label>
-                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required>
+                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required maxlength="11">
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="TermsCode">Terms Code</label>
-                            <input disabled type="text" id="TermsCode" name="TermsCode" class="form-control bg-white needField" required>
+                            <input disabled type="text" id="TermsCode" name="TermsCode" class="form-control bg-white needField" required maxlength="10">
                         </div>
                     </div>
                     <div class="col-4">
@@ -112,7 +112,7 @@
                     <div class="col-12">
                         <div class="mb-3">
                             <label for="CompleteAddress">Home # / Street / Bldg. / Brgy.</label>
-                            <input disabled type="text" id="CompleteAddress" name="CompleteAddress" class="form-control bg-white needField" required placeholder="address">
+                            <input disabled type="text" id="CompleteAddress" name="CompleteAddress" class="form-control bg-white needField" required placeholder="address" maxlength="100">
                         </div>
                     </div>
                     <div class="col-6">
@@ -124,7 +124,7 @@
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="holdStatus">Hold Status</label>
-                            <input disabled type="text" id="holdStatus" name="holdStatus" class="form-control bg-white needField" required>
+                            <input disabled type="text" id="holdStatus" name="holdStatus" class="form-control bg-white needField" required maxlength="1">
                         </div>
                     </div>
                 </div>

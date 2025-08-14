@@ -87,13 +87,13 @@
                     <div class="col-9">
                         <div class="mb-3">
                             <label for="Name">Name</label>
-                            <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="custName" maxlength="25">
+                            <input disabled type="text" id="Name" name="Name" class="form-control bg-white needField" required placeholder="custName" maxlength="100">
                         </div>
                     </div>
                     <div class="col-7">
                         <div class="mb-3">
                             <label for="Contact">Contact Person</label>
-                            <input disabled type="text" id="Contact" name="Contact" class="form-control bg-white" required placeholder="contactPerson" maxlength="18">
+                            <input disabled type="text" id="Contact" name="Contact" class="form-control bg-white" required placeholder="contactPerson" maxlength="100">
                         </div>
                     </div>
                     <div class="col-5">
@@ -123,7 +123,7 @@
                     <div class="col-12">
                         <div class="mb-3">
                             <label for="address">Home # / Street / Bldg. / Brgy.</label>
-                            <input disabled type="text" id="address" name="address" class="form-control bg-white needField" required placeholder="address">
+                            <input disabled type="text" id="address" name="address" class="form-control bg-white needField" required placeholder="address" maxlength="100">
                         </div>
                     </div>
                     <div class="col-6">

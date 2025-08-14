@@ -45,6 +45,50 @@ $(document).ready(async function () {
     initVS.provinceVS();
     initVS.municipalityVS();
 
+    // Contact Number validation - only allow numbers
+    $('#ContactNo').on('input', function(e) {
+        // Remove any non-numeric characters
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    $('#ContactNo').on('keypress', function(e) {
+        // Allow only numeric keys (0-9), backspace, delete, tab, and arrow keys
+        const allowedKeys = [8, 9, 37, 38, 39, 40, 46]; // backspace, tab, arrow keys, delete
+        const key = e.which || e.keyCode;
+        
+        if (allowedKeys.indexOf(key) !== -1) {
+            return true; // Allow control keys
+        }
+        
+        // Only allow numeric characters (0-9)
+        if (key < 48 || key > 57) {
+            e.preventDefault();
+            return false;
+        }
+        
+        return true;
+    });
+
+    // Prevent paste of non-numeric content
+    $('#ContactNo').on('paste', function(e) {
+        e.preventDefault();
+        const paste = (e.originalEvent.clipboardData || window.clipboardData).getData('text');
+        const numericPaste = paste.replace(/[^0-9]/g, '');
+        
+        // Only paste if there are numeric characters and respect maxlength
+        if (numericPaste) {
+            const currentValue = this.value;
+            const maxLength = parseInt(this.getAttribute('maxlength')) || 11;
+            const newValue = currentValue + numericPaste;
+            
+            if (newValue.length <= maxLength) {
+                this.value = newValue;
+            } else {
+                this.value = newValue.substring(0, maxLength);
+            }
+        }
+    });
+
     $("#supplierTable").on("click", "tbody tr", async function () {
         $("#supplierTable tbody").css('pointer-events', 'none');
         const selectedSupplierCode = $(this).attr('id');
@@ -502,28 +546,52 @@ const SupplierModal = {
         $('#holdStatus').val(suppData.holdStatus);
         $('#CompleteAddress').val(suppData.CompleteAddress);
 
+        // Filter and check if data exists before accessing
         var selectedProv = Province.filter(prov => prov.province_name == suppData.Province);
-        var selectedRegion = Region.filter(reg => reg.region_id == selectedProv[0].region_id);
-        var selectedMunicipality = Municipality.filter(muni => muni.municipality_name == suppData.Municipality);
+        var selectedRegion = [];
+        var selectedMunicipality = [];
+        
+        // Check if province exists
+        if (selectedProv.length > 0) {
+            selectedRegion = Region.filter(reg => reg.region_id == selectedProv[0].region_id);
+            selectedMunicipality = Municipality.filter(muni => muni.municipality_name == suppData.Municipality);
+        }
+        
+        // Initialize region VS
         initVS.regionVS();
-        document.querySelector('#VSregion').setValue(selectedRegion[0].region_id);
+        
+        // Set region if found
+        if (selectedRegion.length > 0) {
+            document.querySelector('#VSregion').setValue(selectedRegion[0].region_id);
+        }
+        
         setTimeout(() => {
-            document.querySelector('#VSprovince').setOptions([])
-            document.querySelector('#VSprovince').addOption({
-                label: selectedProv[0].province_name,
-                value: selectedProv[0].province_id
-            });
-            document.querySelector('#VSprovince').setValue(selectedProv[0].province_id);
+            document.querySelector('#VSprovince').setOptions([]);
+            
+            // Set province if found
+            if (selectedProv.length > 0) {
+                document.querySelector('#VSprovince').addOption({
+                    label: selectedProv[0].province_name,
+                    value: selectedProv[0].province_id
+                });
+                document.querySelector('#VSprovince').setValue(selectedProv[0].province_id);
+            }
         }, 100);
 
         setTimeout(() => {
-            document.querySelector('#VSmunicipality').setOptions([])
-            document.querySelector('#VSmunicipality').addOption({
-                label: selectedMunicipality[0].municipality_name,
-                value: selectedMunicipality[0].municipality_id
-            });
-            document.querySelector('#VSmunicipality').setValue(selectedMunicipality[0].municipality_id );
-            console.log(selectedMunicipality[0].municipality_id );
+            document.querySelector('#VSmunicipality').setOptions([]);
+            
+            // Set municipality if found
+            if (selectedMunicipality.length > 0) {
+                document.querySelector('#VSmunicipality').addOption({
+                    label: selectedMunicipality[0].municipality_name,
+                    value: selectedMunicipality[0].municipality_id
+                });
+                document.querySelector('#VSmunicipality').setValue(selectedMunicipality[0].municipality_id);
+                console.log('Municipality set:', selectedMunicipality[0].municipality_id);
+            } else {
+                console.warn('Municipality not found:', suppData.Municipality);
+            }
         }, 500);
     },
     SupplierSave: async () => {

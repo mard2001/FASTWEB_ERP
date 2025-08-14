@@ -61,27 +61,27 @@
                         </div>
                         <div class="col-6 mb-3">
                             <label for="Warehouse">Warehouse</label>
-                            <input disabled type="text" id="Warehouse" name="Warehouse" class="form-control bg-white" required placeholder="Warehouse" maxlength="10">
+                            <input disabled type="text" id="Warehouse" name="Warehouse" class="form-control bg-white needField" required placeholder="Warehouse" maxlength="10">
                         </div>
                         <div class="col-6 mb-3">
                             <label for="SourceWarehouse">Source Warehouse</label>
-                            <input disabled type="text" id="SourceWarehouse" name="SourceWarehouse" class="form-control bg-white" required placeholder="SourceWarehouse" maxlength="10">
+                            <input disabled type="text" id="SourceWarehouse" name="SourceWarehouse" class="form-control bg-white needField" required placeholder="SourceWarehouse" maxlength="10">
                         </div>
                         <div class="col-6 mb-3">
                             <label for="ContactNo">ContactNo</label>
-                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" required placeholder="ContactNo" onkeypress="return /[0-9]/.test(event.key)" maxlength="11">
+                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white needField" required placeholder="ContactNo" onkeypress="return /[0-9]/.test(event.key)" maxlength="11">
                         </div>
                         <div class="col-6 mb-3">
                             <label for="ContactHP">ContactHP</label>
-                            <input disabled type="text" id="ContactHP" name="ContactHP" class="form-control bg-white" required placeholder="ContactHP" onkeypress="return /[0-9]/.test(event.key)" maxlength="11">
+                            <input disabled type="text" id="ContactHP" name="ContactHP" class="form-control bg-white needField" required placeholder="ContactHP" onkeypress="return /[0-9]/.test(event.key)" maxlength="11">
                         </div>
                         <div class="col-12 mb-3">
                             <label for="ContacteMail">Contact Email</label>
-                            <input disabled type="email" id="ContacteMail" name="ContacteMail" class="form-control bg-white" required placeholder="ContacteMail" maxlength="50">
+                            <input disabled type="email" id="ContacteMail" name="ContacteMail" class="form-control bg-white needField" required placeholder="ContacteMail" maxlength="50">
                         </div>
                         <div class="col-12 mb-3">
                             <label for="Addr1">Address1</label>
-                            <input disabled type="text" id="Addr1" name="Addr1" class="form-control bg-white" required placeholder="Addr1" maxlength="100">
+                            <input disabled type="text" id="Addr1" name="Addr1" class="form-control bg-white needField" required placeholder="Addr1" maxlength="100">
                         </div>
                         <div class="col-12 mb-3">
                             <label for="Addr2">Address2</label>
