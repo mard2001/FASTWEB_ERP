@@ -58,6 +58,8 @@ class Customer extends Model
         "SoldToAddr1",
         "SoldToAddr2",
         "SoldToAddr3",
+        "SoldToAddr4",
+        "SoldPostalCode",
         "ShipToAddr1",
         "ShipToAddr2",
         "ShipToAddr3",

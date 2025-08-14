@@ -91,28 +91,40 @@
                             <input disabled type="text" id="TermsCode" name="TermsCode" class="form-control bg-white needField" required maxlength="10">
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                         <div class="mb-3">
                             <label for="address">Region</label>
                             <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                         <div class="mb-3">
                             <label for="address">Province</label>
                             <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                         <div class="mb-3">
-                            <label for="address">Municipaliy</label>
+                            <label for="address">City/Municipality</label>
                             <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
                         </div>
                     </div>
-                    <div class="col-12">
+                    <div class="col-3">
                         <div class="mb-3">
-                            <label for="CompleteAddress">Home # / Street / Bldg. / Brgy.</label>
+                            <label for="address">Barangay</label>
+                            <div id="VSbarangay" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-9">
+                        <div class="mb-3">
+                            <label for="CompleteAddress">Home # / Street / Bldg.</label>
                             <input disabled type="text" id="CompleteAddress" name="CompleteAddress" class="form-control bg-white needField" required placeholder="address" maxlength="100">
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="mb-3">
+                            <label for="PostalCode">Postal Code</label>
+                            <input disabled type="text" id="PostalCode" name="PostalCode" class="form-control bg-white" placeholder="Postal Code" maxlength="10">
                         </div>
                     </div>
                     <div class="col-6">

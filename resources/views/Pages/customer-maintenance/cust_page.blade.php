@@ -102,30 +102,43 @@
                             <input disabled type="text" id="Telephone" name="Telephone" class="form-control bg-white" required placeholder="contactCellNumber" maxlength="11">
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                         <div class="mb-3">
                             <label for="address">Region</label>
-                            <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">MdCode</div>
+                            <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">Region</div>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                         <div class="mb-3">
                             <label for="address">Province</label>
-                            <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">MdCode</div>
+                            <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">Province</div>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                         <div class="mb-3">
-                            <label for="address">Municipaliy</label>
-                            <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">MdCode</div>
+                            <label for="address">City/Municipality</label>
+                            <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">City/Municipality</div>
                         </div>
                     </div>
-                    <div class="col-12">
+                    <div class="col-3">
                         <div class="mb-3">
-                            <label for="address">Home # / Street / Bldg. / Brgy.</label>
+                            <label for="address">Barangay</label>
+                            <div id="VSbarangay" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">Barangay</div>
+                        </div>
+                    </div>
+                    <div class="col-9">
+                        <div class="mb-3">
+                            <label for="address">Home # / Street / Bldg.</label>
                             <input disabled type="text" id="address" name="address" class="form-control bg-white needField" required placeholder="address" maxlength="100">
                         </div>
                     </div>
+                    <div class="col-3">
+                        <div class="mb-3">
+                            <label for="postalCode">Postal Code</label>
+                            <input disabled type="text" id="postalCode" name="postalCode" class="form-control bg-white" placeholder="Postal Code" maxlength="10">
+                        </div>
+                    </div>
+                    
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="PriceCode">Price Code</label>

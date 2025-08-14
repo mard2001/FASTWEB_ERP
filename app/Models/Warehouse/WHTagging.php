@@ -21,7 +21,11 @@ class WHTagging extends Model
         'WHType',
         'WHGroupCode',
         'WHGroupDesc',
+        'Region',
+        'Province',
         'Municipality',
+        'Barangay',
+        'PostalCode',
         'Status',
     ];
 }

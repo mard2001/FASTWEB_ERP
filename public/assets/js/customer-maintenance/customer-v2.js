@@ -19,12 +19,18 @@ let issueTable = `
         </div>`;
 
 $(document).ready(async function () {
+    // Load Philippine data from global function
+    if (!window.PhilippineLocationHelpers.isDataLoaded()) {
+        await loadPhilippineData();
+    }
+    
     await datatables.loadCustomerData();
     await initVS.liteDataVS();
     await initVS.salesmanVS();
     await initVS.regionVS();
     initVS.provinceVS();
     initVS.municipalityVS();
+    initVS.barangayVS();
 
     $("#customerTable").on("click", "tbody tr", async function () {
         const selectedCustCode = $(this).attr('id');
@@ -379,17 +385,15 @@ const CustomerModal = {
         let isRegionValid = true;
         let isProvinceValid = true;
         let isMunicipalityValid = true;
+        let isBarangayValid = true;
         
         // Validate Region
         const regionValue = document.querySelector('#VSregion')?.value;
         if (!regionValue || regionValue === '') {
             isRegionValid = false;
-            // Remove existing error message
             $('#VSregion').siblings('.validation-error').remove();
-            // Add error message
             $('#VSregion').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
         } else {
-            // Remove error message if valid
             $('#VSregion').siblings('.validation-error').remove();
         }
         
@@ -397,12 +401,9 @@ const CustomerModal = {
         const provinceValue = document.querySelector('#VSprovince')?.value;
         if (!provinceValue || provinceValue === '') {
             isProvinceValid = false;
-            // Remove existing error message
             $('#VSprovince').siblings('.validation-error').remove();
-            // Add error message
             $('#VSprovince').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
         } else {
-            // Remove error message if valid
             $('#VSprovince').siblings('.validation-error').remove();
         }
         
@@ -410,16 +411,23 @@ const CustomerModal = {
         const municipalityValue = document.querySelector('#VSmunicipality')?.value;
         if (!municipalityValue || municipalityValue === '') {
             isMunicipalityValid = false;
-            // Remove existing error message
             $('#VSmunicipality').siblings('.validation-error').remove();
-            // Add error message
             $('#VSmunicipality').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
         } else {
-            // Remove error message if valid
             $('#VSmunicipality').siblings('.validation-error').remove();
         }
         
-        return isFormValid && isRegionValid && isProvinceValid && isMunicipalityValid;
+        // Validate Barangay
+        const barangayValue = document.querySelector('#VSbarangay')?.value;
+        if (!barangayValue || barangayValue === '') {
+            isBarangayValid = false;
+            $('#VSbarangay').siblings('.validation-error').remove();
+            $('#VSbarangay').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
+        } else {
+            $('#VSbarangay').siblings('.validation-error').remove();
+        }
+        
+        return isFormValid && isRegionValid && isProvinceValid && isMunicipalityValid && isBarangayValid;
     },
     hide: () => {
         $('#customerMainModal').modal('hide');
@@ -434,7 +442,7 @@ const CustomerModal = {
         initVS.regionVS();
         document.querySelector('#VSprovince').setOptions([])
         document.querySelector('#VSmunicipality').setOptions([])
-
+        document.querySelector('#VSbarangay').setOptions([])
     },
     enable: (enable) => {
         $('#modalFields input[type="text"]').prop('disabled', !enable);
@@ -446,12 +454,13 @@ const CustomerModal = {
             document.querySelector('#VSregion').disable();
             document.querySelector('#VSprovince').disable();
             document.querySelector('#VSmunicipality').disable();
+            document.querySelector('#VSbarangay').disable();
         } else{
             document.querySelector('#VSregion').enable();
             document.querySelector('#VSprovince').enable();
             document.querySelector('#VSmunicipality').enable();
+            document.querySelector('#VSbarangay').enable();
         }
-
     },
     viewMode: async (custData) => {
         CustomerModal.fill(custData);
@@ -477,30 +486,59 @@ const CustomerModal = {
         $('#Telephone').val(custData.Telephone);
         $('#Contact').val(custData.Contact);
         $('#address').val(custData.SoldToAddr1);
+        $('#postalCode').val(custData.SoldPostalCode || '');
 
-        var selectedProv = Province.filter(prov => prov.province_name == custData.SoldToAddr3);
-        var selectedRegion = Region.filter(reg => reg.region_id == selectedProv[0].region_id);
-        var selectedMunicipality = Municipality.filter(muni => muni.municipality_name == custData.SoldToAddr2);
-        initVS.regionVS();
-        document.querySelector('#VSregion').setValue(selectedRegion[0].region_id);
-        setTimeout(() => {
-            document.querySelector('#VSprovince').setOptions([])
-            document.querySelector('#VSprovince').addOption({
-                label: selectedProv[0].province_name,
-                value: selectedProv[0].province_id
-            });
-            document.querySelector('#VSprovince').setValue(selectedProv[0].province_id);
-        }, 100);
+        // Find matching data from JSON files
+        // Find region by name from SoldToAddr3 (Province name)
+        const selectedProvince = window.philippineData.provinces.find(prov => 
+            prov.province_name.toLowerCase() === custData.SoldToAddr3.toLowerCase()
+        );
+        
+        if (selectedProvince) {
+            const selectedRegion = window.philippineData.regions.find(region => 
+                region.region_code === selectedProvince.region_code
+            );
+            
+            const selectedCity = window.philippineData.cities.find(city => 
+                city.city_name.toLowerCase() === custData.SoldToAddr2.toLowerCase() && 
+                city.province_code === selectedProvince.province_code
+            );
 
-        setTimeout(() => {
-            document.querySelector('#VSmunicipality').setOptions([])
-            document.querySelector('#VSmunicipality').addOption({
-                label: selectedMunicipality[0].municipality_name,
-                value: selectedMunicipality[0].municipality_id
-            });
-            document.querySelector('#VSmunicipality').setValue(selectedMunicipality[0].municipality_id );
-            console.log(selectedMunicipality[0].municipality_id );
-        }, 500);
+            // Initialize region dropdown and set value
+            await initVS.regionVS();
+            if (selectedRegion) {
+                document.querySelector('#VSregion').setValue(selectedRegion.region_code);
+                
+                setTimeout(() => {
+                    // Set province
+                    if (selectedProvince) {
+                        document.querySelector('#VSprovince').setValue(selectedProvince.province_code);
+                        
+                        setTimeout(() => {
+                            // Set city
+                            if (selectedCity) {
+                                document.querySelector('#VSmunicipality').setValue(selectedCity.city_code);
+                                
+                                // Load and set barangay if available in SoldToAddr4
+                                setTimeout(() => {
+                                    if (custData.SoldToAddr4) {
+                                        // Find barangay by name in the selected city
+                                        const selectedBarangay = window.philippineData.barangays.find(barangay =>
+                                            barangay.brgy_name.toLowerCase() === custData.SoldToAddr4.toLowerCase() &&
+                                            barangay.city_code === selectedCity.city_code
+                                        );
+                                        
+                                        if (selectedBarangay) {
+                                            document.querySelector('#VSbarangay').setValue(selectedBarangay.brgy_code);
+                                        }
+                                    }
+                                }, 200);
+                            }
+                        }, 200);
+                    }
+                }, 200);
+            }
+        }
     },
     CustomerSave: async () => {
         let custData = CustomerModal.getData();
@@ -548,6 +586,8 @@ const CustomerModal = {
             SoldToAddr1 : $('#address').val(),
             SoldToAddr2 : document.querySelector('#VSmunicipality').getDisplayValue(),
             SoldToAddr3 : document.querySelector('#VSprovince').getDisplayValue(),
+            SoldToAddr4 : document.querySelector('#VSbarangay').getDisplayValue(),
+            SoldPostalCode : $('#postalCode').val(),
         }
         return data;
     },
@@ -556,17 +596,14 @@ const CustomerModal = {
 var filteredRegion = [];
 var filteredProvince = [];
 var filteredMunicipality = [];
+var filteredBarangay = [];
+
 const initVS = {
     liteDataVS: async () => {
         // Initialize VirtualSelect for ship via
         VirtualSelect.init({
-            ele: '#filterPOVS',                   // Attach to the element
-            options: [
-                // { label: "", value: null },
-                // { label: "", value: 1 },
-                // { label: "", value: "2" },
-
-            ],
+            ele: '#filterPOVS',                   
+            options: [],
             multiple: true,
             hideClearButton: true,
             search: false,
@@ -576,11 +613,10 @@ const initVS = {
             additionalDropboxContainerClasses: 'rounded',
             additionalToggleButtonClasses: 'rounded customVS-height',
         });
-
     },
 
     salesmanVS: async () => {
-        await ajax('api/maintenance/v2/activesalesperson', 'GET', null, (response) => { // Success callback
+        await ajax('api/maintenance/v2/activesalesperson', 'GET', null, (response) => { 
             salesmanData = response.data;
 
             const SMDataVS = response.data.map(item => {
@@ -609,7 +645,6 @@ const initVS = {
 
             $('#VSmdCode').on('afterClose', function () {
                 if (this.value) {
-                    console.log(selected);
                     var selected = salesmanData.filter(salesman => salesman.Salesperson == this.value);
                     $('#Salesman').val(selected[0].Name);
                 }
@@ -617,7 +652,6 @@ const initVS = {
 
             $('#VSmdCode').on('change', function () {
                 let selectedValue = this.virtualSelect.getValue();
-
                 if (!selectedValue) {
                     $('#Salesman').val('');
                 }
@@ -626,11 +660,9 @@ const initVS = {
     },
 
     regionVS: async () => {
-        filteredRegion = [];
-
-        filteredRegion = Region.map(item => {
+        filteredRegion = window.philippineData.regions.map(item => {
             return {
-                value: item.region_id,
+                value: item.region_code,
                 label: item.region_name,
             };
         });
@@ -654,31 +686,33 @@ const initVS = {
 
         $('#VSregion').on('afterClose', function () {
             if (this.value) {
-                // Clear validation error when user selects a value
                 $('#VSregion').siblings('.validation-error').remove();
                 
-                filteredProvince = Province.filter(prov => prov.region_id == this.value)
+                filteredProvince = window.philippineData.provinces.filter(prov => prov.region_code === this.value)
                     .map(prov => {
                         return {
-                            value: prov.province_id,
+                            value: prov.province_code,
                             label: prov.province_name,
                         };
                     });
 
                 initVS.provinceVS();
-                filteredMunicipality=[];
+                filteredMunicipality = [];
                 initVS.municipalityVS();
+                filteredBarangay = [];
+                initVS.barangayVS();
             }
         });
 
         $('#VSregion').on('change', function () {
             if (!this.value) {
-                filteredProvince=[];
+                filteredProvince = [];
                 initVS.provinceVS();
-                filteredMunicipality=[];
+                filteredMunicipality = [];
                 initVS.municipalityVS();
+                filteredBarangay = [];
+                initVS.barangayVS();
             } else {
-                // Clear validation error when user selects a value
                 $('#VSregion').siblings('.validation-error').remove();
             }
         });
@@ -704,34 +738,35 @@ const initVS = {
 
         $('#VSprovince').on('afterClose', function () {
             if (this.value) {
-                // Clear validation error when user selects a value
                 $('#VSprovince').siblings('.validation-error').remove();
                 
-                filteredMunicipality = Municipality.filter(mul => mul.province_id == this.value)
-                    .map(mul => {
+                filteredMunicipality = window.philippineData.cities.filter(city => city.province_code === this.value)
+                    .map(city => {
                         return {
-                            value: mul.municipality_id,
-                            label: mul.municipality_name,
+                            value: city.city_code,
+                            label: city.city_name,
                         };
                     });
 
                 initVS.municipalityVS();
+                filteredBarangay = [];
+                initVS.barangayVS();
             }
         });
 
         $('#VSprovince').on('change', function () {
             if (!this.value) {
-                filteredMunicipality=[];
+                filteredMunicipality = [];
                 initVS.municipalityVS();
+                filteredBarangay = [];
+                initVS.barangayVS();
             } else {
-                // Clear validation error when user selects a value
                 $('#VSprovince').siblings('.validation-error').remove();
             }
         });
     },
 
     municipalityVS: () => {
-
         if (document.querySelector('#VSmunicipality')?.virtualSelect) {
             document.querySelector('#VSmunicipality').destroy();
         }
@@ -749,34 +784,61 @@ const initVS = {
             additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
         });
 
-        // Add validation event listeners for municipality
         $('#VSmunicipality').on('afterClose', function () {
             if (this.value) {
-                // Clear validation error when user selects a value
                 $('#VSmunicipality').siblings('.validation-error').remove();
+                
+                filteredBarangay = window.philippineData.barangays.filter(barangay => barangay.city_code === this.value)
+                    .map(barangay => {
+                        return {
+                            value: barangay.brgy_code,
+                            label: barangay.brgy_name,
+                        };
+                    });
+
+                initVS.barangayVS();
             }
         });
 
         $('#VSmunicipality').on('change', function () {
-            if (this.value) {
-                // Clear validation error when user selects a value
+            if (!this.value) {
+                filteredBarangay = [];
+                initVS.barangayVS();
+            } else {
                 $('#VSmunicipality').siblings('.validation-error').remove();
             }
         });
+    },
 
-        // $('#VSprovince').on('afterClose', function () {
-        //     if (this.value) {
-        //         filteredMunicipality = Municipality.filter(mul => mul.province_id == this.value)
-        //             .map(mul => {
-        //                 return {
-        //                     value: mul.municipality_id,
-        //                     label: mul.municipality_name,
-        //                 };
-        //             });
+    barangayVS: () => {
+        if (document.querySelector('#VSbarangay')?.virtualSelect) {
+            document.querySelector('#VSbarangay').destroy();
+        }
 
-        //         initVS.municipalityVS();
-        //     }
-        // });
+        VirtualSelect.init({
+            ele: '#VSbarangay',
+            options: filteredBarangay,
+            multiple: false,
+            hideClearButton: false,
+            search: true,
+            maxWidth: '100%',
+            additionalClasses: 'rounded',
+            additionalDropboxClasses: 'rounded',
+            additionalDropboxContainerClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
+        });
+
+        $('#VSbarangay').on('afterClose', function () {
+            if (this.value) {
+                $('#VSbarangay').siblings('.validation-error').remove();
+            }
+        });
+
+        $('#VSbarangay').on('change', function () {
+            if (this.value) {
+                $('#VSbarangay').siblings('.validation-error').remove();
+            }
+        });
     },
 }
 

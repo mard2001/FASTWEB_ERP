@@ -25,6 +25,7 @@ class Supplier extends Model
         'ContactPerson' ,
         'ContactNo' ,
         'CompleteAddress' ,
+        'PostalCode' ,
         'Region' ,
         'Province' ,
         'City' ,

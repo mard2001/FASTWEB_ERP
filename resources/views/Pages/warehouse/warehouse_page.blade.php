@@ -56,25 +56,40 @@
                             <input disabled type="text" id="WHGroupDesc" name="WHGroupDesc" class="form-control bg-white" required>
                         </div>
                     </div>
-                    <div class="col-12">
+                    <div class="col-4">
                         <div class="mb-3">
                             <label for="address">Region</label>
                             <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
                         </div>
                     </div>
-                    <div class="col-12">
+                    <div class="col-4">
                         <div class="mb-3">
                             <label for="address">Province</label>
                             <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
                         </div>
                     </div>
-                    <div class="col-12">
+                    <div class="col-4">
                         <div class="mb-3">
-                            <label for="address">Municipaliy</label>
+                            <label for="address">City/Municipality</label>
                             <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-8">
+                        <div class="mb-3">
+                            <label for="address">Barangay</label>
+                            <div id="VSbarangay" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="PostalCode">Postal Code</label>
+                            <input disabled type="text" id="PostalCode" name="PostalCode" class="form-control bg-white" maxlength="10">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3">
                         <div class="mb-3">
                             <label for="Status">Status</label>
                             {{-- <input disabled type="text" id="Status" name="Status" class="form-control bg-white needField" required onkeypress="return /[0-9]/.test(event.key)" maxlength="2"> --}}

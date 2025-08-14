@@ -18,11 +18,17 @@ let issueTable = `
                 </div>`;
 
 $(document).ready(async function () {
+    // Load Philippine data from global function if not already loaded
+    if (!window.PhilippineLocationHelpers.isDataLoaded()) {
+        await loadPhilippineData();
+    }
+    
     await datatables.loadWHData();
     await initVS.liteDataVS();
     await initVS.regionVS();
     initVS.provinceVS();
     initVS.municipalityVS();
+    initVS.barangayVS();
 
     $("#whTable").on("click", "tbody tr", async function () {
         $("#whTable tbody").css('pointer-events', 'none');
@@ -302,7 +308,11 @@ const datatables = {
                         { data: 'WHType',  title: 'Warehouse Type' },
                         { data: 'WHGroupCode',  title: 'Warehouse GroupCode' },
                         { data: 'WHGroupDesc',  title: 'Warehouse GroupDesc' },
+                        { data: 'Region',  title: 'Region' },
+                        { data: 'Province',  title: 'Province' },
                         { data: 'Municipality',  title: 'Municipality' },
+                        { data: 'Barangay',  title: 'Barangay' },
+                        { data: 'PostalCode',  title: 'Postal Code' },
                         { data: 'Status',  title: 'Status',
                             render: function(data, type, row){
                                 return (data == "A") ? "<span class='statusBadge1 align-middle'> Active </span>" : "";
@@ -327,7 +337,7 @@ const datatables = {
                         },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 1, 3, 4, 5, 6 ] },
+                        { className: "text-start", targets: [ 1, 3, 4, 5, 6, 7, 8, 9, 10 ] },
                         { className: "text-center", targets: [ 0, 2 ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' },
@@ -382,6 +392,7 @@ const WHModal = {
         initVS.regionVS();
         document.querySelector('#VSprovince').setOptions([])
         document.querySelector('#VSmunicipality').setOptions([])
+        document.querySelector('#VSbarangay').setOptions([])
 
     },
     enable: (enable) => {
@@ -394,10 +405,12 @@ const WHModal = {
             document.querySelector('#VSregion').disable();
             document.querySelector('#VSprovince').disable();
             document.querySelector('#VSmunicipality').disable();
+            document.querySelector('#VSbarangay').disable();
         } else{
             document.querySelector('#VSregion').enable();
             document.querySelector('#VSprovince').enable();
             document.querySelector('#VSmunicipality').enable();
+            document.querySelector('#VSbarangay').enable();
         }
 
     },
@@ -419,32 +432,76 @@ const WHModal = {
         $('#WHType').val(whData.WHType);
         $('#WHGroupCode').val(whData.WHGroupCode);
         $('#WHGroupDesc').val(whData.WHGroupDesc);
-        $('#Municipality').val(whData.Municipality);
+        $('#PostalCode').val(whData.PostalCode);
         $('#Status').val(whData.Status);
         $('#DateUpdated').val(whData.DateUpdated);
 
-        var selectedMunicipality = Municipality.filter(muni => muni.municipality_name == whData.Municipality);
-        var selectedProv = Province.filter(prov => prov.province_id == selectedMunicipality[0].province_id);
-        var selectedRegion = Region.filter(reg => reg.region_id == selectedProv[0].region_id);
-        initVS.regionVS();
-        document.querySelector('#VSregion').setValue(selectedRegion[0].region_id);
-        setTimeout(() => {
-            document.querySelector('#VSprovince').setOptions([])
-            document.querySelector('#VSprovince').addOption({
-                label: selectedProv[0].province_name,
-                value: selectedProv[0].province_id
-            });
-            document.querySelector('#VSprovince').setValue(selectedProv[0].province_id);
-        }, 100);
-
-        setTimeout(() => {
-            document.querySelector('#VSmunicipality').setOptions([])
-            document.querySelector('#VSmunicipality').addOption({
-                label: selectedMunicipality[0].municipality_name,
-                value: selectedMunicipality[0].municipality_id
-            });
-            document.querySelector('#VSmunicipality').setValue(selectedMunicipality[0].municipality_id );
-        }, 500);
+        // Handle location data
+        if (whData.Region || whData.Municipality) {
+            let selectedRegion, selectedProv, selectedMunicipality;
+            
+            // If we have a municipality, use it to find the region and province
+            if (whData.Municipality) {
+                selectedMunicipality = window.philippineData.cities.filter(muni => muni.city_name == whData.Municipality);
+                if (selectedMunicipality.length > 0) {
+                    selectedProv = window.philippineData.provinces.filter(prov => prov.province_code == selectedMunicipality[0].province_code);
+                    if (selectedProv.length > 0) {
+                        selectedRegion = window.philippineData.regions.filter(reg => reg.region_code == selectedProv[0].region_code);
+                    }
+                }
+            } else if (whData.Region) {
+                selectedRegion = window.philippineData.regions.filter(reg => reg.region_name == whData.Region || reg.region_code == whData.Region);
+            }
+            
+            // Set region
+            if (selectedRegion && selectedRegion.length > 0) {
+                initVS.regionVS();
+                document.querySelector('#VSregion').setValue(selectedRegion[0].region_code);
+                
+                // Set province
+                if (selectedProv && selectedProv.length > 0) {
+                    setTimeout(() => {
+                        document.querySelector('#VSprovince').setOptions([])
+                        document.querySelector('#VSprovince').addOption({
+                            label: selectedProv[0].province_name,
+                            value: selectedProv[0].province_code
+                        });
+                        document.querySelector('#VSprovince').setValue(selectedProv[0].province_code);
+                    }, 100);
+                    
+                    // Set municipality
+                    if (selectedMunicipality && selectedMunicipality.length > 0) {
+                        setTimeout(() => {
+                            document.querySelector('#VSmunicipality').setOptions([])
+                            document.querySelector('#VSmunicipality').addOption({
+                                label: selectedMunicipality[0].city_name,
+                                value: selectedMunicipality[0].city_code
+                            });
+                            document.querySelector('#VSmunicipality').setValue(selectedMunicipality[0].city_code);
+                            
+                            // Set barangay if available
+                            if (whData.Barangay) {
+                                setTimeout(() => {
+                                    const selectedBarangay = window.philippineData.barangays.find(barangay =>
+                                        barangay.brgy_name.toLowerCase() === whData.Barangay.toLowerCase() &&
+                                        barangay.city_code === selectedMunicipality[0].city_code
+                                    );
+                                    
+                                    if (selectedBarangay) {
+                                        document.querySelector('#VSbarangay').setOptions([])
+                                        document.querySelector('#VSbarangay').addOption({
+                                            label: selectedBarangay.brgy_name,
+                                            value: selectedBarangay.brgy_code
+                                        });
+                                        document.querySelector('#VSbarangay').setValue(selectedBarangay.brgy_code);
+                                    }
+                                }, 200);
+                            }
+                        }, 500);
+                    }
+                }
+            }
+        }
     },
     WHSave: async () => {
         let suppData = WHModal.getData();
@@ -485,7 +542,11 @@ const WHModal = {
             WHType : $('#WHType').val(),
             WHGroupCode : $('#WHGroupCode').val(),
             WHGroupDesc : $('#WHGroupDesc').val(),
-            Municipality : $('#VSmunicipality').val(),
+            Region : document.querySelector('#VSregion').getDisplayValue(),
+            Province : document.querySelector('#VSprovince').getDisplayValue(),
+            Municipality : document.querySelector('#VSmunicipality').getDisplayValue(),
+            Barangay : document.querySelector('#VSbarangay').getDisplayValue(),
+            PostalCode : $('#PostalCode').val(),
             Status : $('#Status').val(),
         }
         return data;
@@ -495,6 +556,7 @@ const WHModal = {
 var filteredRegion = [];
 var filteredProvince = [];
 var filteredMunicipality = [];
+var filteredBarangay = [];
 const initVS = {
     liteDataVS: async () => {
         // Initialize VirtualSelect for ship via
@@ -534,9 +596,9 @@ const initVS = {
     regionVS: async () => {
         filteredRegion = [];
 
-        filteredRegion = Region.map(item => {
+        filteredRegion = window.philippineData.regions.map(item => {
             return {
-                value: item.region_id,
+                value: item.region_code,
                 label: item.region_name,
             };
         });
@@ -560,10 +622,10 @@ const initVS = {
 
         $('#VSregion').on('afterClose', function () {
             if (this.value) {
-                filteredProvince = Province.filter(prov => prov.region_id == this.value)
+                filteredProvince = window.philippineData.provinces.filter(prov => prov.region_code == this.value)
                     .map(prov => {
                         return {
-                            value: prov.province_id,
+                            value: prov.province_code,
                             label: prov.province_name,
                         };
                     });
@@ -571,6 +633,8 @@ const initVS = {
                 initVS.provinceVS();
                 filteredMunicipality=[];
                 initVS.municipalityVS();
+                filteredBarangay=[];
+                initVS.barangayVS();
             }
         });
 
@@ -604,15 +668,17 @@ const initVS = {
 
         $('#VSprovince').on('afterClose', function () {
             if (this.value) {
-                filteredMunicipality = Municipality.filter(mul => mul.province_id == this.value)
+                filteredMunicipality = window.philippineData.cities.filter(mul => mul.province_code == this.value)
                     .map(mul => {
                         return {
-                            value: mul.municipality_id,
-                            label: mul.municipality_name,
+                            value: mul.city_code,
+                            label: mul.city_name,
                         };
                     });
 
                 initVS.municipalityVS();
+                filteredBarangay=[];
+                initVS.barangayVS();
             }
         });
 
@@ -656,6 +722,45 @@ const initVS = {
         //         initVS.municipalityVS();
         //     }
         // });
+
+        // Add municipality change handler for barangay population
+        $('#VSmunicipality').on('change', function () {
+            if (this.value) {
+                // Filter barangays based on selected city/municipality
+                filteredBarangay = window.philippineData.barangays.filter(barangay => barangay.city_code === this.value)
+                    .map(barangay => {
+                        return {
+                            value: barangay.brgy_code,
+                            label: barangay.brgy_name,
+                        };
+                    });
+
+                initVS.barangayVS();
+            } else {
+                filteredBarangay = [];
+                initVS.barangayVS();
+            }
+        });
+    },
+
+    barangayVS: () => {
+
+        if (document.querySelector('#VSbarangay')?.virtualSelect) {
+            document.querySelector('#VSbarangay').destroy();
+        }
+
+        VirtualSelect.init({
+            ele: '#VSbarangay',
+            options: filteredBarangay,
+            multiple: false,
+            hideClearButton: false,
+            search: true,
+            maxWidth: '100%',
+            additionalClasses: 'rounded',
+            additionalDropboxClasses: 'rounded',
+            additionalDropboxContainerClasses: 'rounded',
+            additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
+        });
     },
 }
 
