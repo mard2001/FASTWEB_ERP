@@ -212,6 +212,11 @@ Route::get('/transactions/sales-order', function () {
     return page_view('sales-order/so_page');
 })->name('sales-order');
 
+// ACCOUNTS PAYABLE MODULE
+Route::get('/transactions/accounts-payable', function () {
+    return page_view('accounts-payable/accounts_payable_page');
+})->name('accounts-payable');
+
 
 // SUPPLIER MAINTENANCE MODULE
 Route::get('/master-data/supplier', function () {

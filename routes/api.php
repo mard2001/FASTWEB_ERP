@@ -201,8 +201,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-
-
+// Accounts Payable API Routes
+Route::get('accounts-payable/summary', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'summary']);
+Route::apiResource('accounts-payable', \App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class);
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
