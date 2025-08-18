@@ -1111,6 +1111,13 @@ const SOModal = {
         return $("#modalFields").valid();
     },
     show: () => {
+        // Clear validation states and error messages before showing modal
+        if ($("#modalFields").data('validator')) {
+            $("#modalFields").validate().resetForm();
+            $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+            $("#modalFields").find('.invalid-feedback').remove();
+            $("#modalFields").find('.error').removeClass('error');
+        }
         $('#salesOrderMainModal').modal('show');
     },
     hide: () => {
@@ -1378,6 +1385,13 @@ const SOItemsModal = {
         $('#itemModal').modal('hide');
     },
     show: () => {
+        // Clear validation states and error messages
+        if ($("#modalFields").data('validator')) {
+            $("#modalFields").validate().resetForm();
+            $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+            $("#modalFields").find('.invalid-feedback').remove();
+            $("#modalFields").find('.error').removeClass('error');
+        }
         $('#itemModal').modal('show');
     },
     fill: (itemData) => {

@@ -468,7 +468,7 @@ const SupplierModal = {
             // Remove existing error message
             $('#VSregion').siblings('.validation-error').remove();
             // Add error message
-            $('#VSregion').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
+            $('#VSregion').after('<label class="validation-error error" style="font-size: 8px; text-transform: uppercase;">THIS FIELD IS REQUIRED.</label>');
         } else {
             // Remove error message if valid
             $('#VSregion').siblings('.validation-error').remove();
@@ -481,7 +481,7 @@ const SupplierModal = {
             // Remove existing error message
             $('#VSprovince').siblings('.validation-error').remove();
             // Add error message
-            $('#VSprovince').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
+            $('#VSprovince').after('<label class="validation-error error" style="font-size: 8px; text-transform: uppercase;">THIS FIELD IS REQUIRED.</label>');
         } else {
             // Remove error message if valid
             $('#VSprovince').siblings('.validation-error').remove();
@@ -494,7 +494,7 @@ const SupplierModal = {
             // Remove existing error message
             $('#VSmunicipality').siblings('.validation-error').remove();
             // Add error message
-            $('#VSmunicipality').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
+            $('#VSmunicipality').after('<label class="validation-error error" style="font-size: 8px; text-transform: uppercase;">THIS FIELD IS REQUIRED.</label>');
         } else {
             // Remove error message if valid
             $('#VSmunicipality').siblings('.validation-error').remove();
@@ -508,7 +508,7 @@ const SupplierModal = {
             // Remove existing error message
             $('#VSbarangay').siblings('.validation-error').remove();
             // Add error message
-            $('#VSbarangay').after('<div class="validation-error text-danger" style="font-size: 12px; margin-top: 2px;">This field is required.</div>');
+            $('#VSbarangay').after('<label class="validation-error error" style="font-size: 8px; text-transform: uppercase;">THIS FIELD IS REQUIRED.</label>');
         } else {
             // Remove error message if valid
             $('#VSbarangay').siblings('.validation-error').remove();
@@ -520,6 +520,13 @@ const SupplierModal = {
         $('#supplierMainModal').modal('hide');
     },
     show: () => {
+        // Clear validation states and error messages
+        if ($("#modalFields").data('validator')) {
+            $("#modalFields").validate().resetForm();
+            $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+            $("#modalFields").find('.invalid-feedback').remove();
+            $("#modalFields").find('.error').removeClass('error');
+        }
         $('#supplierMainModal').modal('show');
     },
     clear: () => {

@@ -1063,6 +1063,13 @@ const POModal = {
     $("#editXmlDataModal").modal("hide");
   },
   show: () => {
+    // Clear validation states and error messages
+    if ($("#modalFields").data('validator')) {
+      $("#modalFields").validate().resetForm();
+      $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+      $("#modalFields").find('.invalid-feedback').remove();
+      $("#modalFields").find('.error').removeClass('error');
+    }
     $("#editXmlDataModal").modal("show");
   },
   fill: async (POData) => {
@@ -1310,6 +1317,13 @@ const POItemsModal = {
     $("#itemModal").modal("hide");
   },
   show: () => {
+    // Clear validation states and error messages
+    if ($("#itemModalFields").data('validator')) {
+      $("#itemModalFields").validate().resetForm();
+      $("#itemModalFields").find('.is-invalid').removeClass('is-invalid');
+      $("#itemModalFields").find('.invalid-feedback').remove();
+      $("#itemModalFields").find('.error').removeClass('error');
+    }
     $("#itemModal").modal("show");
   },
   fill: (itemData) => {

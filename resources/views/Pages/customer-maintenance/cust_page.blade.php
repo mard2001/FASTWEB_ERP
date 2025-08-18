@@ -105,25 +105,25 @@
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="address">Region</label>
-                            <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1"  required>Region</div>
+                            <div id="VSregion" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"  required>Region</div>
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="address">Province</label>
-                            <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField">Province</div>
+                            <div id="VSprovince" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1 needField"></div>
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="address">City/Municipality</label>
-                            <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1"  required>City/Municipality</div>
+                            <div id="VSmunicipality" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1"></div>
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="address">Barangay</label>
-                            <div id="VSbarangay" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1"  required>Barangay</div>
+                            <div id="VSbarangay" name="filter" style="width: 100%" class="form-control bg-white p-0 mx-1"  required></div>
                         </div>
                     </div>
                     <div class="col-9">

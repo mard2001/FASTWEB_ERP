@@ -383,6 +383,13 @@ const WHModal = {
         $('#warehouseMainModal').modal('hide');
     },
     show: () => {
+        // Clear validation states and error messages
+            if ($("#modalFields").data('validator')) {
+            $("#modalFields").validate().resetForm();
+            $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+            $("#modalFields").find('.invalid-feedback').remove();
+            $("#modalFields").find('.error').removeClass('error');
+        }
         $('#warehouseMainModal').modal('show');
     },
     clear: () => {

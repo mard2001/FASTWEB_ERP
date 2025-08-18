@@ -231,7 +231,7 @@
                     <div class="col-3">
                         <div class="">
                             <label for="shippedToName" class="form-label">SHIP TO</label>
-                            <div id="shippedToName" name="shippedToName" required class="form-control bg-white p-0 border-0"></div>
+                            <div id="shippedToName" name="shippedToName" class="form-control bg-white p-0 border-0"></div>
                         </div>
                     </div>
                     <div class="col-3">
