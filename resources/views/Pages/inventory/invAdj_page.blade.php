@@ -189,7 +189,9 @@
                     <x-slot:td>
                         <td class="col">StockCode</td>
                         <td class="col">Description</td>
-                        <td class="col">Quantity</td>
+                        <td class="col">Previous Qty</td>
+                        <td class="col">New Qty</td>
+                        <td class="col">Adjusted Qty</td>
                         <td class="col">UOM</td>
                         <td class="col text-center">Action</td>
                     </x-slot:td>

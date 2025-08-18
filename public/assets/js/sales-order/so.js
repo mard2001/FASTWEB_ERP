@@ -67,6 +67,20 @@ const dataTableFilter = `<div class="FilterBtnDiv">
                             </button>
                         </div>`;
 
+// Function to format number with commas
+function formatNumberWithCommas(num) {
+    if (!num) return '';
+    // Remove any existing commas and convert to number
+    const cleanNum = num.toString().replace(/,/g, '');
+    // Add commas every 3 digits
+    return cleanNum.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Function to remove commas from number
+function removeCommas(num) {
+    return num ? num.toString().replace(/,/g, '') : '';
+}
+
 $(document).ready(async function () {
     const user = localStorage.getItem('user');
     const userObject = JSON.parse(user);
@@ -406,19 +420,24 @@ $(document).ready(async function () {
         }
     });
 
+
+
     $(".fa-minus").on("click", function () {
         const quantityElement = $(this).closest(".input-group").find("input");
-        let quantity = quantityElement.val();
+        let quantity = removeCommas(quantityElement.val());
 
         if (quantity && parseInt(quantity) > 0) {
-          quantityElement.val(parseInt(quantity) - 1);
+          const newValue = parseInt(quantity) - 1;
+          quantityElement.val(formatNumberWithCommas(newValue));
           autoCalculateTotalPrice();
         }
     });
 
     $(".fa-plus").on("click", function () {
-        const quantity = $(this).closest(".input-group").find("input");
-        quantity.val(quantity.val() ? parseInt(quantity.val()) + 1 : 1);
+        const quantityElement = $(this).closest(".input-group").find("input");
+        const currentValue = removeCommas(quantityElement.val());
+        const newValue = currentValue ? parseInt(currentValue) + 1 : 1;
+        quantityElement.val(formatNumberWithCommas(newValue));
         autoCalculateTotalPrice();
     });
 
@@ -426,7 +445,17 @@ $(document).ready(async function () {
         autoCalculateTotalPrice();
     });
 
+    // Add comma formatting to quantity inputs
     $("#CSQuantity, #IBQuantity, #PCQuantity").on("input", function () {
+        const originalValue = $(this).val();
+        const cleanValue = removeCommas(originalValue);
+        
+        // Only allow numeric input and format with commas
+        if (/^\d*$/.test(cleanValue)) {
+            const formattedValue = formatNumberWithCommas(cleanValue);
+            $(this).val(formattedValue);
+        }
+        
         autoCalculateTotalPrice();
     });
 
@@ -665,7 +694,7 @@ const datatables = {
                     {
                         data: 'MOrderQty',
                         render: function (data, type, row){
-                            return parseFloat(data).toFixed(2);
+                            return formatNumberWithCommas(parseFloat(data).toFixed(2));
                         }
                     },
                     { data: 'MOrderUom' },
@@ -1444,9 +1473,9 @@ const SOItemsModal = {
     },
     getUOM: () => {
         let UomAndQuantity = {
-          CS: $("#CSQuantity").val(),
-          IB: $("#IBQuantity").val(),
-          PC: $("#PCQuantity").val(),
+          CS: removeCommas($("#CSQuantity").val()),
+          IB: removeCommas($("#IBQuantity").val()),
+          PC: removeCommas($("#PCQuantity").val()),
         };
 
         UomAndQuantity = Object.fromEntries(
@@ -1484,7 +1513,7 @@ const SOItemsModal = {
         }
 
         Object.entries(isAlreadyExist.UomAndQuantity).forEach(([key, value]) => {
-          $(`#${key}Quantity`).val(value);
+          $(`#${key}Quantity`).val(formatNumberWithCommas(value));
         });
 
         $("#itemSave").text("Update Item");

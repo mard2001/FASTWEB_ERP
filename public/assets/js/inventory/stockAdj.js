@@ -70,7 +70,7 @@ $(document).ready(async function () {
             if ($(this).text().toLowerCase() == "update item") {
                 Swal.fire({
                     title: "Are you sure?",
-                    text: "Do you want to update the item?",
+                    text: "Do you want to update the item??",
                     icon: "question",
                     showDenyButton: true,
                     confirmButtonText: "Yes, Update",
@@ -288,7 +288,41 @@ const datatables = {
                     scrollX: '100%',
                     "createdRow": function (row, data) {
                         $(row).attr('id', data.REFERENCE+'-'+data.STOCKCODE);
-                        // $(row).css('cursor', 'pointer');
+                        $(row).css('cursor', 'pointer');
+                        
+                        // Add click event to show modal
+                        $(row).on('click', function() {
+                            selectedMain = data;
+                            SAdjModal.clear();
+                            SAdjModal.enable(false); // Disable editing for viewing existing records
+                            
+                            // Populate modal with selected row data
+                            $('#ENTRY_DATE').val(data.ENTRY_DATE ? new Date(data.ENTRY_DATE).toISOString().slice(0,10) : '');
+                            
+                            // Set warehouse value if available
+                            if(data.WAREHOUSE) {
+                                const warehouseSelect = document.querySelector('#VSWarehouse');
+                                if(warehouseSelect) {
+                                    warehouseSelect.setValue(data.WAREHOUSE);
+                                }
+                            }
+                            
+                            // Set adjustment type if available
+                            if(data.ADJUSTMENT_TYPE) {
+                                const adjTypeSelect = document.querySelector('#VSAdjType');
+                                if(adjTypeSelect) {
+                                    adjTypeSelect.setValue(data.ADJUSTMENT_TYPE);
+                                }
+                            }
+                            
+                            $('#saveSAdjBtn').hide(); // Hide save button for view mode
+                            itemTmpSave = []; // Clear items array
+                            
+                            // Load items for this adjustment reference
+                            datatables.loadAdjustmentItems(data.REFERENCE);
+                            
+                            SAdjModal.show();
+                        });
                     },
 
                     "pageLength": 15,
@@ -329,6 +363,26 @@ const datatables = {
 
     },
 
+    loadAdjustmentItems: (referenceNumber) => {
+        // Filter items from the main data array that match the reference number
+        const adjustmentItems = jsonArr.filter(item => item.REFERENCE === referenceNumber);
+        
+        // Transform the data to match the expected format for the items table
+        const formattedItems = adjustmentItems.map(item => ({
+            StockCode: item.STOCKCODE,
+            Description: item.productdetails ? item.productdetails.Description : '',
+            OrderQty: item.ADJUSTED_QTY,
+            OrderUom: 'PCS', // Default UOM, you may need to adjust this based on your data
+            PREV_QTY: item.PREV_QTY,
+            NEW_QTY: item.NEW_QTY,
+            ADJUSTED_QTY: item.ADJUSTED_QTY,
+            ADJUSTMENT_TYPE: item.ADJUSTMENT_TYPE
+        }));
+        
+        // Initialize the items datatable with the filtered data
+        datatables.initSAdjItemsDatatable(formattedItems);
+    },
+
     initSAdjItemsDatatable: (datas) => {
         if (ItemsTH) {
             ItemsTH.clear().draw();
@@ -338,14 +392,30 @@ const datatables = {
                 dom: "rt<'d-flex justify-content-between' ip>",
                 data: datas,
                 columns: [
-                    { data: 'StockCode' },
-                    { data: 'Description' },
-                    { data: 'OrderQty',
+                    { data: 'StockCode', title: 'Stock Code' },
+                    { data: 'Description', title: 'Description' },
+                    { 
+                        data: 'PREV_QTY',
+                        title: 'Previous Qty',
                         render: function (data, type, row){
-                            return parseFloat(data).toFixed(2);
+                            return data ? parseFloat(data).toFixed(2) : '0.00';
                         }
                     },
-                    { data: 'OrderUom' },
+                    { 
+                        data: 'NEW_QTY',
+                        title: 'New Qty',
+                        render: function (data, type, row){
+                            return data ? parseFloat(data).toFixed(2) : '0.00';
+                        }
+                    },
+                    { 
+                        data: 'ADJUSTED_QTY',
+                        title: 'Adjusted Qty',
+                        render: function (data, type, row){
+                            return data ? parseFloat(data).toFixed(2) : '0.00';
+                        }
+                    },
+                    { data: 'OrderUom', title: 'UOM' },
                     {
                         data: null,
                         render: function (data, type, row) {

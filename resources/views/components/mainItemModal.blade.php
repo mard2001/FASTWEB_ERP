@@ -40,7 +40,7 @@
                                 <label for="CSQuantity" class="form-label">CS Quantity</label>
                                 <div class="input-group">
                                     <span class="input-group-text w-25 rounded-0">CS</span>
-                                    <input disabled type="number" id="CSQuantity" name="CSQuantity" class="form-control" min="0" onkeypress="return /[0-9]/.test(event.key)">
+                                    <input disabled type="text" id="CSQuantity" name="CSQuantity" class="form-control" pattern="[0-9,]*" onkeypress="return /[0-9,]/.test(event.key)">
                                 </div>
                             </div>
                         </div>
@@ -49,7 +49,7 @@
                                 <label for="IBQuantity" class="form-label">IB Quantity</label>
                                 <div class="input-group">
                                     <span class="input-group-text w-25 rounded-0">IB</span>
-                                    <input disabled type="number" id="IBQuantity" name="IBQuantity" class="form-control" min="0" onkeypress="return /[0-9]/.test(event.key)">
+                                    <input disabled type="text" id="IBQuantity" name="IBQuantity" class="form-control" pattern="[0-9,]*" onkeypress="return /[0-9,]/.test(event.key)">
                                 </div>
                             </div>
                         </div>
@@ -58,7 +58,7 @@
                                 <label for="PCQuantity" class="form-label">PC Quantity</label>
                                 <div class="input-group">
                                     <span class="input-group-text w-25 rounded-0">PC</span>
-                                    <input disabled type="number" id="PCQuantity" name="PCQuantity" class="form-control" min="0" onkeypress="return /[0-9]/.test(event.key)">
+                                    <input disabled type="text" id="PCQuantity" name="PCQuantity" class="form-control" pattern="[0-9,]*" onkeypress="return /[0-9,]/.test(event.key)">
                                 </div>
                             </div>
                         </div>

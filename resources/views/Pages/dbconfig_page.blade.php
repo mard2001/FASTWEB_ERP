@@ -440,6 +440,7 @@
         $('#serverIp').val('{{ env("DB_HOST") }}' + ({{ env("DB_PORT") }} ? ',{{ env("DB_PORT") }}' : ''));
         $('#serverDb').val('{{ env("DB_DATABASE") }}');
         $('#serverUser').val('{{ env("DB_USERNAME") }}');
+        $('#serverPass').val('{{ env("DB_PASSWORD") }}');
         
         // Temporary static "Connected" text in Status input field
         $('#status').val('Connected');
