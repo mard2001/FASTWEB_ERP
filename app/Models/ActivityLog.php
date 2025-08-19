@@ -9,7 +9,7 @@ class ActivityLog extends Activity
     /**
      * The table associated with the model.
      */
-    protected $table = 'activity_log';
+    protected $table = 'tblActivityLog';
 
     /**
      * The attributes that should be cast.

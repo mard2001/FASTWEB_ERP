@@ -50,7 +50,7 @@
                     <div class="container h-100 w-75 my-3 p-2 d-flex justify-content-center align-items-center"
                         style="border: 4px dashed rgba(45, 45, 45, 0.5); position: relative;">
                         <img id="prdImg" class="border-0 p-2 h-auto w-100" style="max-width: 200px; object-fit: cover;  cursor: pointer; "
-                            src="./uploads/upload.png" alt="">
+                            src="{{ asset('assets/resources/upload_static.png') }}" alt="">
                     </div>
                 </div>
 

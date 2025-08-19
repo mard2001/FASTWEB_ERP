@@ -79,7 +79,7 @@ class ActivityLogController extends Controller
 
         } catch (\Exception $e) {
             // Handle case where table doesn't exist yet
-            if (str_contains($e->getMessage(), 'activity_log') && 
+            if (str_contains($e->getMessage(), 'tblActivityLog') && 
                 (str_contains($e->getMessage(), 'does not exist') || str_contains($e->getMessage(), 'doesn\'t exist'))) {
                 return response()->json([
                     'success' => false,
@@ -160,8 +160,8 @@ class ActivityLogController extends Controller
     public function statistics(Request $request)
     {
         try {
-            // Check if activity_log table exists
-            $tableExists = DB::select("SELECT name FROM sysobjects WHERE name='activity_log' AND xtype='U'");
+            // Check if tblActivityLog table exists
+            $tableExists = DB::select("SELECT name FROM sysobjects WHERE name='tblActivityLog' AND xtype='U'");
             
             if (empty($tableExists)) {
                 return response()->json([
@@ -251,7 +251,7 @@ class ActivityLogController extends Controller
 
         } catch (\Exception $e) {
             // Handle case where table doesn't exist yet
-            if (str_contains($e->getMessage(), 'activity_log') && 
+            if (str_contains($e->getMessage(), 'tblActivityLog') && 
                 (str_contains($e->getMessage(), 'Invalid object name') || 
                  str_contains($e->getMessage(), 'does not exist') || 
                  str_contains($e->getMessage(), 'doesn\'t exist'))) {

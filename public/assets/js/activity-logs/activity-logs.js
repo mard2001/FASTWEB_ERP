@@ -805,7 +805,7 @@ $(document).ready(function() {
                     <strong>Steps to fix:</strong><br>
                     1. Open SQL Server Management Studio (SSMS)<br>
                     2. Connect to your database server<br>
-                    3. Open the file: <code>database/sql_scripts/create_activity_log_table.sql</code><br>
+                    3. Open the file: <code>database/sql_scripts/create_tblActivityLog_table.sql</code><br>
                     4. Execute the SQL script<br>
                     5. Refresh this page
                 </p>

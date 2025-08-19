@@ -117,7 +117,12 @@ const datatables = {
                         { data: 'EntryDate',  title: 'Date',
                             render: function(data, type, row){
                                 if (!data) return '';
-
+                                
+                                if (type === 'sort' || type === 'type') {
+                                    // Return raw date for sorting
+                                    return data;
+                                }
+                                
                                 const dateObj = new Date(data);
                                 return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short',   year: 'numeric'});
                             }

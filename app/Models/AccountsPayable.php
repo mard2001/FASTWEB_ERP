@@ -10,7 +10,7 @@ class AccountsPayable extends Model
 {
     use HasFactory, ActivityLoggable;
 
-    protected $table = 'accounts_payable';
+    protected $table = 'tblAccountsPayable';
 
     protected $fillable = [
         'branch',

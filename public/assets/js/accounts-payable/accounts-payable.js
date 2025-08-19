@@ -410,7 +410,7 @@ function exportToCSV() {
     let encodedUri = encodeURI(csvContent);
     let link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "accounts_payable_" + moment().format('YYYY-MM-DD') + ".csv");
+    link.setAttribute("download", "tblAccountsPayable_" + moment().format('YYYY-MM-DD') + ".csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

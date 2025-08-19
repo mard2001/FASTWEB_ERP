@@ -70,7 +70,7 @@ $(document).ready(async function () {
             if ($(this).text().toLowerCase() == "update item") {
                 Swal.fire({
                     title: "Are you sure?",
-                    text: "Do you want to update the item??",
+                    text: "Do you want to update the item?",
                     icon: "question",
                     showDenyButton: true,
                     confirmButtonText: "Yes, Update",
@@ -741,6 +741,13 @@ const SAdjModal = {
         }
     },
     show: () => {
+        // Clear validation states and error messages
+            if ($("#modalFields").data('validator')) {
+            $("#modalFields").validate().resetForm();
+            $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+            $("#modalFields").find('.invalid-feedback').remove();
+            $("#modalFields").find('.error').removeClass('error');
+        }
         $('#stockAdjMainModal').modal('show');
     },
     hide: () => {
@@ -855,6 +862,13 @@ const SAdjitemsModal = {
         $('#itemModal').modal('hide');
     },
     show: () => {
+        // Clear validation states and error messages
+        if ($("#modalFields").data('validator')) {
+            $("#modalFields").validate().resetForm();
+            $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+            $("#modalFields").find('.invalid-feedback').remove();
+            $("#modalFields").find('.error').removeClass('error');
+        }
         $('#itemModal').modal('show');
     },
     fill: (itemData) => {

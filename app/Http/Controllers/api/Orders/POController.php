@@ -20,7 +20,7 @@ class POController
     public function index()
     {
         try {
-            $purchaseOrders = PO::orderBy('DateUploaded', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus', 'ConfirmedBy', 'EditedBy', 'DateUpdated')->get();
+            $purchaseOrders = PO::orderBy('PODate', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus', 'ConfirmedBy', 'EditedBy', 'DateUpdated')->get();
 
             if ($purchaseOrders->isEmpty()) {
                 return response()->json([
@@ -50,7 +50,7 @@ class POController
             // return response()->json(gettype($status));
             // $status =  $request->input('status');
 
-            $query = PO::orderBy('DateUploaded', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus', 'ConfirmedBy', 'EditedBy', 'DateUpdated')->whereIn('POStatus', $status);
+            $query = PO::orderBy('PODate', 'desc')->select('id', 'OrderNumber', 'PONumber', 'SupplierName', 'PODate', 'orderPlacer', 'totalDiscount', 'totalCost', 'POStatus', 'ConfirmedBy', 'EditedBy', 'DateUpdated')->whereIn('POStatus', $status);
 
             if (in_array(null, $status->json()->all(), true)) {
                 $query->orWhereNull('POStatus');

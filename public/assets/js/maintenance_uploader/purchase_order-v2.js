@@ -610,11 +610,18 @@ async function getProductPriceCodes() {
     "GET",
     null,
     (response) => {
-      priceCodes = response.success && response.data;
+      // Ensure we properly handle the response structure
+      if (response.success && response.data) {
+        priceCodes = response.data;
+      } else {
+        console.error('Failed to load price codes:', response);
+        priceCodes = [];
+      }
     },
     (xhr, status, error) => {
       // Error callback
-      console.error("Error:", error);
+      console.error("Error loading price codes:", error);
+      priceCodes = [];
     }
   );
 }
@@ -757,8 +764,29 @@ const initVS = {
     $("#vendorName").on("afterClose", function () {
       if (this.value) {
         var findVendor = vendordata.find((item) => item.cID == this.value);
+        // Ensure priceCodes is loaded and is an array
+        if (!priceCodes || !Array.isArray(priceCodes)) {
+          console.warn('Price codes not loaded or invalid format');
+          selectedVendor = null;
+          Swal.fire({
+            title: "Error",
+            text: "Price codes not loaded. Please refresh the page and try again.",
+            icon: "error",
+          });
+          $("#vendorName").trigger("reset");
+          return;
+        }
+        
+        const vendorPriceCode = String(findVendor.PriceCode || '').trim();
+        
         const validPriceCode = priceCodes.some(
-          (item) => item.PRICECODE == findVendor.PriceCode.trim()
+          (item) => {
+            // Convert both values to strings and trim whitespace for comparison
+            const priceCodeFromAPI = String(item.PRICECODE || '').trim();
+            
+            // Use strict equality for comparison
+            return priceCodeFromAPI === vendorPriceCode;
+          }
         );
         if (validPriceCode) {
           $("#VendorContactName").val(findVendor.ContactPerson);
@@ -1651,7 +1679,7 @@ const datatables = {
                 language: {
                     searchPlaceholder: "Search here..."
                 },
-                order: [], // Disable initial ordering to maintain API order (newest first)
+                order: [[ 4, "desc" ]], // Sort by PODate column (index 4) in descending order
                 columns: [
                     { data: "OrderNumber" },
                     { data: "PONumber" },
@@ -1662,7 +1690,17 @@ const datatables = {
                         },
                     },
                     { data: "SupplierName" },
-                    { data: "PODate" },
+                    { 
+                        data: "PODate",
+                        render: function (data, type, row) {
+                            if (type === 'sort' || type === 'type') {
+                                // Return raw date for sorting
+                                return data;
+                            }
+                            // Format for display
+                            return data ? new Date(data).toLocaleDateString() : '-';
+                        }
+                    },
                     { data: "orderPlacer" },
                     { 
                         data: "ConfirmedBy",

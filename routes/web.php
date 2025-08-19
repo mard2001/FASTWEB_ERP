@@ -231,7 +231,7 @@ Route::get('/master-data/warehouse', function () {
 
 // ACTIVITY LOGS MODULE
 Route::get('/reports/activity-logs', function () {
-    return view('Pages.activity-log.activity_log');
+    return view('Pages.activity-log.activityLog_page');
 })->name('activity-logs');
 
 Route::get('/register', function () {
