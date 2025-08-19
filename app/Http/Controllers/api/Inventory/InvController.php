@@ -11,6 +11,7 @@ use App\Models\Inventory\InvAdjustmentLogs;
 use App\Models\Inventory\InvMovements;
 use App\Models\Inventory\InvWarehouse;
 use App\Models\Orders\PO;
+use App\Models\Warehouse\WHTagging;
 
 class InvController extends Controller
 {
@@ -280,13 +281,13 @@ public function getSKUMovement(string $StockCode, string $Warehouse)
 
     public function getAllWarehouse(){
         try {
-            $data = InvWarehouse::select('Warehouse')
+            $data = WHTagging::select('Warehouse')
                     ->distinct()
                     ->get();
             // dd($data);
             if (!$data) {
                 return response()->json([
-                    'response' => 'Product warehouse not found',
+                    'response' => 'Warehouse not found',
                     'status_response' => 0
                 ]);
             } else {

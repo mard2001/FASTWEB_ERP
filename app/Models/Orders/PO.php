@@ -33,6 +33,7 @@ class PO extends Model
         'FOB',
         'orderPlacerEmail',
         'deliveryAddress',
+        'warehouseCode',
         'contactNumber',
         'contactPerson',
         'deliveryMethod',

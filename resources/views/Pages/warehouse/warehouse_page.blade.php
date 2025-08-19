@@ -20,6 +20,7 @@
             <td class="col">Warehouse Type</td>
             <td class="col">Warehouse GroupCode</td>
             <td class="col">Warehouse GroupDesc</td>
+            <td class="col">Consignee</td>
             <td class="col">Municipality</td>
             <td class="col">Status</td>
             <td class="col">Date Updated</td>
@@ -84,6 +85,18 @@
                         <div class="mb-3">
                             <label for="PostalCode">Postal Code</label>
                             <input disabled type="text" id="PostalCode" name="PostalCode" class="form-control bg-white" maxlength="10">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="ContactPerson">Consignee</label>
+                            <input disabled type="text" id="ContactPerson" name="ContactPerson" class="form-control bg-white" maxlength="100">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="ContactNo">Contact Number</label>
+                            <input disabled type="text" id="ContactNo" name="ContactNo" class="form-control bg-white" maxlength="11">
                         </div>
                     </div>
                 </div>

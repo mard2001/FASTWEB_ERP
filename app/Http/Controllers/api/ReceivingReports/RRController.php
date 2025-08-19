@@ -370,7 +370,7 @@ class RRController extends Controller
             unset($rrHeaderDetails['rrData']['rrdetails'], $rrHeaderDetails['rrData']['poincluded']);
 
             // Fetch header first for logging/subject reference
-            $header = ReceivingRHeader::where('RRNo', $rrNo)->first();
+            $header = ReceivingRHeader::where('RRNo', $rrNo)->with('poincluded')->first();
 
             $isPresent = false;
             if ($header) {
@@ -390,10 +390,15 @@ class RRController extends Controller
                 ], 404);
             }
 
-            
+            // Get warehouse from related PO, fallback to 'M1' if not found
+            $warehouse = 'M1'; // Default fallback
+            if ($header->poincluded && $header->poincluded->warehouseCode) {
+                $warehouse = $header->poincluded->warehouseCode;
+            }
+
             foreach ($details as $detail) {
                 $sku = $detail['SKU'];
-                $warehouse = $detail['warehouse'] = 'M1';
+                $detail['warehouse'] = $warehouse;
                 $qty = $detail['Quantity'];
                 $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "IN", null);
                 $InventoryManager->InvMovement($rrHeaderDetails,  $detail, 'I', 'R');

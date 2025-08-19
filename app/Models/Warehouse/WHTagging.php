@@ -21,6 +21,8 @@ class WHTagging extends Model
         'WHType',
         'WHGroupCode',
         'WHGroupDesc',
+        'ContactPerson',
+        'ContactNo',
         'Region',
         'Province',
         'Municipality',

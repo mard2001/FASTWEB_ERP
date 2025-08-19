@@ -6,6 +6,7 @@ var filename = 'purchase_order_maintenance_template.csv';
 var itemDataTableHolder;
 var itemSelectedData, itemAjaxData;
 var vandordata, selectedVendor;
+var selectedWarehouse;
 
 var itemList = [];
 var tmpItemList = [];
@@ -58,7 +59,7 @@ VirtualSelect.init({
 
 $(document).on('click', '#CustomerNoDataFoundBtn', function () {
     $('#newVendorModal').modal('show');
-
+1
 });
 
 
@@ -338,21 +339,21 @@ async function loadSupplierShipTo() {
     var retrievedUser = JSON.parse(localStorage.getItem('dbcon'));
 
     await $.ajax({
-        url: globalApi + 'api/supplier-shipped-to',
+        url: globalApi + 'api/wh/warehouse',
         type: 'GET',
         data: { conn: retrievedUser },
 
         success: async function (response) {
-            if (response.status_response != 1) {
+            if (!response.success) {
                 console.log(JSON.stringify(response, null, 2));
             }
 
-            const newData = response.response.map(item => {
+            const newData = response.data.map(item => {
                 // Create a new object with the existing properties and the new column
                 return {
-                    description: item.CompleteAddress,
-                    value: item.cID, // Spread the existing properties
-                    label: item.SupplierCode, // Copy the value from sourceKey to targetKey
+                    description: `${item.WHGroupDesc}, ${item.Municipality}`,
+                    value: item.Warehouse, // Use warehouse code as value
+                    label: `${item.Warehouse} - ${item.WHGroupDesc}`, // Display warehouse code and description
                 };
             });
 
@@ -382,24 +383,28 @@ async function loadSupplierShipTo() {
 
             $('#shippedToName').on('afterClose', function () {
                 if (this.value) {
-                    var findSupplier = response.response.find(item => item.cID == this.value);
+                    var findWarehouse = response.data.find(item => item.Warehouse == this.value);
+                    selectedWarehouse = findWarehouse;
 
-                    $('#SupplierContactName').val(findSupplier.ContactPerson);
-                    $('#shippedToAddress').val(findSupplier.CompleteAddress);
+                    $('#SupplierContactName').val(findWarehouse.ContactPerson ? findWarehouse.ContactPerson : '');
+                    $('#shippedToAddress').val(`${findWarehouse.WHGroupDesc}, ${findWarehouse.Municipality}`);
 
-                    var mobileContact = findSupplier.ContactNo = /^9\d{9}$/.test(findSupplier.ContactNo) ? findSupplier.ContactNo.replace(/^9/, "09") : findSupplier.ContactNo;
+                    var mobileContact = findWarehouse.ContactNo ? (/^9\d{9}$/.test(findWarehouse.ContactNo) ? findWarehouse.ContactNo.replace(/^9/, "09") : findWarehouse.ContactNo) : '';
 
                     $('#shippedToPhone').val(mobileContact);
 
                     if (this.value && document.querySelector('#vendorName').value) {
                         $('#addItems').prop("disabled", false);
                     }
+                } else {
+                    selectedWarehouse = null;
                 }
 
             });
 
 
             $('#shippedToName').on('reset', function () {
+                selectedWarehouse = null;
                 $('#SupplierContactName').val('');
                 $('#shippedToAddress').val('');
                 $('#shippedToPhone').val('');
@@ -1285,7 +1290,8 @@ function getFieldData() {
         SpecialInstruction: $('#poComment').val(),
         EncoderID: $('#requisitioner').val(),
         orderPlacer: user.name,
-        orderPlacerEmail: user.email
+        orderPlacerEmail: user.email,
+        warehouseCode: selectedWarehouse ? selectedWarehouse.Warehouse : null
 
     }
 

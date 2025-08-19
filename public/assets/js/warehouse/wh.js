@@ -308,11 +308,9 @@ const datatables = {
                         { data: 'WHType',  title: 'Warehouse Type' },
                         { data: 'WHGroupCode',  title: 'Warehouse GroupCode' },
                         { data: 'WHGroupDesc',  title: 'Warehouse GroupDesc' },
-                        { data: 'Region',  title: 'Region' },
+                        { data: 'ContactPerson',  title: 'Consignee' },
                         { data: 'Province',  title: 'Province' },
                         { data: 'Municipality',  title: 'Municipality' },
-                        { data: 'Barangay',  title: 'Barangay' },
-                        { data: 'PostalCode',  title: 'Postal Code' },
                         { data: 'Status',  title: 'Status',
                             render: function(data, type, row){
                                 return (data == "A") ? "<span class='statusBadge1 align-middle'> Active </span>" : "";
@@ -337,7 +335,7 @@ const datatables = {
                         },
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 1, 3, 4, 5, 6, 7, 8, 9, 10 ] },
+                        { className: "text-start", targets: [ 1, 3, 4, 5, 6, 7, 8] },
                         { className: "text-center", targets: [ 0, 2 ] },
                         // { className: "text-end", targets: [ 4 ] },
                         { className: "text-nowrap", targets: '_all' },
@@ -440,6 +438,8 @@ const WHModal = {
         $('#WHGroupCode').val(whData.WHGroupCode);
         $('#WHGroupDesc').val(whData.WHGroupDesc);
         $('#PostalCode').val(whData.PostalCode);
+        $('#ContactPerson').val(whData.ContactPerson);
+        $('#ContactNo').val(whData.ContactNo);
         $('#Status').val(whData.Status);
         $('#DateUpdated').val(whData.DateUpdated);
 
@@ -554,6 +554,8 @@ const WHModal = {
             Municipality : document.querySelector('#VSmunicipality').getDisplayValue(),
             Barangay : document.querySelector('#VSbarangay').getDisplayValue(),
             PostalCode : $('#PostalCode').val(),
+            ContactPerson : $('#ContactPerson').val(),
+            ContactNo : $('#ContactNo').val(),
             Status : $('#Status').val(),
         }
         return data;

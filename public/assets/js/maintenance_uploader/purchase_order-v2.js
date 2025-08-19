@@ -850,9 +850,9 @@ const initVS = {
       }
     });
 
-    //shippedToData
+    //shippedToData - Changed to use warehouse data instead of supplier ship to
     await ajax(
-      "api/supplier-shipped-to",
+      "api/wh/warehouse",
       "GET",
       null,
       (response) => {
@@ -862,8 +862,8 @@ const initVS = {
         const newData = response.data.map((item) => {
           // Create a new object with the existing properties and the new column
           return {
-            value: item.cID, // Spread the existing properties
-            label: item.CompleteAddress, // Copy the value from sourceKey to targetKey
+            value: item.Warehouse, // Use warehouse code as value
+            label: `${item.Warehouse} - ${item.WHGroupDesc}`, // Display warehouse code and description
           };
         });
 
@@ -896,19 +896,19 @@ const initVS = {
 
         $("#shippedToName").on("afterClose", function () {
           if (this.value) {
-            var findSupplier = response.data.find(
-              (item) => item.cID == this.value
+            var findWarehouse = response.data.find(
+              (item) => item.Warehouse == this.value
             );
 
-            selecteddShippedTo = findSupplier;
-            $("#shippedToContactName").val(findSupplier.ContactPerson.trim());
-            $("#shippedToAddress").val(findSupplier.CompleteAddress.trim());
+            selecteddShippedTo = findWarehouse;
+            $("#shippedToContactName").val(findWarehouse.ContactPerson ? findWarehouse.ContactPerson.trim() : '');
+            $("#shippedToAddress").val(`${findWarehouse.WHGroupDesc}, ${findWarehouse.Municipality}`);
 
-            var mobileContact = (findSupplier.ContactNo = /^9\d{9}$/.test(
-              findSupplier.ContactNo
+            var mobileContact = findWarehouse.ContactNo ? (/^9\d{9}$/.test(
+              findWarehouse.ContactNo
             )
-              ? findSupplier.ContactNo.replace(/^9/, "09")
-              : findSupplier.ContactNo);
+              ? findWarehouse.ContactNo.replace(/^9/, "09")
+              : findWarehouse.ContactNo) : '';
 
             $("#shippedToPhone").val(mobileContact);
 
@@ -1122,14 +1122,19 @@ const POModal = {
     $("#shippedToContactName").val(POData.contactPerson);
     $("#shippedToAddress").val(POData.deliveryAddress);
     
-    // Find the correct shippedTo record by matching the delivery address
+    // Find the correct warehouse record by matching the delivery address or warehouse info
     const findShippedTo = shippedToData.find(
-      (item) => item.CompleteAddress.trim() == POData.deliveryAddress.trim()
+      (item) => {
+        const warehouseDesc = `${item.WHGroupDesc}, ${item.Municipality}`;
+        return warehouseDesc.trim() == POData.deliveryAddress.trim() || 
+               item.Warehouse == POData.deliveryAddress.trim() ||
+               item.WHGroupDesc.trim() == POData.deliveryAddress.trim();
+      }
     );
     
     if (findShippedTo) {
       selecteddShippedTo = findShippedTo;
-      document.querySelector("#shippedToName").setValue(findShippedTo.cID);
+      document.querySelector("#shippedToName").setValue(findShippedTo.Warehouse);
     } else {
       // If no match found, reset the virtual select
       selecteddShippedTo = null;
@@ -1200,6 +1205,7 @@ const POModal = {
       productType: selectedVendor.SupplierType.trim(),
       FOB: $("#fob").val(),
       deliveryAddress: $("#shippedToAddress").val(),
+      warehouseCode: selecteddShippedTo ? selecteddShippedTo.Warehouse : null,
       contactPerson: $("#shippedToContactName").val(),
       contactNumber: $("#shippedToPhone").val(),
       deliveryMethod: $("#shipVia").val(),

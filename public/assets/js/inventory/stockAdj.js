@@ -22,6 +22,11 @@ $(document).ready(async function () {
     SAdjitemsModal.setValidator();
 
     $(document).on('click', '#addBtn', async function () {
+       
+        // Clear virtual select validation classes
+        $("#modalFields").find('.virtual-select-invalid').removeClass('virtual-select-invalid');
+        $('.vscomp-wrapper').removeClass('virtual-select-invalid');
+        
         SAdjModal.clear();
         SAdjModal.enable(true);
 
@@ -293,6 +298,18 @@ const datatables = {
                         // Add click event to show modal
                         $(row).on('click', function() {
                             selectedMain = data;
+                            
+                            // Clear validation states and error messages first
+                            if ($("#modalFields").data('validator')) {
+                                $("#modalFields").validate().resetForm();
+                                $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+                                $("#modalFields").find('.invalid-feedback').remove();
+                                $("#modalFields").find('.error').removeClass('error');
+                            }
+                            // Clear virtual select validation classes
+                            $("#modalFields").find('.virtual-select-invalid').removeClass('virtual-select-invalid');
+                            $('.vscomp-wrapper').removeClass('virtual-select-invalid');
+                            
                             SAdjModal.clear();
                             SAdjModal.enable(false); // Disable editing for viewing existing records
                             
@@ -748,6 +765,9 @@ const SAdjModal = {
             $("#modalFields").find('.invalid-feedback').remove();
             $("#modalFields").find('.error').removeClass('error');
         }
+        // Clear virtual select validation classes
+        $("#modalFields").find('.virtual-select-invalid').removeClass('virtual-select-invalid');
+        $('.vscomp-wrapper').removeClass('virtual-select-invalid');
         $('#stockAdjMainModal').modal('show');
     },
     hide: () => {
