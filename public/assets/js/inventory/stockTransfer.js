@@ -348,7 +348,47 @@ const datatables = {
                     scrollX: '100%',
                     "createdRow": function (row, data) {
                         $(row).attr('id', data.StockCode);
-                        // $(row).css('cursor', 'pointer');
+                        $(row).css('cursor', 'pointer');
+                        
+                        // Add click event to show modal
+                        $(row).on('click', async function() {
+                            selectedMain = data;
+                            
+                            // Clear validation states and error messages first
+                            if ($("#modalFields").data('validator')) {
+                                $("#modalFields").validate().resetForm();
+                                $("#modalFields").find('.is-invalid').removeClass('is-invalid');
+                                $("#modalFields").find('.invalid-feedback').remove();
+                                $("#modalFields").find('.error').removeClass('error');
+                            }
+                            // Clear virtual select validation classes
+                            $("#modalFields").find('.virtual-select-invalid').removeClass('virtual-select-invalid');
+                            
+                            // Fill modal with data and show
+                            STModal.clear();
+                            STModal.enable(false); // Disable editing for view mode
+                            
+                            // Initialize destination warehouse virtual select with all warehouses
+                            await ajax('api/wh/all-warehouse', 'GET', null, (response) => {
+                                const warehouses = response.data;
+                                initVS.destWHVS(warehouses);
+                                
+                                // Now fill data after destination warehouse is initialized
+                                STModal.fillData(data);
+                            }, (xhr, status, error) => {
+                                console.error('Error loading warehouses:', error);
+                                // Still try to fill data even if warehouse loading fails
+                                STModal.fillData(data);
+                            });
+                            
+                            // Hide save button and show close button only
+                            $('#saveSTBtn').hide();
+                            
+                            // Load transfer items for this reference
+                            datatables.loadTransferItems(data.Reference);
+                            
+                            STModal.show();
+                        });
                     },
 
                     "pageLength": 15,
@@ -380,17 +420,41 @@ const datatables = {
         }
     },
 
-    loadItems: async (SONumber) => {
-
-        const stItems = await ajax('api/orders/po-items/search-items/' + SONumber, 'GET', null, (response) => { // Success callback
-            ajaxItemsData = response.data;
-            datatables.initSTItemsDatatable(ajaxItemsData);
-
-        }, (xhr, status, error) => { // Error callback
-            console.error('Error:', error);
-        });
-
-
+    loadTransferItems: async (transferReference) => {
+        try {
+            // Filter all transfer records by reference to get all items for this transfer
+            const transferItems = jsonArr.filter(item => item.Reference === transferReference);
+            
+            if (transferItems.length > 0) {
+                // Remove duplicates by StockCode and transform the data
+                const uniqueItems = [];
+                const seenStockCodes = new Set();
+                
+                transferItems.forEach(item => {
+                    if (!seenStockCodes.has(item.StockCode)) {
+                        seenStockCodes.add(item.StockCode);
+                        uniqueItems.push({
+                            StockCode: item.StockCode,
+                            Description: item.productdetails ? item.productdetails.Description : '',
+                            OrderQty: item.TrnQty || 0,
+                            OrderUom: item.StockingUom || 'PC',
+                            TrnQty: item.TrnQty || 0
+                        });
+                    }
+                });
+                
+                itemTmpSave = uniqueItems;
+                datatables.initSTItemsDatatable(uniqueItems);
+            } else {
+                // No items found for this transfer
+                itemTmpSave = [];
+                datatables.initSTItemsDatatable(null);
+            }
+        } catch (error) {
+            console.error('Error loading transfer items:', error);
+            itemTmpSave = [];
+            datatables.initSTItemsDatatable(null);
+        }
     },
 
     initSTItemsDatatable: (datas) => {
@@ -765,12 +829,57 @@ const STModal = {
         $('#modalFields #Reference').prop('disabled', true);
         $('#modalFields #EntryDate').prop('disabled', true);
         $('#addItems').prop('disabled', !enable);
+        
+        // Disable/enable virtual selects
+        if (document.querySelector('#VSWarehouse')?.virtualSelect) {
+            if (enable) {
+                document.querySelector('#VSWarehouse').enable();
+            } else {
+                document.querySelector('#VSWarehouse').disable();
+            }
+        }
+        
+        if (document.querySelector('#VSNewWarehouse')?.virtualSelect) {
+            if (enable) {
+                document.querySelector('#VSNewWarehouse').enable();
+            } else {
+                document.querySelector('#VSNewWarehouse').disable();
+            }
+        }
     },
     getData: () => {
         return {
             Warehouse: $("#VSWarehouse").val().trim(),
             NewWarehouse: $("#VSNewWarehouse").val(),
         };
+    },
+    fillData: (data) => {
+        // Fill the form fields with the selected row data
+        $('#Reference').val(data.Reference || '');
+        $('#EntryDate').val(data.EntryDate ? new Date(data.EntryDate).toISOString().slice(0,10) : '');
+        
+        console.log('fillData called with:', data);
+        console.log('Warehouse:', data.Warehouse);
+        console.log('NewWarehouse:', data.NewWarehouse);
+        console.log('NewWarehouse type:', typeof data.NewWarehouse);
+        console.log('NewWarehouse length:', data.NewWarehouse ? data.NewWarehouse.length : 'null/undefined');
+        
+        // Set warehouse values in virtual selects
+        if (data.Warehouse && document.querySelector('#VSWarehouse')?.virtualSelect) {
+            console.log('Setting VSWarehouse to:', data.Warehouse);
+            document.querySelector('#VSWarehouse').setValue(data.Warehouse);
+        }
+        
+        // Check for destination warehouse - handle both space and empty string
+        if (data.NewWarehouse && data.NewWarehouse.trim() !== '' && document.querySelector('#VSNewWarehouse')?.virtualSelect) {
+            console.log('Setting VSNewWarehouse to:', data.NewWarehouse);
+            document.querySelector('#VSNewWarehouse').setValue(data.NewWarehouse);
+        } else {
+            console.log('Not setting VSNewWarehouse. Reason:', 
+                !data.NewWarehouse ? 'NewWarehouse is falsy' : 
+                data.NewWarehouse.trim() === '' ? 'NewWarehouse is empty/space' : 
+                !document.querySelector('#VSNewWarehouse')?.virtualSelect ? 'VSNewWarehouse element not found or not initialized' : 'Unknown');
+        }
     },
     STSave: async () => {
         let STData = STModal.getData();
