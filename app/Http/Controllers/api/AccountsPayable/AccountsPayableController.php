@@ -260,4 +260,74 @@ class AccountsPayableController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Set AP data in cache for printing all data
+     */
+    public function setAPNum(Request $request) {
+        // Always print all data
+        \Illuminate\Support\Facades\Cache::put('APPrintAll', true, now()->addMinutes(1));
+        
+        // Store current user info for printing if authenticated
+        if (auth()->check()) {
+            \Illuminate\Support\Facades\Cache::put('print_user', auth()->user(), now()->addMinutes(1));
+        }
+
+        return response()->json([
+            'success' => true,
+            'printAll' => true,
+            'originalData' => 'all'
+        ]);
+    }
+
+    /**
+     * Display the print page for all accounts payable data
+     */
+    public function printPage()
+    {
+        try{
+            // Always print all accounts payable data
+            $data = AccountsPayable::all();
+            
+            // Get user from session or cache if available
+            $user = null;
+            if (auth()->check()) {
+                $user = auth()->user();
+            } else {
+                // Try to get user info from cache if set during the print setup
+                $user = \Illuminate\Support\Facades\Cache::get('print_user');
+            }
+            
+            // Log printing activity for all data
+            try {
+                if ($user) {
+                    activity('accounts_payable')
+                        ->causedBy($user)
+                        ->withProperties([
+                            'ip' => request()->ip(),
+                            'user_agent' => request()->userAgent(),
+                            'url' => request()->fullUrl(),
+                            'method' => request()->method(),
+                            'total_records' => $data->count(),
+                        ])
+                        ->event('printed_all')
+                        ->log("Printed All Accounts Payable Reports ({$data->count()} records)");
+                }
+            } catch (\Throwable $e) {
+                // Non-blocking: ignore logging failures
+            }
+            
+            return view('Pages.Printing.AP_printing', [
+                'reports' => $data, 
+                'printAll' => true,
+                'user' => $user
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

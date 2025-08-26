@@ -306,7 +306,7 @@ const datatables = {
                                 if (!data) return '';
                                 if(row.NewWarehouse == " "){
                                     return row.Warehouse;
-                                } else{
+                                } else {
                                     return `${row.Warehouse} <span class="mdi mdi-arrow-right-thick"></span> ${row.NewWarehouse}`
                                 }
                             }

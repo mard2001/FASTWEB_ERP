@@ -8,10 +8,13 @@ let accountsPayableData = [];
 let filteredData = [];
 let accountsPayableTable;
 let statusFilterVS;
+let filteredStartDate;
+let filteredEndDate;
 
 // Initialize page
 $(document).ready(function() {
     initializeFilters();
+    initDateRangePicker();
     loadAccountsPayableData();
 });
 
@@ -32,7 +35,7 @@ function initializeFilters() {
     });
 
     // Set up event listeners for filters
-    $('#dateFrom, #dateTo, #branchFilter').on('change keyup', function() {
+    $('#branchFilter').on('change keyup', function() {
         applyFilters();
     });
 
@@ -207,10 +210,46 @@ function initAccountsPayableDataTable() {
     setupEventHandlers();
 }
 
+// Initialize Date Range Picker
+function initDateRangePicker() {
+    var start = moment().subtract(29, 'days');
+    filteredStartDate = start.format('YYYY-MM-DD');
+    var end = moment();
+    filteredEndDate = end.format('YYYY-MM-DD');
+
+    function cb(start, end) {
+        $('#dateRange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+    }
+
+    $('#dateRange').daterangepicker({
+        startDate: start,
+        endDate: end,
+        autoUpdateInput: false,
+        ranges: {
+           'Today': [moment(), moment()],
+           'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+           'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+           'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+           'This Month': [moment().startOf('month'), moment().endOf('month')],
+           'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+        }
+    }, cb);
+
+    $('#dateRange').on('apply.daterangepicker', function(ev, picker) {
+        filteredStartDate = picker.startDate.format('YYYY-MM-DD');
+        filteredEndDate = picker.endDate.format('YYYY-MM-DD');
+        applyFilters();
+    });
+
+    $('#dateRange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+    });
+
+    cb(start, end);
+}
+
 // Apply filters
 function applyFilters() {
-    let dateFrom = $('#dateFrom').val();
-    let dateTo = $('#dateTo').val();
     let branchFilter = $('#branchFilter').val().toLowerCase();
     let statusFilter = statusFilterVS ? statusFilterVS.getSelectedOptions()[0]?.value || '' : '';
 
@@ -220,12 +259,9 @@ function applyFilters() {
         let matchesStatus = true;
 
         // Date filter
-        if (dateFrom || dateTo) {
+        if (filteredStartDate && filteredEndDate) {
             let itemDate = moment(item.report_date);
-            if (dateFrom && itemDate.isBefore(moment(dateFrom))) {
-                matchesDate = false;
-            }
-            if (dateTo && itemDate.isAfter(moment(dateTo))) {
+            if (itemDate.isBefore(moment(filteredStartDate)) || itemDate.isAfter(moment(filteredEndDate))) {
                 matchesDate = false;
             }
         }
@@ -284,6 +320,38 @@ function setupEventHandlers() {
         $('#accountsPayableForm')[0].reset();
         $('#accountsPayableForm').removeData('id');
         $('#accountsPayableModal').modal('show');
+    });
+
+    // Print all table data functionality
+    $('#apPrintAllBtn').on('click', function() {
+        console.log('Print all accounts payable data clicked');
+        
+        // Store the current filtered data for printing
+        sessionStorage.setItem('printingAPData', JSON.stringify(filteredData));
+        
+        $.ajax({
+            url: "/api/redirect-ap",
+            type: "POST",
+            data: { printAll: true },
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Authorization': 'Bearer ' + localStorage.getItem('api_token')
+            },
+            success: function(response) {
+                if (response.success) {
+                    console.log(response);
+                    window.open('/print/ap', '_blank');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error:", error);
+                if (xhr.status === 401) {
+                    window.location.href = "/login";
+                } else {
+                    Swal.fire('Error!', 'Failed to prepare print data.', 'error');
+                }
+            }
+        });
     });
 
     // Row click to edit record

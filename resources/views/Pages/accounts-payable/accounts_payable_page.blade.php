@@ -3,6 +3,7 @@
 @section('html_title')
     <title>Accounts Payable - FASTWEB ERP</title>
     <link href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 @endsection
 
 @section('title_header')
@@ -12,20 +13,21 @@
 @section('filtering_options')
 <div class="filteringOptionDiv">
     <div class="d-flex">
-        <div class="mb-1 mx-3" style="width: 180px;">
-            <div class="VSLabel">DATE FROM</div>
-            <input type="date" class="form-control" id="dateFrom">
+        <div class="mb-1 whMoverangeDiv">
+            <label for="daterange" class="form-label">DATE RANGE</label>
+            <div id="dateRange" style="background: #fff; cursor: pointer; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 0.375rem; width: 100%">
+                <i class="fa fa-calendar"></i>&nbsp;
+                <span></span> <i class="mdi mdi-chevron-down float-end"></i>
+            </div>
         </div>
-        <div class="mb-1 mx-3" style="width: 180px;">
-            <div class="VSLabel">DATE TO</div>
-            <input type="date" class="form-control" id="dateTo">
+        <div class="mb-1 whMoverangeDiv">
+            <label class="form-label">BRANCH</label>
+            <div id="dateRange" style="background: #fff; cursor: pointer; padding: 8px 12px; border-radius: 0.375rem; width: 100%">
+                <input type="text" id="branchFilter" placeholder="Enter branch name">
+            </div>
         </div>
-        <div class="mb-1 mx-3" style="width: 200px;">
-            <div class="VSLabel">BRANCH</div>
-            <input type="text" class="form-control" id="branchFilter" placeholder="Enter branch name">
-        </div>
-        <div class="mb-1 mx-3" style="width: 200px;">
-            <div class="VSLabel">STATUS</div>
+        <div class="mb-1 whMoverangeDiv">
+            <label class="form-label">STATUS</label>
             <div id="statusFilter_VS" class="VSSelect"></div>
         </div>
     </div>
@@ -150,7 +152,15 @@
         }
     </style>
 
-    <x-contentButtonDiv downloadFunc="true"></x-contentButtonDiv>
+    <x-contentButtonDiv downloadFunc="true">
+        <x-slot:additionalButtons>
+            <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="apPrintAllBtn">
+                <div class="btnImg me-2" style="background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0xOCAzSDZ2NGgxMlYzem0tMiA2SDh2Mmg4VjltMiAydjZIOHYtNmgxMHptLTIgNEg4djJoOHYtMnoiLz48L3N2Zz4='); background-size: 16px; background-repeat: no-repeat; background-position: center; width: 16px; height: 16px;">
+                </div>
+                <span>Print Report</span>
+            </div>
+        </x-slot:additionalButtons>
+    </x-contentButtonDiv>
 
     <x-table id="AccountsPayableTable">
         <x-slot:td>
@@ -241,9 +251,6 @@
 
         <x-slot:modalFooterBtns>
             <div>
-                <!-- Additional action buttons can be added here if needed -->
-            </div>
-            <div>
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" form="accountsPayableForm" class="btn btn-sm btn-primary">Save Record</button>
             </div>
@@ -255,6 +262,7 @@
 @section('pagejs')
 <script type="text/javascript" src="{{ asset('assets/js/vendor/virtual-select.min.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('assets/js/accounts-payable/accounts-payable.js') }}"></script>
 @endsection

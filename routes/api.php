@@ -90,6 +90,7 @@ Route::middleware(['auth:sanctum', DynamicDatabase::class])->group(function () {
 });
 
 Route::post('/redirect', [RRController::class, 'setRRNum']);
+Route::post('/redirect-ap', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'setAPNum'])->middleware('auth:sanctum');
 Route::post('/setCNTHeader', [CountController::class, 'setCNTHeader']);
 Route::get('/remCNTHeader', [CountController::class, 'remCNTHeader']);
 

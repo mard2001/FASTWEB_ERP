@@ -401,6 +401,7 @@ class ActivityLogController extends Controller
                     'latest_log' => [
                         'id' => $latestLog->id,
                         'description' => $latestLog->description,
+                        'ip_address' => $latestLog->ip_address,
                         'properties' => $latestLog->properties,
                         'created_at' => $latestLog->created_at->setTimezone('Asia/Manila')->format('Y-m-d H:i:s')
                     ]

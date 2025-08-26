@@ -157,6 +157,7 @@ Route::get('/transactions/receiving-report', function () {
 })->name('receiving-report');
 
 Route::get('/print/rr/', [RRController::class, 'printPage'])->name('web.print');
+Route::get('/print/ap/', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'printPage'])->name('web.print.ap');
 
 Route::get('/print/rr/testing', function () {
     $data = [

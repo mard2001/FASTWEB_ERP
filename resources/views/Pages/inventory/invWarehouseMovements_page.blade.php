@@ -19,9 +19,9 @@
             </div>
             <div class="mb-1 whMoverangeDiv">
                 <label for="reportrange" class="form-label">DATE RANGE</label>
-                <div id="reportrange" >
+                <div id="reportrange" style="background: #fff; cursor: pointer; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 0.375rem; width: 100%" >
                     <i class="fa fa-calendar"></i>&nbsp;
-                    <span></span> <i class="mdi mdi-chevron-down"></i>
+                    <span></span> <i class="mdi mdi-chevron-down float-end"></i>
                 </div>
             </div>
             <div class="mb-1 mx-3 warhouse_VS_Div" style="display: none; width: 150px;">
