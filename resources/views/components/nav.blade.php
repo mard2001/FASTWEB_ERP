@@ -158,6 +158,12 @@
                             <span class="ms-2 px-1">Activity Logs</span>
                         </a>
                     </li>
+                    <li class="">
+                        <a href="{{ route('themes.index') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Themes</span>
+                        </a>
+                    </li>
                 </div>
             </ul>
         </li>

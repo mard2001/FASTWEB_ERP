@@ -12,8 +12,8 @@
 @section('table')
     <style>
         .secBtns .selected {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
+            background-color: var(--primary-color, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
         }
 
         .secBtns button {
@@ -24,15 +24,15 @@
         }
 
         .secBtns button:hover {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
-            border-top: 0.5px solid #0275d8;
-            border-left: 0.5px solid #0275d8;
-            border-right: 0.5px solid #0275d8;
+            background-color: var(--primary-color, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
+            border-top: 0.5px solid var(--primary-color, #0275d8);
+            border-left: 0.5px solid var(--primary-color, #0275d8);
+            border-right: 0.5px solid var(--primary-color, #0275d8);
         }
 
         .autocompleteHover:hover {
-            background-color: #3B71CA;
+            background-color: var(--accent-color, #3B71CA);
             cursor: pointer;
         }
 
@@ -69,7 +69,7 @@
         }
     </style>
 
-    <x-mainModal mainModalTitle="rrMainModal" modalDialogClass="modal-xl" modalHeaderTitle="RECEIVING REPORT" modalSubHeaderTitle="All key details related to this receiving transaction.">
+    <x-mainModal mainModalTitle="rrMainModal" modalDialogClass="modal-xl" modalHeaderTitle="<span style='color: var(--primary-color, #1E3C72);'>RECEIVING REPORT</span>" modalSubHeaderTitle="All key details related to this receiving transaction.">
         <x-slot:form_fields>
             {{-- <h2 class="text-center mb-5">Receiving Report</h2> --}}
 

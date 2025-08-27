@@ -179,8 +179,8 @@ $(document).ready(async function () {
       text: "Are you sure you want to proceed with this purchase order? This action cannot be undone.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
+      confirmButtonColor: "var(--primary-color, #3085d6)",
+        cancelButtonColor: "var(--danger-color, #d33)",
       confirmButtonText: "Yes, proceed with the order!",
     }).then(async (result) => {
       if (result.isConfirmed) {
@@ -241,8 +241,8 @@ $(document).ready(async function () {
         text: "You won't be able to revert this!",
         icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
+        confirmButtonColor: "var(--danger-color, #d33)",
+        cancelButtonColor: "var(--primary-color, #3085d6)",
         confirmButtonText: "Yes, delete it!",
       }).then(async (result) => {
         if (result.isConfirmed) {
@@ -1602,7 +1602,7 @@ const POItemsModal = {
             title: "Deleted!",
             text: response.message,
             icon: "success",
-            confirmButtonColor: "#3085d6",
+            confirmButtonColor: "var(--primary-color, #3085d6)",
           });
 
           await datatables.loadItems(selectedMain.PONumber);
@@ -1779,7 +1779,7 @@ const datatables = {
                     $("#dattableDiv").removeClass("opacity-0");
 
                     const tableDiv = $('.dt-layout-row').first();
-                    tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Purchase Order Report</p></div>');
+                    tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F)); color: var(--text-color, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px; font-family: var(--heading-font, Inter, sans-serif); color: #FFF;">Purchase Order Report</p></div>');
                 },
             });
         }
@@ -1827,10 +1827,10 @@ const datatables = {
 
                     return ` <div class="d-flex actIcon">
                                                 <div class="w-50 d-flex justify-content-center itemUpdateIcon">
-                                                    <i class="fa-regular fa-pen-to-square fa-lg text-primary m-auto "></i>
+                                                    <i class="fa-regular fa-pen-to-square fa-lg m-auto" style="color: var(--primary-color, #007bff);"></i>
                                                 </div>
                                                 <div class="w-50 d-flex justify-content-center itemDeleteIcon">
-                                                    <i class="fa-solid fa-trash fa-lg text-danger m-auto"></i>
+                                                    <i class="fa-solid fa-trash fa-lg m-auto" style="color: var(--danger-color, #dc3545);"></i>
                                                 </div>
                                             </div>`;
                     },

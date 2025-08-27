@@ -23,8 +23,8 @@
         }
 
         .secBtns .selected {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
+            background-color: var(--primary-color, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
         }
 
         .secBtns button {
@@ -35,15 +35,15 @@
         }
 
         .secBtns button:hover {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
-            border-top: 0.5px solid #0275d8;
-            border-left: 0.5px solid #0275d8;
-            border-right: 0.5px solid #0275d8;
+            background-color: var(--primary-color, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
+            border-top: 0.5px solid var(--primary-color, #0275d8);
+            border-left: 0.5px solid var(--primary-color, #0275d8);
+            border-right: 0.5px solid var(--primary-color, #0275d8);
         }
 
         .autocompleteHover:hover {
-            background-color: #3B71CA;
+            background-color: var(--primary-color, #3B71CA);
             cursor: pointer;
         }
 
@@ -58,46 +58,54 @@
         .poheaderform .row div div label{
             font-size: 0.53em;
             margin-bottom: 0;
+            font-family: var(--body-font, "Inter", sans-serif);
+            color: var(--text-color, #212529);
         }
 
         .poheaderform .row div div input{
             font-size: 0.68em;
             margin-bottom: 0;
+            font-family: var(--body-font, "Inter", sans-serif);
+            color: var(--text-color, #212529);
         }
 
         .poheaderSectionTitle{
             font-size: 0.68em;
             text-wrap: nowrap;
-            color: #33336F;
+            color: var(--accent-color, #33336F);
             font-weight: 500;
             text-transform: uppercase;
             padding: 0 10px;
+            font-family: var(--heading-font, "Inter", sans-serif);
         }
 
         .pofooterform {
             width: 100%;
             margin-bottom: 1rem;
-            color: #212529;
+            color: var(--text-color, #212529);
             border-collapse: collapse;
             font-size: 0.65em;
+            font-family: var(--body-font, "Inter", sans-serif);
         }
 
         .pofooterform th,
         .pofooterform td {
             padding: 2px 15px;
             vertical-align: top;
-            border-top: 1px solid #dee2e6;
+            border-top: 1px solid var(--secondary-color, #dee2e6);
             height: 35px;
             vertical-align: middle !important;
+            color: var(--text-color, #212529);
         }
 
         .pofooterform thead th {
             vertical-align: bottom;
-            border-bottom: 2px solid #dee2e6;
+            border-bottom: 2px solid var(--secondary-color, #dee2e6);
+            font-family: var(--heading-font, "Inter", sans-serif);
         }
 
         .pofooterform tbody + tbody {
-            border-top: 2px solid #dee2e6;
+            border-top: 2px solid var(--secondary-color, #dee2e6);
         }
 
         .pofooterform tbody tr:hover {
@@ -127,11 +135,38 @@
         #customItemSearchBox{
             margin-right: 0.3em;
             width: auto;
-            background-color: whitesmoke;
+            background-color: var(--background-color, whitesmoke);
             padding: 5px 10px;
-            border: 1px solid #aaa;
+            border: 1px solid var(--secondary-color, #aaa);
             border-radius: 5px;
             font-size: 12px;
+            font-family: var(--body-font, "Inter", sans-serif);
+            color: var(--text-color, #212529);
+        }
+
+        /* Force DataTable headers in modal to be white - Override Material Design */
+        #editXmlDataModal table.dataTable thead th,
+        #editXmlDataModal table.dataTable thead td,
+        #editXmlDataModal .dataTables_wrapper table thead th,
+        #editXmlDataModal .dataTables_wrapper table thead td {
+            color: #FFFFFF !important;
+            background-color: var(--primary-color, #1E3C72) !important;
+        }
+
+        /* Specific targeting for sub-table headers with highest specificity */
+        #editXmlDataModal #itemTables.dataTable thead th,
+        #editXmlDataModal #itemTables.dataTable thead td,
+        #editXmlDataModal div #itemTables thead th,
+        #editXmlDataModal div #itemTables thead td {
+            color: #FFFFFF !important;
+            background-color: var(--primary-color, #1E3C72) !important;
+        }
+
+        /* Override any Material Design DataTable styles */
+        #editXmlDataModal table.mdl-data-table thead th,
+        #editXmlDataModal .mdl-data-table thead th {
+            color: #FFFFFF !important;
+            background-color: var(--primary-color, #1E3C72) !important;
         }
     </style>
 
@@ -157,7 +192,7 @@
 @endsection
 
 @section('modal')
-    <x-mainModal mainModalTitle="editXmlDataModal" modalDialogClass="modal-xl" modalHeaderTitle="PURCHASE ORDER" modalSubHeaderTitle="All key details related to this purchase order.">
+    <x-mainModal mainModalTitle="editXmlDataModal" modalDialogClass="modal-xl" modalHeaderTitle="<span style='color: var(--primary-color, #1E3C72);'>PURCHASE ORDER</span>" modalSubHeaderTitle="All key details related to this purchase order.">
         <x-slot:form_fields>
             <div class="poheaderform">
                 <div id="orderDetailsSection">

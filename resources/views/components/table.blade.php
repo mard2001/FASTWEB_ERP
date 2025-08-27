@@ -2,7 +2,7 @@
     <span class="loader" style="height: 42px; width: 42px"></span>
 </div>
 
-<div class="w-100 opacity-0" id="dattableDiv" style="font-size: 0.68rem; color: #33363d !important">
+<div class="w-100 opacity-0" id="dattableDiv" style="font-size: 0.68rem; color: var(--text-color, #FFF) !important">
     <table class="mdl-data-table w-100 rmvBorder {{$class ?? ""}}" id="{{ $id ?? "getXmlData" }}" >
         <thead>
             <tr>

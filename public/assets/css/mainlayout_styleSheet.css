@@ -1,21 +1,24 @@
 *{
-  font-family: "Inter", sans-serif;
+  font-family: var(--body-font, "Inter", sans-serif);
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
 }
 
+/* Apply heading font to heading elements */
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: var(--heading-font, "Inter", sans-serif) !important;
+}
+
 .mainInnerDiv{
-    background-color: #FDFDFF !important;
+    background-color:#FDFDFF;
     padding: 20px 5px;
     margin-bottom: 20px;
     border-radius: 5px;
-    box-shadow: 10px 10px 10px #dcdee5;
 }
 
 .pageHeaderOuterDiv{
-    background-color: #FDFDFF !important;
-    box-shadow: 10px 10px 10px #dcdee5;
+    background-color: #FDFDFF;
     color: #6C757D;
     padding: 10px 0;
     margin: 10px auto;
@@ -120,7 +123,7 @@
 
 /* INVENTORY MOVEMENT */
 .containerStyle{
-    background-color: #FDFDFF !important;
+    background-color: var(--background-color, #FDFDFF) !important;
     box-shadow: 10px 10px 10px #d3d5de;
     color: #212529;
     padding: 10px 0;
@@ -317,20 +320,20 @@
 #addItems{
     margin: 0 5px;
     font-size: 0.65em;
-    color: #33336F;
+    color: var(--primary-color);
     background-color: transparent;
-    border: 1px solid #33336F;
+    border: 1px solid var(--accent-color);;
     transition: 0.3s ease;
 }
 
 #addItems:hover{
     color: #FFF;
-    background-color: #33336F;
+    background-color: var(--primary-color);
     transition: 0.3s ease;
 }
 
 #itemModalFields .sectionTitle{
-    color: #33336F;
+    color: var(--primary-color, #33336F);
     font-weight: 700;
     text-wrap: nowrap;
     font-size: 0.8em;

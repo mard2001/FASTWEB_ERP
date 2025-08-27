@@ -25,3 +25,6 @@
 
 
 <link rel="stylesheet" href="{{asset('assets/css/vendor/virtual-select.min.css')}}">
+
+{{-- THEMES --}}
+<link rel="stylesheet" href="{{asset('assets/css/themes/themes-index.css')}}">

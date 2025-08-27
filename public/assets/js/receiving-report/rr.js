@@ -178,7 +178,7 @@ const datatables = {
                                 return `
                                     <div style="line-height: 1.4;">
                                         <strong>${data.SupplierCode} </strong><span> ${data.SupplierName}</span><br>
-                                        <small style="color: #555;">${data.CompleteAddress}</small>
+                                        <small style="color: var(--muted-text-color, #555);">${data.CompleteAddress}</small>
                                     </div>
                                 `;
                             }
@@ -231,7 +231,7 @@ const datatables = {
                         $('#dattableDiv').removeClass('opacity-0');
 
                         const tableDiv = $('.dt-layout-row').first();
-                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">List of Receiving Report</p></div>');
+                        tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F)); color: var(--text-color, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px; color: white;">List of Receiving Report</p></div>');
                     }
                 });
             }
@@ -301,8 +301,8 @@ const RRModal = {
                     <td style="border-bottom: 0px !important;"></td>
                     <td class="text-end" style="border-bottom: 0px !important;"></td>
                     <td class="text-end" style="border-bottom: 0px !important;"></td>
-                    <td class="text-end fw-semibold" style="border-bottom: 2px solid #000 !important;">TOTAL:</td>
-                    <td class="text-end" style="border-bottom: 2px solid #000 !important;">${total.toLocaleString('en-US')}</td>
+                    <td class="text-end fw-semibold" style="border-bottom: 2px solid var(--border-color, #000) !important;">TOTAL:</td>
+                    <td class="text-end" style="border-bottom: 2px solid var(--border-color, #000) !important;">${total.toLocaleString('en-US')}</td>
                 </tr>`;
 
             tbody.append(tr); // Append row to table

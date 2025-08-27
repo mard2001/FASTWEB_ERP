@@ -3,7 +3,7 @@
         <div class="modal-content">
             <div class="modal-header py-2" style="border-bottom: none">
                 <div>
-                    <p class="text-nowrap modalHeaderTitle">{{ $modalHeaderTitle }}</p>
+                    <p class="text-nowrap modalHeaderTitle">{!! $modalHeaderTitle !!}</p>
                     <small style="font-size:0.7em; color:#929292;">{{ $modalSubHeaderTitle }}</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

@@ -12,8 +12,8 @@
 @section('table')
 <style>
     .secBtns .selected {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
+        background-color: var(--primary-color, rgba(23, 162, 184, 0.10));
+        border-bottom: 2px solid var(--primary-color, #0275d8);
     }
 
     .secBtns button {
@@ -24,15 +24,15 @@
     }
 
     .secBtns button:hover {
-        background-color: rgba(23, 162, 184, 0.10);
-        border-bottom: 2px solid #0275d8;
-        border-top: 0.5px solid #0275d8;
-        border-left: 0.5px solid #0275d8;
-        border-right: 0.5px solid #0275d8;
+        background-color: var(--primary-color, rgba(23, 162, 184, 0.10));
+        border-bottom: 2px solid var(--primary-color, #0275d8);
+        border-top: 0.5px solid var(--primary-color, #0275d8);
+        border-left: 0.5px solid var(--primary-color, #0275d8);
+        border-right: 0.5px solid var(--primary-color, #0275d8);
     }
 
     .autocompleteHover:hover {
-        background-color: #3B71CA;
+        background-color: var(--primary-color, #3B71CA);
         cursor: pointer;
     }
 
@@ -182,7 +182,7 @@
 
         <div class="d-flex justify-content-between flex-wrap mt-2 fs12">
             <div class="my-sm-2 ResMWidth">
-                <div class="bg-primary p-1 d-flex align-items-center text-white" style="font-size: 14px;">
+                <div class="p-1 d-flex align-items-center text-white" style="font-size: 14px; background-color: var(--primary-color, #007bff);">
                     VENDOR
                 </div>
                 <div id="vendorName" name="vendorName" required class="form-control bg-white p-0 border-0">
@@ -204,7 +204,7 @@
             </div>
 
             <div class="my-sm-2 ResMWidth">
-                <div class="bg-primary p-1 d-flex align-items-center text-white" style="font-size: 14px;">
+                <div class="p-1 d-flex align-items-center text-white" style="font-size: 14px; background-color: var(--primary-color, #007bff);">
                     SHIP TO
                 </div>
 
@@ -233,13 +233,13 @@
 
         <div class="row d-flex flex-wrap mt-1 fs12">
             <div class="col pe-0 text-center text-white">
-                <label for="requisitioner" class="w-100 border-0 bg-primary py-1">REQUISITIONER</label>
+                <label for="requisitioner" class="w-100 border-0 py-1" style="background-color: var(--primary-color, #007bff); color: var(--text-color, #fff);">REQUISITIONER</label>
                 <input type="text" disabled id="requisitioner" name="requisitioner"
                     class="form-control form-control-sm bg-white py-2 rounded-0" required>
 
             </div>
             <div class="col px-0 text-center text-white">
-                <label for="shipVia" class="w-100 border-0 bg-primary py-1">SHIP VIA</label>
+                <label for="shipVia" class="w-100 border-0 py-1" style="background-color: var(--primary-color, #007bff); color: var(--text-color, #fff);">SHIP VIA</label>
 
 
                 <div id="shipVia" name="shipVia" class="form-control bg-white p-0 border-0">
@@ -249,13 +249,13 @@
             </div>
 
             <div class="col px-0 text-center text-white">
-                <label for="fob" class="w-100 border-0 bg-primary py-1">F.O.B.</label>
+                <label for="fob" class="w-100 border-0 py-1" style="background-color: var(--primary-color, #007bff); color: var(--text-color, #fff);">F.O.B.</label>
                 <input type="text" disabled id="fob" name="fob"
                     class="form-control form-control-sm bg-white py-2 rounded-0" required>
             </div>
 
             <div class="col ps-0 text-center text-white">
-                <label for="shippingTerms" class="w-100 border-0 bg-primary py-1 rounded-0">SHIPPING TERMS</label>
+                <label for="shippingTerms" class="w-100 border-0 py-1 rounded-0" style="background-color: var(--primary-color, #007bff); color: var(--text-color, #fff);">SHIPPING TERMS</label>
                 <input type="text" disabled id="shippingTerms" name="shippingTerms"
                     class="form-control form-control-sm bg-white py-2" required>
             </div>
@@ -288,7 +288,7 @@
 
             <!-- <div class="d-flex justify-content-between w-100 h-100 fs12 px-4">
                 <div class="col-7">
-                    <div class="row me-0 w-100 bg-info text-center py-1">
+                    <div class="row me-0 w-100 text-center py-1" style="background-color: var(--info-color, #17a2b8); color: var(--text-color, #fff);">
                         <div class="col text-center">
                             Comments or Special Instructions
                         </div>
@@ -356,7 +356,7 @@
             <table class="table table-bordered fs12">
                 <tbody>
                     <tr>
-                        <td class="col-9 text-center bg-info"> Comments or Special Instructions
+                        <td class="col-9 text-center" style="background-color: var(--info-color, #17a2b8); color: var(--text-color, #fff);"> Comments or Special Instructions
                         </td>
                         <td class="col">SUB TOTAL: </td>
                         <td id="subTotal" class="col text-end"></td>

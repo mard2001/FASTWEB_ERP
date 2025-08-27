@@ -46,6 +46,7 @@ use App\Http\Controllers\api\Salesman\SalespersonController;
 use App\Http\Controllers\api\MasterData\PAMasterListController;
 use App\Http\Controllers\api\Warehouse\WHTaggingController;
 use App\Http\Controllers\api\ActivityLog\ActivityLogController;
+use App\Http\Controllers\api\ThemeController;
 
 
 Route::middleware(['auth:sanctum', DynamicDatabase::class])->group(function () {
@@ -197,8 +198,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/test-ip', [ActivityLogController::class, 'testIpCapture']); // Test route
     });
 
+
+
     Route::post('/testcon', [DynamicSQLHelper::class, 'testConnection']);
     Route::post('/registerConn', [DBConsManager::class, 'saveDbconPassword']);
+
+    // Theme Management routes
+    Route::prefix('themes')->group(function () {
+        Route::get('/', [ThemeController::class, 'index']);
+        Route::post('/', [ThemeController::class, 'store']);
+        Route::get('/{id}', [ThemeController::class, 'show']);
+        Route::put('/{id}', [ThemeController::class, 'update']);
+        Route::delete('/{id}', [ThemeController::class, 'destroy']);
+        Route::post('/{id}/activate', [ThemeController::class, 'activate']);
+        Route::get('/active', [ThemeController::class, 'getActive']);
+        Route::get('/{id}/css', [ThemeController::class, 'getCss']);
+    });
 
 });
 

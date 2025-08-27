@@ -235,6 +235,12 @@ Route::get('/reports/activity-logs', function () {
     return view('Pages.activity-log.activityLog_page');
 })->name('activity-logs');
 
+// THEME MANAGEMENT MODULE - View routes only (data operations handled by API)
+Route::get('/settings/themes', [\App\Http\Controllers\ThemeController::class, 'index'])->name('themes.index');
+Route::get('/settings/themes/create', [\App\Http\Controllers\ThemeController::class, 'create'])->name('themes.create');
+Route::get('/settings/themes/{id}/edit', [\App\Http\Controllers\ThemeController::class, 'edit'])->name('themes.edit');
+// Note: POST, PUT, DELETE operations are now handled by API endpoints in /api/themes
+
 Route::get('/register', function () {
     return page_view('register');
 })->name('register');
