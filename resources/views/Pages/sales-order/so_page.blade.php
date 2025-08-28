@@ -19,8 +19,8 @@
 @section('table')
     <style>
         .secBtns .selected {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
+            background-color: var(--accent-color-light, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
         }
 
         .secBtns button {
@@ -31,15 +31,15 @@
         }
 
         .secBtns button:hover {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
-            border-top: 0.5px solid #0275d8;
-            border-left: 0.5px solid #0275d8;
-            border-right: 0.5px solid #0275d8;
+            background-color: var(--accent-color-light, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
+            border-top: 0.5px solid var(--primary-color, #0275d8);
+            border-left: 0.5px solid var(--primary-color, #0275d8);
+            border-right: 0.5px solid var(--primary-color, #0275d8);
         }
 
         .autocompleteHover:hover {
-            background-color: #3B71CA;
+            background-color: var(--primary-color, #3B71CA);
             cursor: pointer;
         }
 
@@ -56,8 +56,8 @@
         }
 
         .dtDetailssearchLabel{
-            background-color: #33336F;
-            color: #FFF !important;
+            background-color: var(--primary-color, #33336F);
+            color: var(--text-color-light, #FFF) !important;
             font-size: 10.5px !important;
             border-top-left-radius: 5px;
             border-bottom-left-radius: 5px;
@@ -68,9 +68,34 @@
         }
 
         .FilterRES{
-            border: 1px solid #33336F;
+            border: 1px solid var(--primary-color, #33336F);
             border-radius: 5px;
             font-size: 9px;
+        }
+
+        /* Force DataTable headers in modal to be white - Override Material Design */
+        #salesOrderMainModal table.dataTable thead th,
+        #salesOrderMainModal table.dataTable thead td,
+        #salesOrderMainModal .dataTables_wrapper table thead th,
+        #salesOrderMainModal .dataTables_wrapper table thead td {
+            color: #FFFFFF !important;
+            background-color: var(--primary-color, #1E3C72) !important;
+        }
+
+        /* Specific targeting for sub-table headers with highest specificity */
+        #salesOrderMainModal #itemTables.dataTable thead th,
+        #salesOrderMainModal #itemTables.dataTable thead td,
+        #salesOrderMainModal div #itemTables thead th,
+        #salesOrderMainModal div #itemTables thead td {
+            color: #FFFFFF !important;
+            background-color: var(--primary-color, #1E3C72) !important;
+        }
+
+        /* Override any Material Design DataTable styles */
+        #salesOrderMainModal table.mdl-data-table thead th,
+        #salesOrderMainModal .mdl-data-table thead th {
+            color: #FFFFFF !important;
+            background-color: var(--primary-color, #1E3C72) !important;
         }
 
     </style>

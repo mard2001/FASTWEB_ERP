@@ -51,7 +51,7 @@
         }
     </style>
 
-    <x-mainModal mainModalTitle="supplierMainModal" modalDialogClass="modal-lg" modalHeaderTitle="SUPPLIER DETAILS" modalSubHeaderTitle="Key details about this supplier’s identity.">
+    <x-mainModal mainModalTitle="supplierMainModal" modalDialogClass="modal-lg" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>SUPPLIER DETAILS</span>" modalSubHeaderTitle="Key details about this supplier's identity.">
         <x-slot:form_fields>
             <div id="itemModalFields">
                 <div class="row h-100 supplierForm">

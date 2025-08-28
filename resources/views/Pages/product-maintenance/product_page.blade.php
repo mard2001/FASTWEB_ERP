@@ -39,7 +39,7 @@
 @endsection
 
 @section('modal')
-    <x-mainModal mainModalTitle="prodMainModal" modalDialogClass="" modalHeaderTitle="PRODUCT DETAILS" modalSubHeaderTitle="Complete overview of item details for inventory.">
+    <x-mainModal mainModalTitle="prodMainModal" modalDialogClass="" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>PRODUCT DETAILS</span>" modalSubHeaderTitle="Complete overview of item details for inventory.">
         <x-slot:form_fields>
             <div id="itemModalFields">
                 <div class="row h-100">

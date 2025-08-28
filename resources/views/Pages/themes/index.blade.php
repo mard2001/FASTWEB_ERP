@@ -1,6 +1,9 @@
 @extends('Layout.layout')
 
-{{-- @section('html_title', 'Theme Management') --}}
+@section('html_title')
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<title>Themes</title>
+@endsection
 
 @section('table')
 <div class="container-fluid px-4 py-5" style="background-color: var(--background-color)">

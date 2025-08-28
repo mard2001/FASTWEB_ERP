@@ -48,7 +48,7 @@
         }
     </style>
 
-    <x-mainModal mainModalTitle="customerMainModal" modalDialogClass="modal-lg" modalHeaderTitle="CUSTOMER DETAILS" modalSubHeaderTitle="Maintain accurate and up-to-date customer records.">
+    <x-mainModal mainModalTitle="customerMainModal" modalDialogClass="modal-lg" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>CUSTOMER DETAILS</span>" modalSubHeaderTitle="Maintain accurate and up-to-date customer records.">
         <x-slot:form_fields>
             <div class="row h-100" id="itemModalFields">
                 <div class="row" id="">

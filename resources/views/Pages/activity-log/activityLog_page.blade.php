@@ -101,7 +101,7 @@
             white-space: nowrap;
         }
         .clickable-row:hover {
-            background-color: #f8f9fa !important;
+            background-color: var(--hover-bg-color, #f8f9fa) !important;
             transform: scale(1.01);
             transition: all 0.2s ease-in-out;
         }
@@ -153,7 +153,7 @@
 
 @section('modal')
 
-    <x-mainModal mainModalTitle="activityDetailsModal" modalDialogClass="modal-xl" modalHeaderTitle="ACTIVITY DETAILS" modalSubHeaderTitle="All key details related to this activity log entry.">
+    <x-mainModal mainModalTitle="activityDetailsModal" modalDialogClass="modal-xl" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>ACTIVITY DETAILS</span>" modalSubHeaderTitle="All key details related to this activity log entry.">
         <x-slot:form_fields>
             <div id="activityDetailsContent">
                 <!-- Activity details will be loaded here -->

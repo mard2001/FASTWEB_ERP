@@ -132,7 +132,7 @@ const datatables = {
                         $('#dattableDiv').removeClass('opacity-0');
 
                         const tableDiv = $('.dt-layout-row').first();
-                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Inventory Warehouse Report</p></div>');
+                        tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F)); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px; color: white;">Inventory Warehouse Report</p></div>');
                     }
 
                 });

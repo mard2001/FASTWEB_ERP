@@ -50,9 +50,9 @@ body {
     z-index: 1000;
     transition: all .25s ease-in-out;
     background: linear-gradient(135deg,
-    var(--primary-color, #335DA6)  0%,
-    var(--secondary-color, #1E3C72) 20%,
-    var(--accent-color, #33336F) 70%
+    var(--primary-color, #335DA6)  10%,
+    var(--secondary-color, #1E3C72) 40%,
+    var(--accent-color, #33336F) 80%
 );
     display: flex;
     flex-direction: column;

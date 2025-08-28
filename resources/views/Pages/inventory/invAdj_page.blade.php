@@ -12,8 +12,8 @@
 @section('table')
     <style>
         .secBtns .selected {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
+            background-color: var(--primary-color-light, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
         }
 
         .secBtns button {
@@ -24,15 +24,15 @@
         }
 
         .secBtns button:hover {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
-            border-top: 0.5px solid #0275d8;
-            border-left: 0.5px solid #0275d8;
-            border-right: 0.5px solid #0275d8;
+            background-color: var(--primary-color-light, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
+            border-top: 0.5px solid var(--primary-color, #0275d8);
+            border-left: 0.5px solid var(--primary-color, #0275d8);
+            border-right: 0.5px solid var(--primary-color, #0275d8);
         }
 
         .autocompleteHover:hover {
-            background-color: #3B71CA;
+            background-color: var(--primary-color, #3B71CA);
             cursor: pointer;
         }
 
@@ -143,9 +143,33 @@
             /* cursor: pointer; */
         }
 
+        /* Force DataTable headers in modal to be white - Comprehensive override */
+        #stockAdjMainModal table.dataTable thead th,
+        #stockAdjMainModal table.dataTable thead td,
+        #stockAdjMainModal .dataTables_wrapper table thead th,
+        #stockAdjMainModal .dataTables_wrapper table thead td,
+        #stockAdjMainModal #itemTables thead th,
+        #stockAdjMainModal #itemTables thead td,
+        #stockAdjMainModal #itemTables.dataTable thead th,
+        #stockAdjMainModal #itemTables.dataTable thead td,
+        #stockAdjMainModal #itemTables_wrapper thead th,
+        #stockAdjMainModal #itemTables_wrapper thead td,
+        #stockAdjMainModal .dataTables_wrapper thead th,
+        #stockAdjMainModal .mdc-data-table__header-cell,
+        #stockAdjMainModal .dt-layout-table thead th,
+        #stockAdjMainModal div #itemTables thead th,
+        #stockAdjMainModal div #itemTables thead td,
+        #stockAdjMainModal table.mdl-data-table thead th,
+        #stockAdjMainModal .mdl-data-table thead th,
+        #stockAdjMainModal .dataTable thead th,
+        #stockAdjMainModal .dataTable thead td {
+            color: #FFFFFF !important;
+            background-color: var(--primary-color, #1E3C72) !important;
+        }
+
     </style>
 
-    <x-mainModal mainModalTitle="stockAdjMainModal" modalDialogClass="modal-lg" modalHeaderTitle="STOCK ADJUSTMENT" modalSubHeaderTitle="Apply stock corrections to maintain inventory accuracy.">
+    <x-mainModal mainModalTitle="stockAdjMainModal" modalDialogClass="modal-lg" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>STOCK ADJUSTMENT</span>" modalSubHeaderTitle="Apply stock corrections to maintain inventory accuracy.">
         <x-slot:form_fields>
             <div class="sAdjheaderform">
                 <div class="row">

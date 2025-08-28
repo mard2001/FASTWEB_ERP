@@ -29,7 +29,7 @@
 @endsection
 
 @section('modal')
-    <x-mainModal mainModalTitle="warehouseMainModal" modalDialogClass="" modalHeaderTitle="WAREHOUSE DETAILS" modalSubHeaderTitle="Manage warehouse data including codes, addresses, and storage status.">
+    <x-mainModal mainModalTitle="warehouseMainModal" modalDialogClass="" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>WAREHOUSE DETAILS</span>" modalSubHeaderTitle="Manage warehouse data including codes, addresses, and storage status.">
         <x-slot:form_fields>
             <div id="itemModalFields">
                 <div class="row h-100 warehouseForm">

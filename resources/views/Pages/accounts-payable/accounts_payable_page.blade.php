@@ -15,14 +15,14 @@
     <div class="d-flex">
         <div class="mb-1 whMoverangeDiv">
             <label for="daterange" class="form-label">DATE RANGE</label>
-            <div id="dateRange" style="background: #fff; cursor: pointer; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 0.375rem; width: 100%">
+            <div id="dateRange" style="background: var(--background-color, #fff); cursor: pointer; padding: 8px 12px; border: 1px solid var(--border-color, #ced4da); border-radius: 0.375rem; width: 100%">
                 <i class="fa fa-calendar"></i>&nbsp;
                 <span></span> <i class="mdi mdi-chevron-down float-end"></i>
             </div>
         </div>
         <div class="mb-1 whMoverangeDiv">
             <label class="form-label">BRANCH</label>
-            <div id="dateRange" style="background: #fff; cursor: pointer; padding: 8px 12px; border-radius: 0.375rem; width: 100%">
+            <div id="dateRange" style="background: var(--background-color, #fff); cursor: pointer; padding: 8px 12px; border-radius: 0.375rem; width: 100%">
                 <input type="text" id="branchFilter" placeholder="Enter branch name">
             </div>
         </div>
@@ -99,7 +99,7 @@
             white-space: nowrap;
         }
         .clickable-row:hover {
-            background-color: #f8f9fa !important;
+            background-color: var(--hover-color, #f8f9fa) !important;
             transform: scale(1.01);
             transition: all 0.2s ease-in-out;
         }
@@ -109,8 +109,8 @@
         
         /* Status styling */
         .status-outstanding {
-            background-color: #dc3545;
-            color: white;
+            background-color: var(--danger-color, #dc3545);
+            color: var(--text-color-light, white);
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 0.875rem;
@@ -118,8 +118,8 @@
         }
         
         .status-settled {
-            background-color: #28a745;
-            color: white;
+            background-color: var(--success-color, #28a745);
+            color: var(--text-color-light, white);
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 0.875rem;
@@ -127,8 +127,8 @@
         }
         
         .status-credit {
-            background-color: #007bff;
-            color: white;
+            background-color: var(--info-color, #007bff);
+            color: var(--text-color-light, white);
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 0.875rem;
@@ -137,18 +137,24 @@
         
         /* Amount styling */
         .amount-positive {
-            color: #28a745;
+            color: var(--success-color, #28a745);
             font-weight: 600;
         }
         
         .amount-negative {
-            color: #dc3545;
+            color: var(--danger-color, #dc3545);
             font-weight: 600;
         }
         
         .amount-zero {
-            color: #6c757d;
+            color: var(--muted-color, #6c757d);
             font-weight: 500;
+        }
+        /* Modal header styling for ACCOUNTS PAYABLE RECORD */
+        #accountsPayableModal .modalHeaderTitle {
+            color: var(--primary-color) !important;
+            font-weight: bold !important;
+            font-size: 1.25rem !important;
         }
     </style>
 

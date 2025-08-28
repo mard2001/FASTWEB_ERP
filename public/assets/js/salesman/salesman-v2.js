@@ -74,8 +74,8 @@ $(document).ready(async function () {
                 text: "You won't be able to revert this!",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonColor: "#3085d6",
+                confirmButtonColor: "var(--danger-color, #d33)",
+                cancelButtonColor: "var(--primary-color, #3085d6)",
                 confirmButtonText: "Yes, delete it!"
             }).then(async (result) => {
                 if (result.isConfirmed) {
@@ -352,7 +352,7 @@ const datatables = {
                         $('#dattableDiv').removeClass('opacity-0');
 
                         const tableDiv = $('.dt-layout-row').first();
-                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">List of Salesman</p></div>');
+                        tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F) ); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">List of Salesman</p></div>');
                     }
                 });
 

@@ -26,7 +26,7 @@
 @endsection
 
 @section('modal')
-    <x-mainModal mainModalTitle="salespersonMainModal" modalDialogClass="" modalHeaderTitle="SALESMAN DETAILS" modalSubHeaderTitle="Relevant information about this sales agent.">
+    <x-mainModal mainModalTitle="salespersonMainModal" modalDialogClass="" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>SALESMAN DETAILS</span>" modalSubHeaderTitle="Relevant information about this sales agent.">
         <x-slot:form_fields>
             <div id="itemModalFields">
                 <div class="row h-100">

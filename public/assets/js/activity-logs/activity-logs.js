@@ -108,7 +108,7 @@ $(document).ready(function() {
                             title: 'User',
                             render: function (data, type, row) {
                                 if (!data || data === null || data === undefined) {
-                                    return '<span style="font-size:10px; color:#808080;">System</span>';
+                                    return '<span style="font-size:10px; color:var(--text-color-muted, #808080);">System</span>';
                                 }
                                 return `<span class="fw-bold">${data}</span>`;
                             }
@@ -191,7 +191,7 @@ $(document).ready(function() {
                                             return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
                                         }
                                     }
-                                    return '<span style="font-size:10px; color:#808080;">Activity</span>';
+                                    return '<span style="font-size:10px; color:var(--text-color-muted, #808080);">Activity</span>';
                                 }
                                 const badgeClass = getActivityBadgeClass(data);
                                 return `<span class="${badgeClass}">${capitalizeFirst(data)}</span>`;
@@ -233,7 +233,7 @@ $(document).ready(function() {
                                 if (!data && row.log_name === 'warehouse') {
                                     return 'Warehouses';
                                 }
-                                if (!data) return '<span style="font-size:10px; color:#808080;">---</span>';
+                                if (!data) return '<span style="font-size:10px; color:var(--text-color-muted, #808080);">---</span>';
                                 return getModuleName(data);
                             }
                         },
@@ -241,7 +241,7 @@ $(document).ready(function() {
                             data: 'description', 
                             title: 'Description',
                             render: function (data, type, row) {
-                                if (!data) return '<span style="font-size:10px; color:#808080;">---</span>';
+                                if (!data) return '<span style="font-size:10px; color:var(--text-color-muted, #808080);">---</span>';
                                 if (data.length > 50) {
                                     return data.substring(0, 50) + '...';
                                 }
@@ -321,7 +321,7 @@ $(document).ready(function() {
                         $('#dattableDiv').removeClass('opacity-0');
 
                         const tableDiv = $('.dt-layout-row').first();
-                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Activity Log Report</p></div>');
+                        tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F) ); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Activity Log Report</p></div>');
                     }
                 });
             }

@@ -12,8 +12,8 @@
 @section('table')
     <style>
         .secBtns .selected {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
+            background-color: var(--primary-color-light, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
         }
 
         .secBtns button {
@@ -24,15 +24,15 @@
         }
 
         .secBtns button:hover {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
-            border-top: 0.5px solid #0275d8;
-            border-left: 0.5px solid #0275d8;
-            border-right: 0.5px solid #0275d8;
+            background-color: var(--primary-color-light, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
+            border-top: 0.5px solid var(--primary-color, #0275d8);
+            border-left: 0.5px solid var(--primary-color, #0275d8);
+            border-right: 0.5px solid var(--primary-color, #0275d8);
         }
 
         .autocompleteHover:hover {
-            background-color: #3B71CA;
+            background-color: var(--primary-color, #3B71CA);
             cursor: pointer;
         }
 
@@ -49,8 +49,8 @@
         }
 
         .dtDetailssearchLabel{
-            background-color: #33336F;
-            color: #FFF !important;
+            background-color: var(--secondary-color, #33336F);
+            color: var(--text-color-light, #FFF) !important;
             font-size: 10.5px !important;
             border-top-left-radius: 5px;
             border-bottom-left-radius: 5px;
@@ -104,7 +104,7 @@
         }
     </style>
 
-    <x-mainModal mainModalTitle="invCountMainModal" modalDialogClass="modal-lg" modalHeaderTitle="INVENTORY COUNT" modalSubHeaderTitle="Track discrepancies between recorded and actual stock levels.">
+    <x-mainModal mainModalTitle="invCountMainModal" modalDialogClass="modal-lg" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>INVENTORY COUNT</span>" modalSubHeaderTitle="Track discrepancies between recorded and actual stock levels.">
         <x-slot:form_fields>
             <div id="itemModalFields" class="stheaderform">
                 <div class="row">

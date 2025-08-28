@@ -151,17 +151,17 @@ const datatables = {
                                 if(data.trim() != "" && row.MovementType != "S"){
                                     if(row.TrnType == "T"){
                                         if(row.NewWarehouse == " "){
-                                            result = `<span style="color:#22bb33">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                            result = `<span style="color:var(--success-color, #22bb33)">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                         } else{
-                                            result = `<span style="color:#df3639">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                            result = `<span style="color:var(--danger-color, #df3639)">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                         }
                                     } else if(row.TrnType == "A"){
-                                        result = `<span style="color:#076aff">${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                        result = `<span style="color:var(--info-color, #076aff)">${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                     } else{
-                                        result = `<span style="color:#22bb33">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                        result = `<span style="color:var(--success-color, #22bb33)">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                     }
                                 } else{
-                                    result = `<span style="color:#df3639">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                    result = `<span style="color:var(--danger-color, #df3639)">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                 }
                                 return result;
                             }
@@ -184,24 +184,24 @@ const datatables = {
                         { data: 'Reference',  title: 'Reference',
                             render: function (data, type, row){
                                 // return (data.trim() !== "" && row.MovementType == "I")? data : "<span style='font-size:10px;color:#808080;'>n/a</span>";
-                                return (data.trim() !== "" && row.MovementType == "I")? data : '<span style="font-size:10px; color:#808080;">---</span>';
+                                return (data.trim() !== "" && row.MovementType == "I")? data : '<span style="font-size:10px; color:var(--muted-color, #808080);">---</span>';
 
                             }
                         },
                         { data: 'SalesOrder',  title: 'SO Number',
                             render: function (data, type, row){
-                                return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:#808080">---</span>';
+                                return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
                             }
                         },
                         { data: 'CustomerPoNumber',  title: 'PO Number'},
                         { data: 'Customer',  title: 'Customer',
                             render: function (data, type, row){
-                                return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:#808080">---</span>';
+                                return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
                             }
                         },
                         { data: 'salesmandetails',  title: 'Salesperson',
                             render: function (data, type, row){
-                                return (data != null && row.MovementType == "S")? data.Name : '<span style="font-size:10px; color:#808080">---</span>';
+                                return (data != null && row.MovementType == "S")? data.Name : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
                             }
                         },
 
@@ -240,7 +240,7 @@ const datatables = {
                         $('#dattableDiv').removeClass('opacity-0');
 
                         const tableDiv = $('.dt-layout-row').first();
-                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Inventory Movement</p></div>');
+                        tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F) ); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px; color: white;">Inventory Movement</p></div>');
                     }
 
                 });

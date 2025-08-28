@@ -62,7 +62,7 @@ const dataTableCustomBtn = `<div class="main-content buttons w-100 overflow-auto
                                 </div>
                             </div>`;
 const dataTableFilter = `<div class="FilterBtnDiv">
-                            <button type="button" id="filterBtn" class="btn FilterRES" style="font-size: 0.9em; border:1px solid #ddd;">
+                            <button type="button" id="filterBtn" class="btn FilterRES" style="font-size: 0.9em; border:1px solid var(--border-color, #ddd);">
                                 <span class="mdi mdi-filter-variant"></span> Filter
                             </button>
                         </div>`;
@@ -580,15 +580,15 @@ const datatables = {
                                 let text = '';
 
                                 switch (row.OrderStatus	) {
-                                    case '1': color = '#f39c12'; backgroundColor = '#fde3a7'; text = 'Open Order'; break;
-                                    case '2': color = '#f39c12'; backgroundColor = '#fde3a7'; text = 'Open Back Order'; break;
-                                    case '3': color = '#f1c40f'; backgroundColor = '#fdf5c7'; text = 'Released Back Order'; break;
-                                    case '4': color = '#3498db'; backgroundColor = '#d6eaf8'; text = 'In Warehouse'; break;
-                                    case '8': color = '#9b59b6'; backgroundColor = '#e8daef'; text = 'To Invoice'; break;
-                                    case 'F': color = '#1abc9c'; backgroundColor = '#d1f2eb'; text = 'Forward Order'; break;
-                                    case 'S': color = '#e74c3c'; backgroundColor = '#fadbd8'; text = 'In Suspense'; break;
-                                    case '9': color = '#28a745'; backgroundColor = '#d4edda'; text = 'Complete'; break;
-                                    default: color = '#808080'; backgroundColor = '#f0f0f0'; text = 'Unknown';
+                                    case '1': color = 'var(--warning-color, #f39c12)'; backgroundColor = 'var(--warning-bg, #fde3a7)'; text = 'Open Order'; break;
+                                    case '2': color = 'var(--warning-color, #f39c12)'; backgroundColor = 'var(--warning-bg, #fde3a7)'; text = 'Open Back Order'; break;
+                                    case '3': color = 'var(--warning-color, #f1c40f)'; backgroundColor = 'var(--warning-bg, #fdf5c7)'; text = 'Released Back Order'; break;
+                                    case '4': color = 'var(--info-color, #3498db)'; backgroundColor = 'var(--info-bg, #d6eaf8)'; text = 'In Warehouse'; break;
+                                    case '8': color = 'var(--secondary-color, #9b59b6)'; backgroundColor = 'var(--secondary-bg, #e8daef)'; text = 'To Invoice'; break;
+                                    case 'F': color = 'var(--success-color, #1abc9c)'; backgroundColor = 'var(--success-bg, #d1f2eb)'; text = 'Forward Order'; break;
+                                    case 'S': color = 'var(--danger-color, #e74c3c)'; backgroundColor = 'var(--danger-bg, #fadbd8)'; text = 'In Suspense'; break;
+                                    case '9': color = 'var(--success-color, #28a745)'; backgroundColor = 'var(--success-bg, #d4edda)'; text = 'Complete'; break;
+                                    default: color = 'var(--muted-color, #808080)'; backgroundColor = 'var(--muted-bg, #f0f0f0)'; text = 'Unknown';
                                 }
 
                                 var bardgeStatus = `<span class="statusbadge" style="color: ${color}; background-color: ${backgroundColor};" border: 1px solid ${color}">${text}</span>`;
@@ -653,7 +653,7 @@ const datatables = {
                         $('#dattableDiv').removeClass('opacity-0');
                         // $('#soTable thead tr td .dt-column-title').css('white-space','nowrap !important');
                         const tableDiv = $('.dt-layout-row').first();
-                        tableDiv.after('<div style="background: linear-gradient(to right, #1b438f, #33336F ); color: #FFF; margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Sales Order Report</p></div>');
+                        tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F)); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px; color: white;">Sales Order Report</p></div>');
                     }
                 });
             }

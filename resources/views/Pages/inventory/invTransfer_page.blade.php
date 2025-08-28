@@ -12,8 +12,8 @@
 @section('table')
     <style>
         .secBtns .selected {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
+            background-color: var(--primary-color-light, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
         }
 
         .secBtns button {
@@ -24,15 +24,15 @@
         }
 
         .secBtns button:hover {
-            background-color: rgba(23, 162, 184, 0.10);
-            border-bottom: 2px solid #0275d8;
-            border-top: 0.5px solid #0275d8;
-            border-left: 0.5px solid #0275d8;
-            border-right: 0.5px solid #0275d8;
+            background-color: var(--primary-color-light, rgba(23, 162, 184, 0.10));
+            border-bottom: 2px solid var(--primary-color, #0275d8);
+            border-top: 0.5px solid var(--primary-color, #0275d8);
+            border-left: 0.5px solid var(--primary-color, #0275d8);
+            border-right: 0.5px solid var(--primary-color, #0275d8);
         }
 
         .autocompleteHover:hover {
-            background-color: #3B71CA;
+            background-color: var(--primary-color, #3B71CA);
             cursor: pointer;
         }
 
@@ -136,9 +136,29 @@
             /* cursor: pointer; */
         }
 
+        /* Stock Transfer Modal Subtable Column Headers - Force white text */
+        #stockTransferMainModal table.dataTable thead th,
+        #stockTransferMainModal table.dataTable thead td,
+        #stockTransferMainModal .dataTables_wrapper table thead th,
+        #stockTransferMainModal .dataTables_wrapper table thead td,
+        #stockTransferMainModal #itemTables thead th,
+        #stockTransferMainModal #itemTables thead td,
+        #stockTransferMainModal #itemTables_wrapper thead th,
+        #stockTransferMainModal #itemTables_wrapper thead td,
+        #stockTransferMainModal .dataTables_wrapper thead th,
+        #stockTransferMainModal .mdc-data-table__header-cell,
+        #stockTransferMainModal .dt-layout-table thead th,
+        #stockTransferMainModal div #itemTables thead th,
+        #stockTransferMainModal div #itemTables thead td,
+        #stockTransferMainModal table.mdl-data-table thead th,
+        #stockTransferMainModal .mdl-data-table thead th {
+            color: #FFFFFF !important;
+            background-color: var(--primary-color, #1E3C72) !important;
+        }
+
     </style>
 
-    <x-mainModal mainModalTitle="stockTransferMainModal" modalDialogClass="modal-lg" modalHeaderTitle="STOCK TRANSFER" modalSubHeaderTitle="Record and track internal stock transfers across your warehouses.">
+    <x-mainModal mainModalTitle="stockTransferMainModal" modalDialogClass="modal-lg" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>STOCK TRANSFER</span>" modalSubHeaderTitle="Record and track internal stock transfers across your warehouses.">
         <x-slot:form_fields>
             <div class="stheaderform">
                 <div class="row">

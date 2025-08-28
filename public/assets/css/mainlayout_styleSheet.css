@@ -123,8 +123,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 
 /* INVENTORY MOVEMENT */
 .containerStyle{
-    background-color: var(--background-color, #FDFDFF) !important;
-    box-shadow: 10px 10px 10px #d3d5de;
+    background-color: white !important;
     color: #212529;
     padding: 10px 0;
     margin: 5px auto 5px auto;
