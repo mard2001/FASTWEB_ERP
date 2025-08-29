@@ -5,7 +5,7 @@
     .setup {
         text-align: center;
         float: left;
-        background: linear-gradient(to right, red 50%, white 50%);
+        background: linear-gradient(to right, var(--danger-color, red) 50%, var(--background-color, white) 50%);
         /* Initial gradient */
         background-size: 300% 100%;
         background-position: right bottom;
@@ -37,12 +37,12 @@
     }
 
     .SetupColor {
-        color: #33336F;
+        color: var(--text-color, #33336F);
         font-weight: bold;
     }
 
     .inputShadow {
-        box-shadow: 4px 4px 4px 0px #33336F4D inset;
+        box-shadow: 4px 4px 4px 0px var(--secondary-color-alpha, #33336F4D) inset;
 
     }
 
@@ -76,7 +76,7 @@
 
     .iconWall {
         width: 200px;
-        background-color: #33336F;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         display: flex;
         justify-content: center;
         align-items: center;
@@ -90,7 +90,7 @@
 @endsection
 
 @section('title_header')
-<x-header title="Database Settings" />
+<x-header title="Database Settings"/>
 @endsection
 
 @section('content')
@@ -224,7 +224,7 @@
                 <svg id="conTestBtn" class="d-none" width="150" height="100%" viewBox="0 0 208 55" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
                     <rect x="25" y="9" width="183" height="35" rx="3" fill="url(#paint0_linear_340_77)" />
                     <g filter="url(#filter0_i_340_77)">
-                        <ellipse cx="28" cy="27.1765" rx="28" ry="27.1765" fill="#33336F" />
+                        <ellipse cx="28" cy="27.1765" rx="28" ry="27.1765" fill="var(--secondary-color, #33336F)" />
                     </g>
                     <path d="M55.5 27.1765C55.5 41.8955 43.202 53.8529 28 53.8529C12.798 53.8529 0.5 41.8955 0.5 27.1765C0.5 12.4574 12.798 0.5 28 0.5C43.202 0.5 55.5 12.4574 55.5 27.1765Z" stroke="white" />
                     <rect x="13" y="12" width="30" height="30" fill="url(#pattern0_340_77)" />
@@ -244,7 +244,7 @@
                             <use xlink:href="#image0_340_77" transform="scale(0.00390625)" />
                         </pattern>
                         <linearGradient id="paint0_linear_340_77" x1="25" y1="26.5" x2="208" y2="26.5" gradientUnits="userSpaceOnUse">
-                            <stop offset="0.761" stop-color="#33336F" />
+                            <stop offset="0.761" stop-color="var(--secondary-color, #33336F)" />
                         </linearGradient>
                         <image id="image0_340_77" width="256" height="256" xlink:href="data:image/png;base64,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" />
                     </defs>
