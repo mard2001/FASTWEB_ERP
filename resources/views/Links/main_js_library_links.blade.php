@@ -18,6 +18,9 @@
 <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.1/dist/js.cookie.min.js"></script>
 
+{{-- VIRTUAL SELECT --}}
+<script src="https://unpkg.com/virtual-select-plugin@1.0.44/dist/virtual-select.min.js"></script>
+
 
 <script src="{{ asset('assets/js/mainJS.js') }}"></script>
 

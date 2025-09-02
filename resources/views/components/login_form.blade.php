@@ -20,7 +20,12 @@
                     class="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-blue-500 focus:border-blue-500"
                     oninput="this.value = this.value.replace(/[^0-9]/g, '')"> <!-- JavaScript to allow only numbers -->
             </div>
-            <p class="text-sm text-gray-600 !mb-6 ml-1" style="font-size: 11px">Do not have an account yet? <a href="/register" class="text-blue-500 hover:underline">Register now!</a></p>
+            @if(session('message'))
+                <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                    {{ session('message') }}
+                </div>
+            @endif
+            <p class="text-sm text-gray-600 !mb-6 ml-1" style="font-size: 11px">Need an account? Contact your administrator for access.</p>
             <div class="text-right">
                 <button
                     id="loginBtn"

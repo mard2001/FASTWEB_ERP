@@ -215,13 +215,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/css', [ThemeController::class, 'getCss']);
     });
 
+    // User Management routes - Restricted to developer, super_admin, and admin only
+    Route::prefix('users')->middleware('role:developer,super_admin,admin')->group(function () {
+        Route::get('/', [\App\Http\Controllers\api\UserController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\api\UserController::class, 'store']);
+        Route::get('/statistics', [\App\Http\Controllers\api\UserController::class, 'statistics']);
+        Route::get('/{id}', [\App\Http\Controllers\api\UserController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\api\UserController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\api\UserController::class, 'destroy']);
+    });
+
 });
 
 // Accounts Payable API Routes
 Route::get('accounts-payable/summary', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'summary']);
 Route::apiResource('accounts-payable', \App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class);
 
-Route::post('/auth/register', [AuthController::class, 'register']);
+// Route::post('/auth/register', [AuthController::class, 'register']); // Disabled - Registration handled by admin through user management
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('/auth/force-logout', [AuthController::class, 'forceLogout']); // No auth required

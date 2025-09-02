@@ -238,11 +238,16 @@ Route::get('/reports/activity-logs', function () {
 // THEME MANAGEMENT MODULE - View routes only (data operations handled by API)
 Route::get('/settings/themes', [\App\Http\Controllers\ThemeController::class, 'index'])->name('themes.index');
 Route::get('/settings/themes/create', [\App\Http\Controllers\ThemeController::class, 'create'])->name('themes.create');
+
+// USER MANAGEMENT MODULE - Restricted to developer, super_admin, and admin only
+Route::get('/settings/users', function () {
+    return page_view('user-management/users_page');
+})->name('users')->middleware('role:developer,super_admin,admin');
 Route::get('/settings/themes/{id}/edit', [\App\Http\Controllers\ThemeController::class, 'edit'])->name('themes.edit');
 // Note: POST, PUT, DELETE operations are now handled by API endpoints in /api/themes
 
 Route::get('/register', function () {
-    return page_view('register');
+    return redirect()->route('login')->with('message', 'Registration is now handled by administrators. Please contact your admin for account creation.');
 })->name('register');
 
 Route::get('/uploader', function () {

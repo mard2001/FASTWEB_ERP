@@ -164,6 +164,14 @@
                             <span class="ms-2 px-1">Themes</span>
                         </a>
                     </li>
+                    @if(auth()->check() && (auth()->user()->user_type === 'developer' || auth()->user()->user_type === 'super_admin' || auth()->user()->user_type === 'admin'))
+                    <li class="">
+                        <a href="{{ route('users') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Users</span>
+                        </a>
+                    </li>
+                    @endif
                 </div>
             </ul>
         </li>
