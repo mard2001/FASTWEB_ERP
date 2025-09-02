@@ -26,6 +26,20 @@ class AuthController extends Controller
             return response()->json(['response' => 'Account invalid']);
         }
 
+        // Check if user account is active
+        if (!$user->isActive()) {
+            $message = 'Your account has been deactivated';
+            if ($user->deactivation_reason) {
+                $message .= '. Reason: ' . $user->deactivation_reason;
+            }
+            $message .= '. Please contact your administrator for assistance.';
+            
+            return response()->json([
+                'response' => $message,
+                'status' => 'deactivated'
+            ], 403);
+        }
+
         $token = $user->createToken($user->token . 'Auth-Token')->plainTextToken;
 
         // Fire the Login event for event listeners

@@ -26,7 +26,7 @@ function page_view($view)
 
 Route::get('/pamasterlist', function () {
     return page_view('pamasterlist_page');
-})->name('pamasterlist');
+})->name('pamasterlist')->middleware('check.user.status');
 
 
 
@@ -41,26 +41,26 @@ Route::get('/', function () {
 
 Route::get('/settings/dbconfig', function () {
     return page_view('dbconfig_page');
-})->name('dbconfig');
+})->name('dbconfig')->middleware('check.user.status');
 
 Route::get('/picklist', function () {
     return page_view('picklist_page');
-})->name('picklist');
+})->name('picklist')->middleware('check.user.status');
 
 Route::get('/testpage', function () {
     return page_view('inventory_test');
-})->name('dbconfigtest');
+})->name('dbconfigtest')->middleware('check.user.status');
 
 
 Route::get('/patarget', function () {
     return page_view('patarget_page');
-})->name('patarget');
+})->name('patarget')->middleware('check.user.status');
 
 
 
 Route::get('/invoices', function () {
     return page_view('invoices_page');
-})->name('invoices');
+})->name('invoices')->middleware('check.user.status');
 
 
 
@@ -70,26 +70,26 @@ Route::get('/invoices', function () {
 // LAYOUT
 Route::get('/layout', function () {
     return page_view('layout');
-})->name('layout');
+})->name('layout')->middleware('check.user.status');
 
 
 // CUSTOMER MAINTENANCE MODULE
 Route::get('/master-data/customer', function () {
     // return page_view('customer_page');
     return page_view('customer-maintenance/cust_page');
-})->name('customer');
+})->name('customer')->middleware('check.user.status');
 
 
 // INVENTORY MAINTENANCE MODULE
 Route::get('/inventory/stock-count', function () {
     return page_view('inventory-maintenance/invCount_page');
-})->name('stockcount');
+})->name('stockcount')->middleware('check.user.status');
 
 Route::get('/countsheet', function () {
     return page_view('invCount_page');
-})->name('countsheet');
+})->name('countsheet')->middleware('check.user.status');
 
-Route::get('/print/countsheet/manual', [CountController::class, 'printManualPage'])->name('printManualPage');
+Route::get('/print/countsheet/manual', [CountController::class, 'printManualPage'])->name('printManualPage')->middleware('check.user.status');
 
 Route::get('/print/countsheet/testing', function () {
     $data = [
@@ -122,19 +122,19 @@ Route::get('/print/countsheet/testing', function () {
 // INVENTORY WAREHOUSE MODULE
 Route::get('/inventory/warehouse', function () {
     return page_view('inventory/invWarehouse_page');
-})->name('invWarehouse');
+})->name('invWarehouse')->middleware('check.user.status');
 Route::get('/inventory/movement/product', function () {
     return page_view('inventory/invMovements_page');
-})->name('invMovements');
+})->name('invMovements')->middleware('check.user.status');
 Route::get('/inventory/movement/warehouse', function () {
     return page_view('inventory/invWarehouseMovements_page');
-})->name('invWarehouseMovements');
+})->name('invWarehouseMovements')->middleware('check.user.status');
 Route::get('/inventory/stock-transfer', function () {
     return page_view('inventory/invTransfer_page');
-})->name('invStockTransfer');
+})->name('invStockTransfer')->middleware('check.user.status');
 Route::get('/inventory/stock-adjustment', function () {
     return page_view('inventory/invAdj_page');
-})->name('stockadjustment');
+})->name('stockadjustment')->middleware('check.user.status');
 
 
 
@@ -142,22 +142,22 @@ Route::get('/inventory/stock-adjustment', function () {
 // PRODUCT MAINTENANCE MODULE
 Route::get('/master-data/product', function () {
     return page_view('product-maintenance/product_page');
-})->name('product');
+})->name('product')->middleware('check.user.status');
 
 
 // PURCHASE ORDER
 Route::get('/transactions/purchase-order', function () {
     return page_view('purchase-order/purchase_order_page');
-})->name('purchase-order');
+})->name('purchase-order')->middleware('check.user.status');
 
 
 // RECEIVING REPORT MODULE
 Route::get('/transactions/receiving-report', function () {
     return page_view('receiving-report/receiving_report_page');
-})->name('receiving-report');
+})->name('receiving-report')->middleware('check.user.status');
 
-Route::get('/print/rr/', [RRController::class, 'printPage'])->name('web.print');
-Route::get('/print/ap/', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'printPage'])->name('web.print.ap');
+Route::get('/print/rr/', [RRController::class, 'printPage'])->name('web.print')->middleware('check.user.status');
+Route::get('/print/ap/', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'printPage'])->name('web.print.ap')->middleware('check.user.status');
 
 Route::get('/print/rr/testing', function () {
     $data = [
@@ -205,45 +205,45 @@ Route::get('/print/rr/testing', function () {
 Route::get('/master-data/salesman', function () {
     // return page_view('salesman_page');
     return page_view('salesman/salesperson_page');
-})->name('salesman');
+})->name('salesman')->middleware('check.user.status');
 
 
 // SALES ORDER MODULE
 Route::get('/transactions/sales-order', function () {
     return page_view('sales-order/so_page');
-})->name('sales-order');
+})->name('sales-order')->middleware('check.user.status');
 
 // ACCOUNTS PAYABLE MODULE
 Route::get('/transactions/accounts-payable', function () {
     return page_view('accounts-payable/accounts_payable_page');
-})->name('accounts-payable');
+})->name('accounts-payable')->middleware('check.user.status');
 
 
 // SUPPLIER MAINTENANCE MODULE
 Route::get('/master-data/supplier', function () {
     return page_view('supplier-maintenance/supplier_page');
-})->name('supplier');
+})->name('supplier')->middleware('check.user.status');
 
 
 // WAREHOUSE MAINTENANCE MODULE
 Route::get('/master-data/warehouse', function () {
     return page_view('warehouse/warehouse_page');
-})->name('warehouse');
+})->name('warehouse')->middleware('check.user.status');
 
 // ACTIVITY LOGS MODULE - Restricted to developers only
 Route::get('/reports/activity-logs', function () {
     return view('Pages.activity-log.activityLog_page');
-})->name('activity-logs')->middleware('role:developer');
+})->name('activity-logs')->middleware(['check.user.status', 'role:developer']);
 
 // THEME MANAGEMENT MODULE - View routes only (data operations handled by API)
-Route::get('/settings/themes', [\App\Http\Controllers\ThemeController::class, 'index'])->name('themes.index');
-Route::get('/settings/themes/create', [\App\Http\Controllers\ThemeController::class, 'create'])->name('themes.create');
+Route::get('/settings/themes', [\App\Http\Controllers\ThemeController::class, 'index'])->name('themes.index')->middleware('check.user.status');
+Route::get('/settings/themes/create', [\App\Http\Controllers\ThemeController::class, 'create'])->name('themes.create')->middleware('check.user.status');
 
 // USER MANAGEMENT MODULE - Restricted to developer, super_admin, and admin only
 Route::get('/settings/users', function () {
     return page_view('user-management/users_page');
-})->name('users')->middleware('role:developer,super_admin,admin');
-Route::get('/settings/themes/{id}/edit', [\App\Http\Controllers\ThemeController::class, 'edit'])->name('themes.edit');
+})->name('users')->middleware(['check.user.status', 'role:developer,super_admin,admin']);
+Route::get('/settings/themes/{id}/edit', [\App\Http\Controllers\ThemeController::class, 'edit'])->name('themes.edit')->middleware('check.user.status');
 // Note: POST, PUT, DELETE operations are now handled by API endpoints in /api/themes
 
 Route::get('/register', function () {
@@ -252,15 +252,19 @@ Route::get('/register', function () {
 
 Route::get('/uploader', function () {
     return page_view('uploader_page');
-})->name('uploader');
+})->name('uploader')->middleware('check.user.status');
 
 Route::get('/login', function () {
     return page_view('login');
 })->name('login');
 
+Route::get('/account-deactivated', function () {
+    return page_view('account-deactivated');
+})->name('account.deactivated');
+
 Route::get('/transactions/print', function () {
     return page_view('PurchaseOrder-PDF');
-})->name('print');
+})->name('print')->middleware('check.user.status');
 
 
 

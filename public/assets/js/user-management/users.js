@@ -280,7 +280,7 @@ function loadUsersData() {
 
 function updateDashboardStats() {
     const totalUsers = usersData.length;
-    const activeUsers = usersData.filter(user => user.email_verified_at !== null).length;
+    const activeUsers = usersData.filter(user => user.status === 1 || user.status === true).length;
     
     // Calculate new users this month
     const currentMonth = new Date().getMonth();
@@ -330,23 +330,24 @@ function populateUsersTable() {
                     }
                 },
                 { 
-                    data: 'created_at', 
-                    title: 'CREATED AT',
+                    data: 'status_text', 
+                    title: 'STATUS',
                     render: function(data, type, row) {
-                        return formatDateTime(data);
+                        const statusClass = row.status ? 'bg-success' : 'bg-danger';
+                        return `<span class="badge ${statusClass}">${data}</span>`;
                     }
                 },
                 { 
-                    data: 'updated_at', 
-                    title: 'UPDATED AT',
+                    data: 'created_at', 
+                    title: 'CREATED AT',
                     render: function(data, type, row) {
                         return formatDateTime(data);
                     }
                 }
             ],
             columnDefs: [
-                { className: "text-center", targets: [0, 4] },
-                { className: "text-start", targets: [1, 2, 3, 5, 6] },
+                { className: "text-center", targets: [0, 4, 5] },
+                { className: "text-start", targets: [1, 2, 3, 6] },
                 { className: "text-nowrap", targets: '_all' }
             ],
             scrollCollapse: true,
@@ -677,6 +678,9 @@ const UserModal = {
         const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
         const currentUserType = currentUser.user_type || 'user';
         
+        // Remove existing activation/deactivation buttons if they exist
+        $('#activateBtn, #deactivateBtn').remove();
+        
         // Hide edit and delete buttons if current user is admin
         if (currentUserType === 'admin') {
             $('#deleteBtn').hide();
@@ -686,6 +690,24 @@ const UserModal = {
             $('#saveEdit').show();
             $('#saveEdit').text('Edit details').removeClass('btn-primary').addClass('btn-info');
             $('#deleteBtn').text('Delete');
+        }
+        
+        // Only show activation/deactivation buttons for developers
+        if (currentUserType === 'developer') {
+            const modalFooter = $('.modal-footer');
+            if (userData.status) {
+                // User is active, show deactivate button
+                const deactivateBtn = `<button type="button" id="deactivateBtn" class="btn btn-outline-danger" onclick="deactivateUserFromModal(${userData.id})">
+                    <i class="mdi mdi-account-off"></i> Deactivate User
+                </button>`;
+                modalFooter.prepend(deactivateBtn);
+            } else {
+                // User is inactive, show activate button
+                const activateBtn = `<button type="button" id="activateBtn" class="btn btn-outline-success" onclick="activateUserFromModal(${userData.id})">
+                <i class="mdi mdi-account-check"></i> Activate User
+            </button>`;
+            modalFooter.prepend(activateBtn);
+        }
         }
         
         UserModal.enable(false);
@@ -727,4 +749,231 @@ function formatDateTime(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+// User Activation/Deactivation Functions
+function activateUser(userId) {
+    const token = localStorage.getItem('api_token');
+    
+    Swal.fire({
+        title: 'Activate User',
+        text: 'Are you sure you want to activate this user?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, activate!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: `/api/users/${userId}/activate`,
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                success: function(response) {
+                    if (response.response_stat === 1) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'User has been activated successfully!',
+                            icon: 'success'
+                        }).then(() => {
+                            loadUsersData();
+                        });
+                    } else {
+                        Swal.fire('Error', response.message || 'Failed to activate user', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error activating user:', xhr.responseText || error);
+                    handleAjaxError(xhr, 'Failed to activate user');
+                }
+            });
+        }
+    });
+}
+
+function activateUserFromModal(userId) {
+    const token = localStorage.getItem('api_token');
+    
+    Swal.fire({
+        title: 'Activate User',
+        text: 'Are you sure you want to activate this user?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, activate!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: `/api/users/${userId}/activate`,
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                success: function(response) {
+                    if (response.response_stat === 1) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'User has been activated successfully!',
+                            icon: 'success'
+                        }).then(() => {
+                            loadUsersData();
+                            UserModal.hide();
+                        });
+                    } else {
+                        Swal.fire('Error', response.message || 'Failed to activate user', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error activating user:', xhr.responseText || error);
+                    handleAjaxError(xhr, 'Failed to activate user');
+                }
+            });
+        }
+    });
+}
+
+function deactivateUser(userId) {
+    showDeactivationModal(userId, false);
+}
+
+function showDeactivationModal(userId, isFromModal = false) {
+    // Create modal HTML
+    const modalHtml = `
+        <div class="modal fade" id="deactivationModal" tabindex="-1" aria-labelledby="deactivationModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deactivationModalLabel">
+                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>Deactivate User
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3">Are you sure you want to deactivate this user?</p>
+                        <div class="mb-3">
+                            <label for="deactivationReason" class="form-label">Reason for deactivation <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="deactivationReason" rows="4" placeholder="Enter reason for deactivation..." required></textarea>
+                            <div class="invalid-feedback">Please provide a reason for deactivation.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeactivation">Yes, deactivate!</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    $('#deactivationModal').remove();
+    
+    // Add modal to body
+    $('body').append(modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('deactivationModal'));
+    modal.show();
+    
+    // Focus textarea after modal is shown
+    $('#deactivationModal').on('shown.bs.modal', function() {
+        $('#deactivationReason').focus();
+    });
+    
+    // Handle confirm button click
+    $('#confirmDeactivation').on('click', function() {
+        const reason = $('#deactivationReason').val().trim();
+        const reasonField = $('#deactivationReason');
+        
+        // Validate reason
+        if (!reason) {
+            reasonField.addClass('is-invalid');
+            return;
+        }
+        
+        reasonField.removeClass('is-invalid');
+        
+        // Disable button and show loading
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Deactivating...');
+        
+        const token = localStorage.getItem('api_token');
+        
+        $.ajax({
+            url: `/api/users/${userId}/deactivate`,
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({
+                reason: reason
+            }),
+            success: function(response) {
+                if (response.response_stat === 1) {
+                    modal.hide();
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'User has been deactivated successfully!',
+                        icon: 'success'
+                    }).then(() => {
+                        loadUsersData();
+                        if (isFromModal) {
+                            UserModal.hide();
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', response.message || 'Failed to deactivate user', 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error deactivating user:', xhr.responseText || error);
+                handleAjaxError(xhr, 'Failed to deactivate user');
+            },
+            complete: function() {
+                $('#confirmDeactivation').prop('disabled', false).html('Yes, deactivate!');
+            }
+        });
+    });
+    
+    // Clean up modal when hidden
+    $('#deactivationModal').on('hidden.bs.modal', function() {
+        $(this).remove();
+    });
+}
+
+function deactivateUserFromModal(userId) {
+    showDeactivationModal(userId, true);
+}
+
+function handleAjaxError(xhr, defaultMessage) {
+    if (xhr.status === 401) {
+        Swal.fire({
+            title: 'Session Expired',
+            text: 'Your session has expired. Please log in again.',
+            icon: 'warning',
+            confirmButtonText: 'Go to Login'
+        }).then(() => {
+            localStorage.removeItem('api_token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        });
+    } else if (xhr.status === 403) {
+        const errorMessage = xhr.responseJSON?.message || 'You do not have permission to perform this action.';
+        Swal.fire({
+            title: 'Access Denied',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    } else {
+        const errorMessage = xhr.responseJSON?.message || xhr.responseText || defaultMessage;
+        Swal.fire('Error', errorMessage, 'error');
+    }
 }

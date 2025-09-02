@@ -87,7 +87,18 @@
                     errorMessage = xhr.responseText;
                 }
                 
-                alert(errorMessage);
+                // Check if it's a deactivated account
+                if (xhr.status === 403 && xhr.responseJSON && xhr.responseJSON.status === 'deactivated') {
+                    // Redirect to account deactivated page with details
+                    const params = new URLSearchParams({
+                        mobile: xhr.responseJSON.mobile || '',
+                        reason: xhr.responseJSON.deactivation_reason || 'No reason provided',
+                        date: xhr.responseJSON.deactivation_date || ''
+                    });
+                    window.location.href = globalApi + 'account-deactivated?' + params.toString();
+                } else {
+                    alert(errorMessage);
+                }
             },
             complete: function() {
                 // Reset button state
@@ -192,6 +203,18 @@
                         let errorMessage = 'OTP verification failed';
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        // Check if it's a deactivated account
+                        if (xhr.status === 403 && xhr.responseJSON && xhr.responseJSON.status === 'deactivated') {
+                            // Redirect to account deactivated page with details
+                            const params = new URLSearchParams({
+                                mobile: xhr.responseJSON.mobile || '',
+                                reason: xhr.responseJSON.deactivation_reason || 'No reason provided',
+                                date: xhr.responseJSON.deactivation_date || ''
+                            });
+                            window.location.href = globalApi + 'account-deactivated?' + params.toString();
+                            return;
                         }
                         
                         alert(errorMessage);

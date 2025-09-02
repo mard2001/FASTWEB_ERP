@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\RoleHelper;
 
 class UserController extends Controller
 {
@@ -31,7 +32,9 @@ class UserController extends Controller
                     'email_verified' => $user->email_verified_at ? 'Verified' : 'Not Verified',
                     'created_at' => $user->created_at ? $user->created_at->format('Y-m-d H:i:s') : null,
                     'updated_at' => $user->updated_at ? $user->updated_at->format('Y-m-d H:i:s') : null,
-                    'status' => $user->email_verified_at ? 'Active' : 'Pending'
+                    'status' => $user->status ?? 1,
+                    'status_text' => ($user->status ?? 1) ? 'Active' : 'Deactivated',
+                    'deactivation_reason' => $user->deactivation_reason
                 ];
             });
 
@@ -306,6 +309,145 @@ class UserController extends Controller
             return response()->json([
                 'response' => 'Error fetching statistics',
                 'status_response' => 0
+            ], 500);
+        }
+    }
+
+    /**
+     * Activate a user account.
+     */
+    public function activate(Request $request, $id)
+    {
+        try {
+            // Check if current user is a developer
+            $currentUser = $request->user();
+            if (!$currentUser || $currentUser->user_type !== 'developer') {
+                return response()->json([
+                    'response_stat' => 0,
+                    'message' => 'Access denied. Only developers can activate user accounts.'
+                ], 403);
+            }
+            
+            $user = User::findOrFail($id);
+            
+            if ($user->isActive()) {
+                return response()->json([
+                    'response_stat' => 0,
+                    'message' => 'User is already active'
+                ], 400);
+            }
+
+            $user->activate();
+
+            // Log activation activity
+            activity('user_management')
+                ->causedBy($request->user())
+                ->performedOn($user)
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'activated_by' => $request->user()->name ?? 'System'
+                ])
+                ->log("activated user account for {$user->name}");
+
+            return response()->json([
+                'response_stat' => 1,
+                'message' => 'User activated successfully',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'status' => $user->status,
+                    'status_text' => 'Active',
+                    'deactivation_reason' => null
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error activating user: ' . $e->getMessage());
+            return response()->json([
+                'response_stat' => 0,
+                'message' => 'An error occurred during user activation.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Deactivate a user account.
+     */
+    public function deactivate(Request $request, $id)
+    {
+        // Check if current user is a developer
+        $currentUser = $request->user();
+        if (!$currentUser || $currentUser->user_type !== 'developer') {
+            return response()->json([
+                'response_stat' => 0,
+                'message' => 'Access denied. Only developers can deactivate user accounts.'
+            ], 403);
+        }
+        
+        $validator = Validator::make($request->all(), [
+            'reason' => 'required|string|max:255'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'response_stat' => 0,
+                'message' => 'Deactivation reason is required',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = User::findOrFail($id);
+            
+            if (!$user->isActive()) {
+                return response()->json([
+                    'response_stat' => 0,
+                    'message' => 'User is already deactivated'
+                ], 400);
+            }
+
+            // Prevent self-deactivation
+            if ($user->id === $request->user()->id) {
+                return response()->json([
+                    'response_stat' => 0,
+                    'message' => 'You cannot deactivate your own account'
+                ], 400);
+            }
+
+            $user->deactivate($request->reason);
+
+            // Log deactivation activity
+            activity('user_management')
+                ->causedBy($request->user())
+                ->performedOn($user)
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'deactivated_by' => $request->user()->name ?? 'System',
+                    'reason' => $request->reason
+                ])
+                ->log("deactivated user account for {$user->name}");
+
+            return response()->json([
+                'response_stat' => 1,
+                'message' => 'User deactivated successfully',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'status' => $user->status,
+                    'status_text' => 'Deactivated',
+                    'deactivation_reason' => $user->deactivation_reason
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error deactivating user: ' . $e->getMessage());
+            return response()->json([
+                'response_stat' => 0,
+                'message' => 'An error occurred during user deactivation.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

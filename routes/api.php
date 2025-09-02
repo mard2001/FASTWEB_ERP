@@ -49,7 +49,7 @@ use App\Http\Controllers\api\ActivityLog\ActivityLogController;
 use App\Http\Controllers\api\ThemeController;
 
 
-Route::middleware(['auth:sanctum', DynamicDatabase::class])->group(function () {
+Route::middleware(['auth:sanctum', 'check.user.status', DynamicDatabase::class])->group(function () {
 
     Route::post('/upload-po-pdf', [PDFUploaderController::class, 'store']);
 
@@ -91,11 +91,11 @@ Route::middleware(['auth:sanctum', DynamicDatabase::class])->group(function () {
 });
 
 Route::post('/redirect', [RRController::class, 'setRRNum']);
-Route::post('/redirect-ap', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'setAPNum'])->middleware('auth:sanctum');
+Route::post('/redirect-ap', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'setAPNum'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::post('/setCNTHeader', [CountController::class, 'setCNTHeader']);
 Route::get('/remCNTHeader', [CountController::class, 'remCNTHeader']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
     Route::prefix('orders')->group(function () {
         Route::apiResource('/po', POController::class);
         Route::post('/po-filter', [POController::class, 'filterPOByStatus']);
@@ -223,18 +223,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [\App\Http\Controllers\api\UserController::class, 'show']);
         Route::put('/{id}', [\App\Http\Controllers\api\UserController::class, 'update']);
         Route::delete('/{id}', [\App\Http\Controllers\api\UserController::class, 'destroy']);
+        Route::post('/{id}/activate', [\App\Http\Controllers\api\UserController::class, 'activate']);
+        Route::post('/{id}/deactivate', [\App\Http\Controllers\api\UserController::class, 'deactivate']);
     });
 
 });
 
 // Accounts Payable API Routes
-Route::get('accounts-payable/summary', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'summary']);
-Route::apiResource('accounts-payable', \App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class);
+Route::get('accounts-payable/summary', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'summary'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::apiResource('accounts-payable', \App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class)->middleware(['auth:sanctum', 'check.user.status']);
 
 // Route::post('/auth/register', [AuthController::class, 'register']); // Disabled - Registration handled by admin through user management
 Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::post('/auth/force-logout', [AuthController::class, 'forceLogout']); // No auth required
 Route::post('/sendOTP', [OtpController::class, 'generateAndSend']);
 Route::post('/verifyOTP', [OtpController::class, 'verifyOtp']);
-Route::get('transactions/api/print/po/{poid}', [POController::class, 'generatePDF']);
+Route::get('transactions/api/print/po/{poid}', [POController::class, 'generatePDF'])->middleware(['auth:sanctum', 'check.user.status']);

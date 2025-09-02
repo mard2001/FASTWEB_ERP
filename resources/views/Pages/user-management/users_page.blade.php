@@ -98,7 +98,7 @@
 @section('modal')
 <x-form_modal>
     <x-slot:form_fields>
-        <div class="p-4 space-y-4">
+        <div class="p-1">
             <div class="row">
                 <div class="col-md-6">
                     <label for="firstName" class="form-label text-sm font-medium text-gray-700">First Name</label>

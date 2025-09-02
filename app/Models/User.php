@@ -24,7 +24,9 @@ class User extends Authenticatable
         'email',
         'password',
         'mobile',
-        'user_type'
+        'user_type',
+        'status',
+        'deactivation_reason'
     ];
 
     /**
@@ -44,6 +46,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'status' => 'integer',
     ];
 
     /**
@@ -85,8 +88,56 @@ class User extends Authenticatable
             'deleted' => "deleted user account for {$this->name}",
             'login' => "logged into the system",
             'logout' => "logged out of the system",
+            'activated' => "activated user account for {$this->name}",
+            'deactivated' => "deactivated user account for {$this->name}",
         ];
 
         return $descriptions[$eventName] ?? "{$eventName} user {$this->name}";
+    }
+
+    /**
+     * Scope a query to only include active users.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 1);
+    }
+
+    /**
+     * Scope a query to only include inactive users.
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('status', 0);
+    }
+
+    /**
+     * Check if user is active.
+     */
+    public function isActive()
+    {
+        return $this->status == 1;
+    }
+
+    /**
+     * Activate the user.
+     */
+    public function activate()
+    {
+        $this->update([
+            'status' => 1,
+            'deactivation_reason' => null
+        ]);
+    }
+
+    /**
+     * Deactivate the user.
+     */
+    public function deactivate($reason = null)
+    {
+        $this->update([
+            'status' => 0,
+            'deactivation_reason' => $reason
+        ]);
     }
 }

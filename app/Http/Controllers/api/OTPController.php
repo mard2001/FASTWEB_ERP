@@ -33,6 +33,24 @@ class OtpController
 
         // Find the user
         $user = User::where('mobile', $request->mobile)->first();
+        
+        // Check if user account is active before sending OTP
+        if (!$user->isActive()) {
+            $message = 'Your account has been deactivated';
+            if ($user->deactivation_reason) {
+                $message .= '. Reason: ' . $user->deactivation_reason;
+            }
+            $message .= '. Please contact your administrator for assistance.';
+            
+            return response()->json([
+                'message' => $message,
+                'success' => false,
+                'status' => 'deactivated',
+                'mobile' => $user->mobile,
+                'deactivation_reason' => $user->deactivation_reason,
+                'deactivation_date' => $user->updated_at
+            ], 403);
+        }
 
         //delete expired otps
         Otp::where('otp_expires_at', '<', now())->delete();
@@ -101,6 +119,24 @@ class OtpController
                 'message' => 'Invalid or expired OTP.',
                 'success' => false
             ]);
+        }
+
+        // Check if user account is active
+        if (!$user->isActive()) {
+            $message = 'Your account has been deactivated';
+            if ($user->deactivation_reason) {
+                $message .= '. Reason: ' . $user->deactivation_reason;
+            }
+            $message .= '. Please contact your administrator for assistance.';
+            
+            return response()->json([
+                'message' => $message,
+                'success' => false,
+                'status' => 'deactivated',
+                'mobile' => $user->mobile,
+                'deactivation_reason' => $user->deactivation_reason,
+                'deactivation_date' => $user->updated_at
+            ], 403);
         }
 
         Auth::guard('web')->login($user);
