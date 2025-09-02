@@ -25,6 +25,17 @@
             <input type="email" id="email" name="email" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
         </div>
 
+        <div>
+            <label for="user_type" class="block text-sm font-medium text-gray-700">User Type</label>
+            <select id="user_type" name="user_type" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select User Type</option>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
+                <option value="developer">Developer</option>
+            </select>
+        </div>
+
         <div class="flex items-start mb-6">
             <div class="flex items-center h-5"><input required="" id="terms" aria-describedby="terms" name="terms" type="checkbox" class="w-4 h-4 bg-gray-50 rounded border-gray-300 focus:ring-3 focus:ring-blue-300 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"></div>
             <div class="ml-3 text-sm"><label for="terms" class="font-medium text-gray-900 dark:text-black">I accept the<a class="ml-1 text-blue-700 dark:text-blue-500 hover:underline" href="/terms-and-conditions/">Terms and Conditions</a></label></div>

@@ -152,7 +152,7 @@
                             <span class="ms-2 px-1">Database Connection</span>
                         </a>
                     </li>
-                    <li class="">
+                    <li class="" id="activity-logs-menu" style="display: none;">
                         <a href="{{ route('activity-logs') }}" class="sidebar-link">
                             <span class="mdi mdi-ray-start-arrow"></span>
                             <span class="ms-2 px-1">Activity Logs</span>
@@ -390,5 +390,38 @@
         </li>
     </ul>
 </aside> --}}
+
+<script>
+// Role-based navigation visibility
+document.addEventListener('DOMContentLoaded', function() {
+    // Get user data from localStorage
+    const retrievedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const userType = retrievedUser.user_type || 'user';
+    
+    // Define role-based menu visibility
+    const menuPermissions = {
+        'activity-logs-menu': ['developer'], // Only developers can see Activity Logs
+        // Add more menu items and their allowed roles here
+        // 'admin-panel-menu': ['admin', 'super_admin'],
+        // 'developer-tools-menu': ['developer', 'super_admin'],
+    };
+    
+    // Show/hide menu items based on user role
+    Object.keys(menuPermissions).forEach(menuId => {
+        const menuElement = document.getElementById(menuId);
+        if (menuElement) {
+            const allowedRoles = menuPermissions[menuId];
+            if (allowedRoles.includes(userType)) {
+                menuElement.style.display = 'block';
+            } else {
+                menuElement.style.display = 'none';
+            }
+        }
+    });
+    
+    // Optional: Log current user type for debugging
+    console.log('Current user type:', userType);
+});
+</script>
 
 

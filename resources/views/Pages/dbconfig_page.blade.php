@@ -472,7 +472,7 @@
             $('input[name="contact"]').val(contactValue);
             
             $('input[name="email"]').val(retrievedUser.email || '');
-            $('input[name="account"]').val('Administrator');
+            $('input[name="account"]').val(retrievedUser.user_type || 'user');
         }
     }
 

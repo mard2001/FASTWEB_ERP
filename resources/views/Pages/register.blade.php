@@ -22,12 +22,14 @@
             var lnameReq = validateField('lname');
             var emailReq = validateField('email');
             var mobileReq = validateField('mobile');
+            var userTypeReq = validateField('user_type');
 
-            if (fnameReq && lnameReq && emailReq && mobileReq) {
+            if (fnameReq && lnameReq && emailReq && mobileReq && userTypeReq) {
                 var regData = {
                     "name": $('#fname').val().trim() + ' ' + $('#lname').val().trim(),
                     "email": $('#email').val().trim(),
                     "mobile": $('#mobile').val().trim(),
+                    "user_type": $('#user_type').val(),
                 }
 
                 Swal.fire({

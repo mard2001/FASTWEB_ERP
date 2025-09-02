@@ -118,7 +118,8 @@ class OtpController
             'token' => $token,
             'user' =>  [
                 'name' => $user->name,
-                'email' => $user->email
+                'email' => $user->email,
+                'user_type' => $user->user_type
             ],
             'success' => true
         ])->cookie(

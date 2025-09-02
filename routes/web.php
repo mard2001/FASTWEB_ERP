@@ -230,10 +230,10 @@ Route::get('/master-data/warehouse', function () {
     return page_view('warehouse/warehouse_page');
 })->name('warehouse');
 
-// ACTIVITY LOGS MODULE
+// ACTIVITY LOGS MODULE - Restricted to developers only
 Route::get('/reports/activity-logs', function () {
     return view('Pages.activity-log.activityLog_page');
-})->name('activity-logs');
+})->name('activity-logs')->middleware('role:developer');
 
 // THEME MANAGEMENT MODULE - View routes only (data operations handled by API)
 Route::get('/settings/themes', [\App\Http\Controllers\ThemeController::class, 'index'])->name('themes.index');

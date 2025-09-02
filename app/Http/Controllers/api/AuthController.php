@@ -176,6 +176,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'mobile' => 'required|unique:users|string|min:10|max:10',
             'email' => 'required|email|string|max:255|unique:users,email',
+            'user_type' => 'required|string|in:user,admin,super_admin,developer',
         ]);
     
         if ($validator->fails()) {
@@ -194,7 +195,7 @@ class AuthController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'mobile' => '0' . $request->mobile,
-                'user_type' => 'user',
+                'user_type' => $request->user_type,
                 'password' => Hash::make('admin123')
             ]);
 
