@@ -203,8 +203,8 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
     Route::post('/testcon', [DynamicSQLHelper::class, 'testConnection']);
     Route::post('/registerConn', [DBConsManager::class, 'saveDbconPassword']);
 
-    // Theme Management routes
-    Route::prefix('themes')->group(function () {
+    // Theme Management routes - Restricted to developer, super_admin, and admin only
+    Route::prefix('themes')->middleware('role:developer,super_admin,admin')->group(function () {
         Route::get('/', [ThemeController::class, 'index']);
         Route::post('/', [ThemeController::class, 'store']);
         Route::get('/{id}', [ThemeController::class, 'show']);

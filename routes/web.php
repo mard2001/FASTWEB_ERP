@@ -235,15 +235,15 @@ Route::get('/reports/activity-logs', function () {
     return view('Pages.activity-log.activityLog_page');
 })->name('activity-logs')->middleware(['check.user.status', 'role:developer']);
 
-// THEME MANAGEMENT MODULE - View routes only (data operations handled by API)
-Route::get('/settings/themes', [\App\Http\Controllers\ThemeController::class, 'index'])->name('themes.index')->middleware('check.user.status');
-Route::get('/settings/themes/create', [\App\Http\Controllers\ThemeController::class, 'create'])->name('themes.create')->middleware('check.user.status');
+// THEME MANAGEMENT MODULE - Restricted to developer, super_admin, and admin only
+Route::get('/settings/themes', [\App\Http\Controllers\ThemeController::class, 'index'])->name('themes.index')->middleware(['check.user.status', 'role:developer,super_admin,admin']);
+Route::get('/settings/themes/create', [\App\Http\Controllers\ThemeController::class, 'create'])->name('themes.create')->middleware(['check.user.status', 'role:developer,super_admin,admin']);
+Route::get('/settings/themes/{id}/edit', [\App\Http\Controllers\ThemeController::class, 'edit'])->name('themes.edit')->middleware(['check.user.status', 'role:developer,super_admin,admin']);
 
 // USER MANAGEMENT MODULE - Restricted to developer, super_admin, and admin only
 Route::get('/settings/users', function () {
     return page_view('user-management/users_page');
 })->name('users')->middleware(['check.user.status', 'role:developer,super_admin,admin']);
-Route::get('/settings/themes/{id}/edit', [\App\Http\Controllers\ThemeController::class, 'edit'])->name('themes.edit')->middleware('check.user.status');
 // Note: POST, PUT, DELETE operations are now handled by API endpoints in /api/themes
 
 Route::get('/register', function () {

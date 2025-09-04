@@ -42,7 +42,7 @@
 
 <body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen flex items-center justify-center px-3">
     
-    <div class="transition-all duration-500 ease-in-out max-w-auto h-auto min-w-[30%] bg-white shadow-lg rounded-lg moving-shadow">
+    <div class="transition-all duration-500 ease-in-out max-w-md w-full h-auto bg-white shadow-lg rounded-lg moving-shadow">
         @yield('content')
     </div>
 </body>

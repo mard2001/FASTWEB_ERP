@@ -14,16 +14,27 @@ $(document).ready(function() {
 });
 
 function initializeUserManagement() {
+    // Get current user role to determine available options
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUserType = currentUser.user_type || 'user';
+    
+    // Build user type options based on current user role
+    const userTypeOptions = [
+        { label: 'All Types', value: '' },
+        { label: 'User', value: 'user' },
+        { label: 'Admin', value: 'admin' },
+        { label: 'Super Admin', value: 'super_admin' }
+    ];
+    
+    // Only show Developer option to developer users
+    if (currentUserType === 'developer') {
+        userTypeOptions.push({ label: 'Developer', value: 'developer' });
+    }
+    
     // Initialize VirtualSelect for filters
     VirtualSelect.init({
         ele: '#userType_VS',
-        options: [
-            { label: 'All Types', value: '' },
-            { label: 'User', value: 'user' },
-            { label: 'Admin', value: 'admin' },
-            { label: 'Super Admin', value: 'super_admin' },
-            { label: 'Developer', value: 'developer' }
-        ],
+        options: userTypeOptions,
         placeholder: 'Select User Type'
     });
 
@@ -36,6 +47,9 @@ function initializeUserManagement() {
         ],
         placeholder: 'Select Status'
     });
+
+    // Initialize form user type dropdown based on current user role
+    initializeFormUserTypeDropdown();
 
     // Generate initial password
     generatePassword();
@@ -131,6 +145,9 @@ function editUser(userId) {
     
     currentEditingUser = user;
     
+    // Initialize form dropdown first to ensure all options are available
+    initializeFormUserTypeDropdown();
+    
     // Split name into first and last name
     const nameParts = user.name.split(' ');
     const firstName = nameParts[0] || '';
@@ -143,11 +160,27 @@ function editUser(userId) {
     $('#mobile').val(user.mobile);
     $('#userType').val(user.user_type);
     
-    // Change button text for editing
-    $('#saveEdit').text('Update User');
+    // Get current user role to determine if user type should be editable
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUserType = currentUser.user_type || 'user';
     
-    // Show modal
-    $('#editXmlDataModal').modal('show');
+    // Disable user type dropdown for non-developer accounts
+    if (currentUserType !== 'developer') {
+        $('#userType').prop('disabled', true);
+    } else {
+        $('#userType').prop('disabled', false);
+    }
+    
+    // Show delete button and configure save button for edit mode
+    $('#deleteBtn').show();
+    $('#activateBtn, #deactivateBtn').remove();
+    
+    // Change button text for editing
+    $('#saveEdit').text('Update User').removeClass('btn-primary').addClass('btn-info');
+    $('#saveEdit').show();
+    
+    // Show modal with validation clearing
+    UserModal.show();
 }
 
 // Delete user function
@@ -172,6 +205,8 @@ function deleteUser(userId) {
     }
     
     // Remove the duplicate confirmation dialog - it's already handled in the button click handler
+    showLoadingAnimation('Deleting user...');
+    
     $.ajax({
                 url: `/api/users/${userId}`,
                 method: 'DELETE',
@@ -180,6 +215,7 @@ function deleteUser(userId) {
                     'Content-Type': 'application/json'
                 },
                 success: function(response) {
+                    hideLoadingAnimation();
                     if (response.response_stat === 1) {
                         Swal.fire('Deleted!', 'User has been deleted.', 'success');
                         $('#editXmlDataModal').modal('hide');
@@ -190,6 +226,7 @@ function deleteUser(userId) {
                     }
                 },
                 error: function(xhr, status, error) {
+                    hideLoadingAnimation();
                     console.error('Error deleting user:', xhr.responseText || error);
                     
                     if (xhr.status === 401) {
@@ -242,6 +279,15 @@ function loadUsersData() {
         success: function(response) {
             if (response.status_response === 1) {
                 usersData = response.response;
+                
+                // Filter out developer accounts if current user is not a developer
+                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const currentUserType = currentUser.user_type || 'user';
+                
+                if (currentUserType !== 'developer') {
+                    usersData = usersData.filter(user => user.user_type !== 'developer');
+                }
+                
                 filteredUsers = [...usersData];
                 updateDashboardStats();
                 populateUsersTable();
@@ -299,53 +345,71 @@ function populateUsersTable() {
     if (usersTable) {
         usersTable.clear().draw();
         usersTable.rows.add(filteredUsers).draw();
+        
+        // Update column visibility based on current user role
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const currentUserType = currentUser.user_type || 'user';
+        
+        // Show/hide status column based on user role
+        usersTable.column(5).visible(currentUserType === 'developer');
     } else {
+        // Get current user role to determine initial column visibility
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const currentUserType = currentUser.user_type || 'user';
+        
+        // Define all columns upfront - status column will be hidden/shown via API
+        const columns = [
+            { data: 'id', title: 'ID' },
+            { data: 'name', title: 'NAME' },
+            { data: 'email', title: 'EMAIL' },
+            { 
+                data: 'mobile', 
+                title: 'MOBILE',
+                render: function(data, type, row) {
+                    // Remove leading '0' if present before adding country code
+                    const mobileNumber = data.startsWith('0') ? data.substring(1) : data;
+                    return `+63${mobileNumber}`;
+                }
+            },
+            { 
+                data: 'user_type', 
+                title: 'USER TYPE',
+                render: function(data, type, row) {
+                    const userTypeClass = {
+                        'user': 'bg-primary',
+                        'admin': 'bg-info',
+                        'super_admin': 'bg-danger',
+                        'developer': 'bg-dark'
+                    }[data] || 'bg-secondary';
+                    return `<span class="badge ${userTypeClass}">${data.replace('_', ' ').toUpperCase()}</span>`;
+                }
+            },
+            { 
+                data: 'status_text', 
+                title: 'STATUS',
+                visible: currentUserType === 'developer', // Set initial visibility
+                render: function(data, type, row) {
+                    const statusClass = row.status ? 'bg-success' : 'bg-danger';
+                    return `<span class="badge ${statusClass}">${data}</span>`;
+                }
+            },
+            {
+                data: 'created_at', 
+                title: 'CREATED AT',
+                render: function(data, type, row) {
+                    return formatDateTime(data);
+                }
+            }
+        ];
+        
         usersTable = $('#getXmlData').DataTable({
             data: filteredUsers,
             language: {
                 searchPlaceholder: "Search users..."
             },
-            columns: [
-                { data: 'id', title: 'ID' },
-                { data: 'name', title: 'NAME' },
-                { data: 'email', title: 'EMAIL' },
-                { 
-                    data: 'mobile', 
-                    title: 'MOBILE',
-                    render: function(data, type, row) {
-                        return `+63${data}`;
-                    }
-                },
-                { 
-                    data: 'user_type', 
-                    title: 'USER TYPE',
-                    render: function(data, type, row) {
-                        const userTypeClass = {
-                            'user': 'bg-primary',
-                            'admin': 'bg-info',
-                            'super_admin': 'bg-danger',
-                            'developer': 'bg-dark'
-                        }[data] || 'bg-secondary';
-                        return `<span class="badge ${userTypeClass}">${data.replace('_', ' ').toUpperCase()}</span>`;
-                    }
-                },
-                { 
-                    data: 'status_text', 
-                    title: 'STATUS',
-                    render: function(data, type, row) {
-                        const statusClass = row.status ? 'bg-success' : 'bg-danger';
-                        return `<span class="badge ${statusClass}">${data}</span>`;
-                    }
-                },
-                { 
-                    data: 'created_at', 
-                    title: 'CREATED AT',
-                    render: function(data, type, row) {
-                        return formatDateTime(data);
-                    }
-                }
-            ],
+            columns: columns,
             columnDefs: [
+                // Fixed column definitions - status column (5) may be hidden
                 { className: "text-center", targets: [0, 4, 5] },
                 { className: "text-start", targets: [1, 2, 3, 6] },
                 { className: "text-nowrap", targets: '_all' }
@@ -353,29 +417,54 @@ function populateUsersTable() {
             scrollCollapse: true,
             scrollY: '100%',
             scrollX: '100%',
-            "createdRow": function (row, data) {
+            createdRow: function (row, data) {
                 $(row).attr('id', data.id);
             },
             pageLength: 15,
             lengthChange: false,
             order: [[0, 'asc']],
             initComplete: function () {
-                $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-                $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-                $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
-                $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
-                $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
-                $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
-                $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
-                
+                const api = this.api();
+                const container = $(api.table().container());
+
+                // Customize search input
+                container.find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
+                container.find('.dt-search label')
+                    .addClass('py-1 px-3 mx-0 dtsearchLabel')
+                    .html('<span class="mdi mdi-magnify"></span>');
+
+                // Set row heights
+                container.find('.dt-layout-row').first().find('.dt-layout-cell').each(function () {
+                    this.style.setProperty('height', '38px', 'important');
+                });
+
+                // Table layout tweaks
+                container.find('.dt-layout-table').removeClass('px-4');
+                container.find('.dt-scroll-body').addClass('rmvBorder');
+                container.find('.dt-layout-table').addClass('btmdtborder');
+                container.find('.dt-search').addClass('d-flex justify-content-end');
+
+                // Remove loading overlay
                 $('.loadingScreen').remove();
                 $('#dattableDiv').removeClass('opacity-0');
-                
-                // Add blue header to the table
+
+                // Add blue header after the table
                 const tableDiv = $('.dt-layout-row').first();
-                tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F)); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px; color: var(--text-color-light, #FFF);">User Management</p></div>');
+                tableDiv.after(`
+                    <div style="
+                        background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F));
+                        color: var(--text-color-light, #FFF);
+                        margin-top:10px;
+                        padding: 10px 15px;
+                        border-top-left-radius:10px;
+                        border-top-right-radius: 10px;
+                    ">
+                        <p style="margin:0px; color: var(--text-color-light, #FFF);">User Management</p>
+                    </div>
+                `);
             }
         });
+
         
         // Add row click event handler similar to warehouse module
         $("#getXmlData").on("click", "tbody tr", async function () {
@@ -403,6 +492,10 @@ function filterUsers() {
     const statusFilter = $('#userStatus_VS').val();
     const searchTerm = $('#searchUser').val().toLowerCase();
 
+    // Get current user role to apply developer filtering
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUserType = currentUser.user_type || 'user';
+
     filteredUsers = usersData.filter(user => {
         const matchesType = !userTypeFilter || user.user_type === userTypeFilter;
         const matchesStatus = !statusFilter || 
@@ -411,8 +504,11 @@ function filterUsers() {
         const matchesSearch = !searchTerm || 
             user.name.toLowerCase().includes(searchTerm) ||
             user.email.toLowerCase().includes(searchTerm);
+        
+        // Hide developer accounts from non-developer users
+        const canViewDeveloper = currentUserType === 'developer' || user.user_type !== 'developer';
 
-        return matchesType && matchesStatus && matchesSearch;
+        return matchesType && matchesStatus && matchesSearch && canViewDeveloper;
     });
 
     populateUsersTable();
@@ -421,18 +517,22 @@ function filterUsers() {
 function openAddUserModal() {
     currentEditingUser = null;
     
-    // Clear form
-    $('#firstName').val('');
-    $('#lastName').val('');
-    $('#email').val('');
-    $('#mobile').val('');
-    $('#userType').val('');
+    // Clear form and validation states using UserModal
+    UserModal.clear();
+    
+    // Initialize form dropdown based on current user role
+    initializeFormUserTypeDropdown();
+    
+    // Hide delete button and any activation/deactivation buttons for add mode
+    $('#deleteBtn').hide();
+    $('#activateBtn, #deactivateBtn').remove();
     
     // Change button text for adding
-    $('#saveEdit').text('Add User');
+    $('#saveEdit').text('Add User').removeClass('btn-info').addClass('btn-primary');
+    $('#saveEdit').show();
     
-    // Show modal
-    $('#editXmlDataModal').modal('show');
+    // Show modal with validation clearing
+    UserModal.show();
 }
 
 // Duplicate functions removed - using the API-integrated versions above
@@ -472,6 +572,9 @@ function saveUser() {
     const url = currentEditingUser ? `/api/users/${currentEditingUser.id}` : '/api/users';
     const method = currentEditingUser ? 'PUT' : 'POST';
 
+    // Show loading animation
+    showLoadingAnimation(currentEditingUser ? 'Updating user...' : 'Creating user...');
+
     $.ajax({
         url: url,
         method: method,
@@ -481,6 +584,9 @@ function saveUser() {
         },
         data: JSON.stringify(userData),
         success: function(response) {
+            // Hide loading animation
+            hideLoadingAnimation();
+            
             if (response.response_stat === 1) {
                 Swal.fire({
                     title: 'Success!',
@@ -497,6 +603,9 @@ function saveUser() {
             }
         },
         error: function(xhr, status, error) {
+            // Hide loading animation
+            hideLoadingAnimation();
+            
             console.error('Error saving user:', xhr.responseText || error);
             
             if (xhr.status === 401) {
@@ -598,6 +707,37 @@ function isValidEmail(email) {
     return emailRegex.test(email);
 }
 
+function initializeFormUserTypeDropdown() {
+    // Get current user role to determine available options
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUserType = currentUser.user_type || 'user';
+    
+    // Clear existing options except the first one (placeholder)
+    const userTypeSelect = $('#userType');
+    userTypeSelect.find('option:not(:first)').remove();
+    
+    // Add user type options based on current user role with proper restrictions
+    if (currentUserType === 'developer') {
+        // Developers can create all types of accounts
+        userTypeSelect.append('<option value="user">User</option>');
+        userTypeSelect.append('<option value="admin">Admin</option>');
+        userTypeSelect.append('<option value="super_admin">Super Admin</option>');
+        userTypeSelect.append('<option value="developer">Developer</option>');
+    } else if (currentUserType === 'super_admin') {
+        // Super admins can create all types except developer
+        userTypeSelect.append('<option value="user">User</option>');
+        userTypeSelect.append('<option value="admin">Admin</option>');
+        userTypeSelect.append('<option value="super_admin">Super Admin</option>');
+    } else if (currentUserType === 'admin') {
+        // Admins can only create admin and user accounts
+        userTypeSelect.append('<option value="user">User</option>');
+        userTypeSelect.append('<option value="admin">Admin</option>');
+    } else {
+        // Regular users can only create user accounts
+        userTypeSelect.append('<option value="user">User</option>');
+    }
+}
+
 function generatePassword() {
     const length = 12;
     const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
@@ -638,6 +778,22 @@ const UserModal = {
         $('#editXmlDataModal').modal('hide');
     },
     show: () => {
+        // Clear validation states and error messages
+        if ($("#modalFields").data('validator')) {
+            $("#modalFields").validate().resetForm();
+        }
+        
+        // Clear all validation classes and messages more comprehensively
+        $('#modalFields').find('.is-invalid').removeClass('is-invalid');
+        $('#modalFields').find('.invalid-feedback').remove();
+        $('#modalFields').find('.error').removeClass('error');
+        $('#modalFields').find('.field-validation-error').removeClass('field-validation-error');
+        $('#modalFields').find('.input-validation-error').removeClass('input-validation-error');
+        
+        // Clear any remaining validation messages
+        $('#modalFields').find('.text-danger').remove();
+        $('#modalFields').find('[data-valmsg-for]').empty();
+        
         $('#editXmlDataModal').modal('show');
     },
     setTitle: (title, subtitle) => {
@@ -658,7 +814,8 @@ const UserModal = {
         // Clear validation states
         $('.form-control, .form-select').removeClass('is-invalid');
         
-        // Generate new password
+        // Initialize form dropdown and generate new password
+        initializeFormUserTypeDropdown();
         generatePassword();
     },
     enable: (enable) => {
@@ -666,9 +823,26 @@ const UserModal = {
         $('#lastName').prop('disabled', !enable);
         $('#email').prop('disabled', !enable);
         $('#mobile').prop('disabled', !enable);
-        $('#userType').prop('disabled', !enable);
         $('#password').prop('disabled', !enable);
         $('#sendCredentials').prop('disabled', !enable);
+        
+        // Handle user type field based on current user role and context
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const currentUserType = currentUser.user_type || 'user';
+        
+        // For adding new users: allow all users to select user type (dropdown options are already filtered)
+        // For editing existing users: only allow developers to change user type
+        if (currentEditingUser === null) {
+            // Adding new user - enable user type dropdown for all users
+            $('#userType').prop('disabled', !enable);
+        } else {
+            // Editing existing user - only enable user type dropdown for developer accounts
+            if (currentUserType === 'developer') {
+                $('#userType').prop('disabled', !enable);
+            } else {
+                $('#userType').prop('disabled', true);
+            }
+        }
     },
     viewMode: async (userData) => {
         UserModal.setTitle('User Details', `View and manage ${userData.name}'s account`);
@@ -714,6 +888,9 @@ const UserModal = {
         UserModal.show();
     },
     fill: async (userData) => {
+        // Initialize form dropdown first to ensure all options are available
+        initializeFormUserTypeDropdown();
+        
         // Split name into first and last name
         const nameParts = userData.name.split(' ');
         const firstName = nameParts[0] || '';
@@ -722,7 +899,9 @@ const UserModal = {
         $('#firstName').val(firstName);
         $('#lastName').val(lastName);
         $('#email').val(userData.email);
-        $('#mobile').val(userData.mobile);
+        // Remove leading '0' from mobile number when displaying
+        const displayMobile = userData.mobile.startsWith('0') ? userData.mobile.substring(1) : userData.mobile;
+        $('#mobile').val(displayMobile);
         $('#userType').val(userData.user_type);
         $('#password').val(''); // Don't show existing password
         $('#sendCredentials').prop('checked', false);
@@ -859,7 +1038,7 @@ function showDeactivationModal(userId, isFromModal = false) {
                         <p class="mb-3">Are you sure you want to deactivate this user?</p>
                         <div class="mb-3">
                             <label for="deactivationReason" class="form-label">Reason for deactivation <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="deactivationReason" rows="4" placeholder="Enter reason for deactivation..." required></textarea>
+                            <textarea class="form-control" id="deactivationReason" rows="4" placeholder="Enter reason for deactivation..." required maxlength="150"></textarea>
                             <div class="invalid-feedback">Please provide a reason for deactivation.</div>
                         </div>
                     </div>
@@ -976,4 +1155,31 @@ function handleAjaxError(xhr, defaultMessage) {
         const errorMessage = xhr.responseJSON?.message || xhr.responseText || defaultMessage;
         Swal.fire('Error', errorMessage, 'error');
     }
+}
+
+// Loading animation functions
+function showLoadingAnimation(message = 'Processing...') {
+    const loadingHtml = `
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-content">
+                <div class="newtons-cradle">
+                    <div class="newtons-cradle__dot"></div>
+                    <div class="newtons-cradle__dot"></div>
+                    <div class="newtons-cradle__dot"></div>
+                    <div class="newtons-cradle__dot"></div>
+                </div>
+                <div class="loading-text">${message}</div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing loading overlay if any
+    $('#loadingOverlay').remove();
+    
+    // Add loading overlay to body
+    $('body').append(loadingHtml);
+}
+
+function hideLoadingAnimation() {
+    $('#loadingOverlay').remove();
 }

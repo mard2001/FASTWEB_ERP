@@ -35,14 +35,15 @@
         
         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
             <h3 class="font-semibold text-yellow-800 mb-2">Reason for Deactivation:</h3>
-            <p class="text-gray-700" id="deactivationReason">{{ request('reason', 'No reason provided') }}</p>
+            <div class="max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-yellow-300 scrollbar-track-yellow-100">
+                <p class="text-gray-700 break-words" id="deactivationReason">{{ request('reason', 'No reason provided') }}</p>
+            </div>
         </div>
         
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
             <h3 class="font-semibold text-blue-800 mb-2">What to do next:</h3>
             <ul class="text-sm text-gray-700 space-y-1">
                 <li>• Contact your system administrator for assistance</li>
-                <li>• Provide your mobile number and the deactivation details above</li>
                 <li>• Request account reactivation if needed</li>
             </ul>
         </div>
