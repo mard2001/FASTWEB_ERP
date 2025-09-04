@@ -1,3 +1,5 @@
+@props(['showInventory' => true])
+
 <div class="modal fade" id="itemModal">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content w-100 h-100">
@@ -26,6 +28,23 @@
                         </div>
                         {{ $customFields ?? "" }}
                     </div>
+                    @if($showInventory)
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="inventoryAvailabilityInput" class="form-label">Inventory Availability</label>
+                                <input type="text" class="form-control" id="inventoryAvailabilityInput" 
+                                       placeholder="Select warehouse and product to view availability" 
+                                       readonly style="background-color: #f8f9fa; cursor: default;">
+                                <!-- Hidden elements for JavaScript compatibility -->
+                                <div id="inventoryAvailability" style="display: none; visibility: hidden; position: absolute; top: -9999px;">
+                                    <span id="availabilityText">-</span>
+                                    <span id="warehouseInfo">Select warehouse and product</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                     <div class="row">
                         <div class="col-sm-6 col-md-4">
                             <span class="sectionTitle">Product Quantity</span>

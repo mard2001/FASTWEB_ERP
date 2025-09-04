@@ -14,7 +14,7 @@ class InventoryManager
             foreach ($productsQty as $prod) {
                 $res = InvWarehouse::where('StockCode', $prod['stockCode'])
                     ->where('Warehouse', $prod['warehouse'])
-                    ->where('QtyOnHand', '>', (float)$prod['qty'])
+                    ->where('QtyOnHand', '>=', (float)$prod['qty'])
                     ->first();
                 if (!$res) {
                     return false; 

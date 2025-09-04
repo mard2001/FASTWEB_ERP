@@ -255,7 +255,7 @@
             </div>
 
             <div class="col ps-0 text-center text-white">
-                <label for="shippingTerms" class="w-100 border-0 py-1 rounded-0" style="background-color: var(--primary-color, #007bff); color: var(--text-color, #fff);">SHIPPING TERMS</label>
+                <label for="shippingTerms" class="w-100 border-0 py-1 rounded-0" style="background-color: var(--primary-color, #007bff); color: var(--text-color, #fff);">TERMS</label>
                 <input type="text" disabled id="shippingTerms" name="shippingTerms"
                     class="form-control form-control-sm bg-white py-2" required>
             </div>

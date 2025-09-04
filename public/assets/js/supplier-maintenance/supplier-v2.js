@@ -533,6 +533,7 @@ const SupplierModal = {
         $('#modalFields input[type="text"]').val('');
         $('#modalFields input[type="number"]').val('');
         $('#modalFields textarea').val('');
+        $('#CreditLimit').val('');
         initVS.regionVS();
         document.querySelector('#VSprovince').setOptions([])
         document.querySelector('#VSmunicipality').setOptions([])
@@ -578,6 +579,7 @@ const SupplierModal = {
         $('#ContactNo').val(suppData.ContactNo);
         $('#TermsCode').val(suppData.TermsCode);
         $('#PriceCode').val(suppData.PriceCode);
+        $('#CreditLimit').val(suppData.CreditLimit || 0);
         $('#holdStatus').val(suppData.holdStatus);
         $('#CompleteAddress').val(suppData.CompleteAddress);
         $('#PostalCode').val(suppData.PostalCode || '');
@@ -689,6 +691,7 @@ const SupplierModal = {
             CompleteAddress : $('#CompleteAddress').val(),
             PostalCode : $('#PostalCode').val(),
             PriceCode : $('#PriceCode').val(),
+            CreditLimit : $('#CreditLimit').val() || 0,
             holdStatus : $('#holdStatus').val(),
             Region : document.querySelector('#VSregion').getDisplayValue(),
             Municipality : document.querySelector('#VSmunicipality').getDisplayValue(),

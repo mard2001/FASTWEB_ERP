@@ -231,14 +231,14 @@
                     </div>
                     <div class="col-3">
                         <div class="">
-                            <label for="Branch" class="form-label">BRANCH</label>
-                            <input type="text" disabled class="form-control" id="Branch" name="Branch" required>
+                            <label for="Warehouse" class="form-label">WAREHOUSE</label>
+                            <div id="Warehouse" name="Warehouse" class="form-control bg-white p-0 border-0"></div>
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="">
-                            <label for="Warehouse" class="form-label">WAREHOUSE</label>
-                            <input type="text" disabled class="form-control" id="Warehouse" name="Warehouse" required>
+                            <label for="Branch" class="form-label">BRANCH</label>
+                            <input type="text" disabled class="form-control" id="Branch" name="Branch" required>
                         </div>
                     </div>
                     <div class="col-3">

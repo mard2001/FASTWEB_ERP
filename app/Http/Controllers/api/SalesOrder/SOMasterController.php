@@ -84,8 +84,27 @@ class SOMasterController extends Controller
     public function store(Request $request)
     {
         try {
+            $InventoryManager = new InventoryManager();
             $data = $request->data;
             $items = Arr::pull($data, 'Items');
+            
+            // Validate stock availability before creating the sales order
+            $checkProdArr = array_map(function ($item) use ($data) {
+                return [
+                    'stockCode' => $item['MStockCode'],
+                    'qty' => (float)$item['QTYinPCS'],
+                    'warehouse'=> $data['Warehouse'],
+                ];
+            }, $items);
+            
+            $isEnough = $InventoryManager->isInvEnough($checkProdArr);
+            if (!$isEnough) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot create sales order: Insufficient stock for one or more items in the selected warehouse.',
+                ], 400);
+            }
+            
             $so = SOMaster::create([
                 'NextDetailLine'=> count($items)+1,
                 'Customer'=> $data['CustomerInfo']['Customer'],
@@ -103,7 +122,11 @@ class SOMasterController extends Controller
                 'ShipToGpsLat'=> $data['CustomerInfo']['SoldToGpsLat'],
                 'ShipToGpsLong'=> $data['CustomerInfo']['SoldToGpsLong'],
                 'LastOperator' => $data['LastOperator'],
-            ]);
+            ]);            
+            // Set MWarehouse for each item from the parent SOMaster warehouse
+            foreach ($items as &$item) {
+                $item['MWarehouse'] = $data['Warehouse'];
+            }
             $so->sodetails()->createMany($items);
 
             // Log the activity
@@ -323,6 +346,32 @@ class SOMasterController extends Controller
         }
 
         // Process new items (insert)
+        // Set MWarehouse for each new item from the parent SOMaster warehouse
+        $parentWarehouse = $request->data['Warehouse'];
+        
+        // Validate stock availability for new items before adding them
+        if (!empty($newItems)) {
+            $InventoryManager = new InventoryManager();
+            $checkNewItemsArr = array_map(function ($item) use ($parentWarehouse) {
+                return [
+                    'stockCode' => $item['MStockCode'],
+                    'qty' => (float)$item['QTYinPCS'],
+                    'warehouse'=> $parentWarehouse,
+                ];
+            }, $newItems);
+            
+            $isEnoughForNewItems = $InventoryManager->isInvEnough($checkNewItemsArr);
+            if (!$isEnoughForNewItems) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot add new items: Insufficient stock for one or more new items in the selected warehouse.',
+                ], 400);
+            }
+        }
+        
+        foreach ($newItems as &$item) {
+            $item['MWarehouse'] = $parentWarehouse;
+        }
         $SOdata->sodetails()->createMany($newItems);
 
         // Process deleted items (remove)
@@ -642,16 +691,21 @@ class SOMasterController extends Controller
             $soHeaderDetails = $request->sodata;
             unset($soHeaderDetails['details']);
 
-            $checkProdArr = array_map(function ($item) {
+            // Get the correct warehouse from SOMaster instead of using SODetail's MWarehouse
+            $soMaster = SOMaster::where('SalesOrder', $request->salesOrder)->first();
+            $correctWarehouse = $soMaster->Warehouse;
+            
+            $checkProdArr = array_map(function ($item) use ($correctWarehouse) {
                 return [
                     'stockCode' => $item['MStockCode'],
                     // 'qty' => (float)$item['MOrderQty'],
                     'qty' => (float)$item['QTYinPCS'],
-                    'warehouse'=> $item['MWarehouse'],
+                    'warehouse'=> $correctWarehouse,
                 ];
             }, $details);
 
-            $isEnough = 1;
+            // Check if there's enough inventory before allowing completion
+            $isEnough = $InventoryManager->isInvEnough($checkProdArr);
             if($isEnough){
                 $data = SOMaster::where('SalesOrder', $request->salesOrder)->where('OrderStatus',8)->first();
                 if(!$data){
@@ -668,8 +722,12 @@ class SOMasterController extends Controller
 
                 foreach ($details as $detail) {
                     $sku = $detail['MStockCode'];
-                    $warehouse = $detail['MWarehouse'];
+                    $warehouse = $correctWarehouse; // Use correct warehouse from SOMaster
                     $qty = $detail['QTYinPCS'];
+                    
+                    // Update the detail with correct warehouse for inventory movement
+                    $detail['MWarehouse'] = $correctWarehouse;
+                    
                     $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "OUT", null);
                     $InventoryManager->InvMovement($soHeaderDetails,  $detail, 'S', null);
                 }

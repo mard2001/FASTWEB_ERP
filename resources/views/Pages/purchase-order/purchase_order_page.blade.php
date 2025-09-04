@@ -254,7 +254,7 @@
                     </div>
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="">
-                            <label for="shippingTerms" class="form-label">SHIPPING TERMS</label>
+                            <label for="shippingTerms" class="form-label">TERMS</label>
                             <input type="text" disabled id="shippingTerms" name="shippingTerms" class="form-control" required>
                         </div>
                     </div>
@@ -265,28 +265,34 @@
                     <div style="width:100%;"><hr></div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-12 col-sm-6 col-md-3">
+                    <div class="col">
                         <div class="">
                             <label for="vendorName" class="form-label">SUPPLIER</label>
                             <div id="vendorName" name="vendorName" class="form-control border-0 p-0">Shipper Name</div>
                         </div>
                     </div>
-                    <div class="col-12 col-sm-6 col-md-3">
+                    <div class="col">
                         <div class="">
                             <label for="VendorContactName" class="form-label">SUPPLIER CONTACT PERSON</label>
                             <input type="text" disabled id="VendorContactName" name="VendorContactName" class="form-control" required>
                         </div>
                     </div>
-                    <div class="col-12 col-sm-6 col-md-3">
+                    <div class="col">
                         <div class="">
                             <label for="vendorPhone" class="form-label">SUPPLIER CONTACT NUMBER</label>
                             <input type="text" disabled id="vendorPhone" name="vendorPhone" class="form-control" required>
                         </div>
                     </div>
-                    <div class="col-12 col-sm-6 col-md-3">
+                    <div class="col">
                         <div class="">
                             <label for="vendorAddress" class="form-label">SUPPLIER ADDRESS</label>
                             <input type="text" disabled id="vendorAddress" name="vendorAddress" class="form-control" required >
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="">
+                            <label for="vendorCreditLimit" class="form-label">CREDIT LIMIT</label>
+                            <input type="text" disabled id="vendorCreditLimit" name="vendorCreditLimit" class="form-control" required >
                         </div>
                     </div>
                 </div>
@@ -410,7 +416,7 @@
         </x-slot:modalFooterBtns>
     </x-mainModal>
 
-    <x-mainItemModal>
+    <x-mainItemModal :showInventory="false">
         <x-slot:customFields>
             <div class="col-6">
                 <div class="">

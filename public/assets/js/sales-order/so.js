@@ -18,6 +18,13 @@ var tmpUpdatedMain;
 var filteredStartDate;
 var filteredEndDate;
 var options = [];
+var warehouseData = [];
+
+// Cache and debouncing variables
+var priceCache = new Map();
+var inventoryCache = new Map();
+var debounceTimer = null;
+var currentStockCodeRequest = null;
 
 // FOR THE MEANTIME
 selectedVendor = {
@@ -91,6 +98,7 @@ $(document).ready(async function () {
         select.setValue("8");
     },100);
     await initVS.liteDataVS();
+    await initVS.loadWarehouseVS();
     await initVS.bigDataVS();
     await getProductPriceCodes();
     SOItemsModal.setValidator();
@@ -341,6 +349,9 @@ $(document).ready(async function () {
         SOItemsModal.clear();
         SOItemsModal.enable(true);
 
+        // Clear any cached inventory data to ensure fresh data on product selection
+        clearInventoryAvailability();
+
         $(".UOMField").addClass("d-none");
         $("#itemSave").text("Save Item");
         SOItemsModal.show();
@@ -533,6 +544,8 @@ const datatables = {
             console.error('Error:', error);
         });
     },
+
+
 
     initSODatatable: (response) => {
         // console.log(response.data);
@@ -933,14 +946,24 @@ const initVS = {
         });
     },
 
-    bigDataVS: async () => {
-        await ajax( "api/product", "GET", null,
+    bigDataVS: async (warehouse = null) => {
+        let endpoint = "api/product";
+        if (warehouse) {
+            endpoint = `api/inv/transfer/warehouse/inventory/${warehouse}`;
+        }
+        
+        await ajax(endpoint, "GET", null,
           (response) => {
-            const products = response.data;
+            let products;
+            if (warehouse) {
+                products = response.data; // For warehouse-specific endpoint
+            } else {
+                products = response.data; // For general product endpoint
+            }
 
             const newData = products.map((item) => {
               return {
-                description: item.Description,
+                description: item.productdetails ? item.productdetails.Description : item.Description,
                 value: item.StockCode,
                 label: item.StockCode,
               };
@@ -971,7 +994,8 @@ const initVS = {
                         (item) => item.StockCode == stockCode
                     );
                     // console.log(findProduct);
-                    $("#Decription").val(findProduct.Description);
+                    const description = findProduct.productdetails ? findProduct.productdetails.Description : findProduct.Description;
+                    $("#Decription").val(description);
 
                     let priceCode = selectedVendor.PriceCode.trim();
 
@@ -980,71 +1004,10 @@ const initVS = {
                         priceCode: priceCode,
                     };
 
-                    await ajax( "api/getProductPrice", "GET", getPriceBody, (response) => {
-                      if (response.status_response == 1) {
-                        var uomColumn = ["StockUom", "AlternateUom", "OtherUom"];
-
-                        var uoms = uomColumn.map((item) => {
-                            return {
-                                value: findProduct[item],
-                                label: findProduct[item],
-                            };
-                        });
-
-                        uoms = uoms.filter(
-                            (item, index, self) =>
-                                index === self.findIndex((other) => other.value === item.value)
-                        );
-
-                        if (!$(".UOMField").hasClass("d-none")) {
-                            $(".UOMField").addClass("d-none");
-                            $("#itemModalFields").validate().resetForm();
-                        }
-
-                        uoms.forEach((item) => {
-                            $(`#${item.value}Div`).removeClass("d-none");
-                        });
-
-                        productConFact = response.convertionFactor;
-                        console.log(productConFact);
-
-                        $("#PricePerUnit").val(response.response.UNITPRICE);
-                        $("#itemSave").prop("disabled", false);
-
-                        const isAlreadyExist = itemTmpSave.find(
-                            (item) => item.MStockCode == stockCode
-                        );
-                        // console.log(isAlreadyExist);
-                        if (isAlreadyExist) {
-                            selectedItem = isAlreadyExist;
-                            SOItemsModal.itemEditMode(uoms, isAlreadyExist);
-                        } else {
-                            if ($("#itemSave").text().toLowerCase() == "update item") {
-                                $("#itemSave").text("Save Item");
-                            }
-                        }
-                      } else {
-                            $("#PricePerUnit").val("");
-                            $("#itemSave").prop("disabled", true);
-
-                            Swal.fire({
-                                title: "Opppps..",
-                                text: "No price maintained for this product",
-                                icon: "warning",
-                            });
-                        }
-                    },
-                    (xhr, status, error) => {
-                        $("#PricePerUnit").val("");
-                        $("#itemSave").prop("disabled", true);
-
-                        Swal.fire({
-                            title: "Opppps..",
-                            text: "No price maintained for this product",
-                            icon: "warning",
-                        });
-                    }
-                  );
+                    // Use cached price fetch function with debouncing
+                    debounceStockCodeSelection(stockCode, (debouncedStockCode) => {
+                        fetchProductPrice(debouncedStockCode, priceCode, products);
+                    }, 200);
 
                   autoCalculateTotalPrice();
                 }
@@ -1053,6 +1016,7 @@ const initVS = {
             $("#StockCode").on("reset", function () {
                 $("#Decription").val("");
                 $("#PricePerUnit").val("");
+                clearInventoryAvailability();
             });
           },
           (xhr, status, error) => {
@@ -1133,6 +1097,61 @@ const initVS = {
             }
         )
     },
+
+    loadWarehouseVS: async () => {
+        await ajax('api/wh/warehouse', 'GET', null, (response) => {
+            if (response.success) {
+                warehouseData = response.data;
+                
+                const warehouseOptions = response.data.map(item => {
+                    return {
+                        value: item.Warehouse,
+                        label: item.Warehouse,
+                        description: item.WHGroupDesc
+                    };
+                });
+
+                // Check if the VirtualSelect instance exists before destroying
+                if (document.querySelector('#Warehouse')?.virtualSelect) {
+                    document.querySelector('#Warehouse').destroy();
+                }
+
+                VirtualSelect.init({
+                    ele: '#Warehouse',
+                    options: warehouseOptions,
+                    markSearchResults: true,
+                    maxWidth: '100%',
+                    search: true,
+                    hasOptionDescription: true,
+                    additionalClasses: 'rounded',
+                    additionalDropboxClasses: 'rounded',
+                    additionalDropboxContainerClasses: 'rounded dropboxCont',
+                    additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
+                });
+
+                // Add change event handler for warehouse selection
+                $('#Warehouse').on('change', function () {
+                    // Clear cache when warehouse changes
+                    clearCache();
+                    
+                    if (this.value) {
+                        const selectedWarehouse = warehouseData.find(item => item.Warehouse === this.value);
+                        if (selectedWarehouse) {
+                            $('#Branch').val(selectedWarehouse.WHGroupDesc);
+                            // Refresh Stock Code dropdown with warehouse-specific products
+                            initVS.bigDataVS(this.value);
+                        }
+                    } else {
+                        $('#Branch').val('');
+                        // If no warehouse selected, load all products
+                        initVS.bigDataVS();
+                    }
+                });
+            }
+        }, (xhr, status, error) => {
+            console.error('Error loading warehouse data:', error);
+        });
+    },
 }
 
 const SOModal = {
@@ -1167,6 +1186,9 @@ const SOModal = {
         if (document.querySelector('#shippedToName')?.virtualSelect) {
             document.querySelector('#shippedToName').reset();
         }
+        if (document.querySelector('#Warehouse')?.virtualSelect) {
+            document.querySelector('#Warehouse').reset();
+        }
     },
     enable: (enable) => {
         $('#modalFields input[type="text"]').prop('disabled', !enable);
@@ -1180,8 +1202,14 @@ const SOModal = {
 
         if (enable) {
             document.querySelector("#shippedToName").enable();
+            if (document.querySelector('#Warehouse')?.virtualSelect) {
+                document.querySelector('#Warehouse').enable();
+            }
         } else {
             document.querySelector("#shippedToName").disable();
+            if (document.querySelector('#Warehouse')?.virtualSelect) {
+                document.querySelector('#Warehouse').disable();
+            }
         }
     },
     viewMode: async (SOData) => {
@@ -1200,7 +1228,10 @@ const SOModal = {
         $('#OrderStatus').val(orderStatusSting(SODetails.OrderStatus));
         $('#Branch').val(SODetails.Branch);
         $('#CustomerPONumber').val(SODetails.CustomerPoNumber);
-        $('#Warehouse').val(SODetails.Warehouse);
+        // Set warehouse dropdown value using VirtualSelect
+        if (document.querySelector('#Warehouse')?.virtualSelect) {
+            document.querySelector('#Warehouse').setValue(SODetails.Warehouse);
+        }
         $('#SalesOrder').val(SODetails.SalesOrder);
         $('#shippedToContactName').val(SODetails.CustomerName);
         $('#shippedToAddress').val(SODetails.ShipAddress1+", "+SODetails.ShipAddress2+", "+SODetails.ShipAddress3);
@@ -1311,7 +1342,7 @@ const SOModal = {
             // TermsCode: $("#shippingTerms").val(),
             totalCost: parseMoney($("#grandTotal").text()),
             Branch: $('#Branch').val(),
-            Warehouse: $('#Warehouse').val()
+            Warehouse: document.querySelector('#Warehouse')?.virtualSelect ? document.querySelector('#Warehouse').value : $('#Warehouse').val()
         };
 
         return data;
@@ -1322,7 +1353,7 @@ const SOModal = {
             OrderStatus: $('#OrderStatus').val(),
             CustomerPoNumber: $('#CustomerPONumber').val(),
             Branch: $('#Branch').val(),
-            Warehouse: $('#Warehouse').val(),
+            Warehouse: document.querySelector('#Warehouse')?.virtualSelect ? document.querySelector('#Warehouse').value : $('#Warehouse').val(),
             OrderDate: $("#OrderDate").val(),
             ReqShipDate: $("#ReqShipDate").val(),
             Customer: $("#shippedToName").val(),
@@ -1421,6 +1452,15 @@ const SOItemsModal = {
             $("#modalFields").find('.invalid-feedback').remove();
             $("#modalFields").find('.error').removeClass('error');
         }
+        
+        // Load products filtered by selected warehouse when modal opens
+        const selectedWarehouse = document.querySelector('#Warehouse')?.value;
+        if (selectedWarehouse) {
+            initVS.bigDataVS(selectedWarehouse);
+        } else {
+            initVS.bigDataVS();
+        }
+        
         $('#itemModal').modal('show');
     },
     fill: (itemData) => {
@@ -1446,6 +1486,8 @@ const SOItemsModal = {
             document.querySelector('#StockCode').reset();
         }
 
+        // Clear inventory availability display
+        clearInventoryAvailability();
     },
     enable: (enable) => {
         $('#itemModalFields input[type="text"]').prop('disabled', !enable);
@@ -1894,6 +1936,301 @@ const isStatSaveNew = () => {
     return $("#saveBtn").is(":visible");
 };
 
+// Inventory availability functions
+// Debounced function to handle stock code selection
+function debounceStockCodeSelection(stockCode, callback, delay = 300) {
+    // Cancel previous timer
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+    }
+    
+    // Cancel previous request if still pending
+    if (currentStockCodeRequest) {
+        currentStockCodeRequest.abort();
+        currentStockCodeRequest = null;
+    }
+    
+    // Set new timer
+    debounceTimer = setTimeout(() => {
+        callback(stockCode);
+    }, delay);
+}
+
+// Cached inventory fetch function
+async function fetchInventoryAvailability(stockCode) {
+    const selectedWarehouse = document.querySelector('#Warehouse')?.value;
+    
+    if (!selectedWarehouse) {
+        showInventoryAvailability('Select warehouse first', 'text-warning');
+        return;
+    }
+
+    // Check cache first
+    const cacheKey = `${selectedWarehouse}_${stockCode}`;
+    if (inventoryCache.has(cacheKey)) {
+        const cachedData = inventoryCache.get(cacheKey);
+        if (cachedData.qtyOnHand !== null) {
+            displayInventoryByUOM(cachedData.qtyOnHand, cachedData.productInventory, selectedWarehouse);
+        } else {
+            showInventoryAvailability('No stock available', 'text-danger');
+        }
+        return;
+    }
+
+    try {
+        const controller = new AbortController();
+        currentStockCodeRequest = controller;
+        
+        await ajax(`api/inv/transfer/warehouse/inventory/${selectedWarehouse}`, "GET", null,
+            (response) => {
+                currentStockCodeRequest = null;
+                
+                if (response.data && response.data.length > 0) {
+                    const productInventory = response.data.find(item => item.StockCode === stockCode);
+                    
+                    if (productInventory && productInventory.QtyOnHand) {
+                        const qtyOnHand = parseFloat(productInventory.QtyOnHand);
+                        
+                        // Cache the result
+                        inventoryCache.set(cacheKey, {
+                            qtyOnHand: qtyOnHand,
+                            productInventory: productInventory,
+                            timestamp: Date.now()
+                        });
+                        
+                        displayInventoryByUOM(qtyOnHand, productInventory, selectedWarehouse);
+                    } else {
+                        // Cache negative result
+                        inventoryCache.set(cacheKey, {
+                            qtyOnHand: null,
+                            productInventory: null,
+                            timestamp: Date.now()
+                        });
+                        showInventoryAvailability('No stock available', 'text-danger');
+                    }
+                } else {
+                    showInventoryAvailability('No inventory data found', 'text-warning');
+                }
+            },
+            (xhr, status, error) => {
+                currentStockCodeRequest = null;
+                if (xhr.statusText !== 'abort') {
+                    console.error('Error fetching inventory:', error);
+                    showInventoryAvailability('Error loading inventory', 'text-danger');
+                }
+            }
+        );
+    } catch (error) {
+        currentStockCodeRequest = null;
+        if (error.name !== 'AbortError') {
+            console.error('Error:', error);
+            showInventoryAvailability('Error loading inventory', 'text-danger');
+        }
+    }
+}
+
+// Cached price fetch function
+async function fetchProductPrice(stockCode, priceCode, products) {
+    const cacheKey = `${stockCode}_${priceCode}`;
+    
+    // Check cache first
+    if (priceCache.has(cacheKey)) {
+        const cachedPrice = priceCache.get(cacheKey);
+        handlePriceResponse(cachedPrice, stockCode, products);
+        return;
+    }
+
+    const getPriceBody = {
+        stockCode: stockCode,
+        priceCode: priceCode,
+    };
+
+    await ajax("api/getProductPrice", "GET", getPriceBody, 
+        (response) => {
+            // Cache the result
+            priceCache.set(cacheKey, {
+                ...response,
+                timestamp: Date.now()
+            });
+            
+            handlePriceResponse(response, stockCode, products);
+        },
+        (xhr, status, error) => {
+            if (xhr.statusText !== 'abort') {
+                handlePriceError();
+            }
+        }
+    );
+}
+
+// Handle price response
+function handlePriceResponse(response, stockCode, products) {
+    if (response.status_response == 1) {
+        var findProduct = products.find((item) => item.StockCode == stockCode);
+        var uomColumn = ["StockUom", "AlternateUom", "OtherUom"];
+
+        var uoms = uomColumn.map((item) => {
+            // Handle both direct product data and warehouse inventory data with productdetails
+            const uomValue = findProduct.productdetails ? findProduct.productdetails[item] : findProduct[item];
+            return {
+                value: uomValue,
+                label: uomValue,
+            };
+        });
+
+        uoms = uoms.filter(
+            (item, index, self) =>
+                index === self.findIndex((other) => other.value === item.value)
+        );
+
+        if (!$(".UOMField").hasClass("d-none")) {
+            $(".UOMField").addClass("d-none");
+            $("#itemModalFields").validate().resetForm();
+        }
+
+        uoms.forEach((item) => {
+            $(`#${item.value}Div`).removeClass("d-none");
+        });
+
+        productConFact = response.convertionFactor;
+        console.log(productConFact);
+
+        $("#PricePerUnit").val(response.response.UNITPRICE);
+        $("#itemSave").prop("disabled", false);
+
+        // Fetch and display inventory availability with debouncing
+        debounceStockCodeSelection(stockCode, fetchInventoryAvailability, 100);
+
+        const isAlreadyExist = itemTmpSave.find(
+            (item) => item.MStockCode == stockCode
+        );
+        
+        if (isAlreadyExist) {
+            selectedItem = isAlreadyExist;
+            SOItemsModal.itemEditMode(uoms, isAlreadyExist);
+        } else {
+            if ($("#itemSave").text().toLowerCase() == "update item") {
+                $("#itemSave").text("Save Item");
+            }
+        }
+    } else {
+        handlePriceError();
+    }
+}
+
+// Handle price error
+function handlePriceError() {
+    $("#PricePerUnit").val("");
+    $("#itemSave").prop("disabled", true);
+
+    Swal.fire({
+        title: "Opppps..",
+        text: "No price maintained for this product",
+        icon: "warning",
+    });
+}
+
+// Clear cache when warehouse changes
+function clearCache() {
+    priceCache.clear();
+    inventoryCache.clear();
+    
+    // Cancel any pending requests
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+    }
+    
+    if (currentStockCodeRequest) {
+        currentStockCodeRequest.abort();
+        currentStockCodeRequest = null;
+    }
+}
+
+function displayInventoryByUOM(qtyOnHand, productInventory, warehouse) {
+    if (!productConFact) {
+        showInventoryAvailability(`${qtyOnHand.toFixed(2)} PC`, 'text-success', warehouse);
+        return;
+    }
+
+    const { ConvFactAltUom, ConvFactOthUom } = productConFact;
+    
+    // Calculate CS quantity
+    const csQty = Math.floor(qtyOnHand / ConvFactAltUom);
+    
+    if (csQty >= 1) {
+        showInventoryAvailability(`${csQty} CS`, 'text-success', warehouse);
+    } else {
+        // Calculate LB quantity
+        const lbConvFactor = ConvFactAltUom / ConvFactOthUom;
+        const lbQty = Math.floor(qtyOnHand / lbConvFactor);
+        
+        if (lbQty >= 1) {
+            showInventoryAvailability(`${lbQty} LB`, 'text-info', warehouse);
+        } else {
+            // Show PC quantity
+            showInventoryAvailability(`${qtyOnHand.toFixed(2)} PC`, 'text-warning', warehouse);
+        }
+    }
+}
+
+function showInventoryAvailability(text, className = 'text-info', warehouse = '') {
+    const inventoryInput = $('#inventoryAvailabilityInput');
+    const availabilityDiv = $('#inventoryAvailability');
+    const availabilityText = $('#availabilityText');
+    const warehouseInfo = $('#warehouseInfo');
+    
+    // Update the input field value
+    let displayText = `Available: ${text}`;
+    if (warehouse) {
+        displayText += ` (Warehouse: ${warehouse})`;
+    }
+    inventoryInput.val(displayText);
+    
+    // Remove all color classes to ensure black text
+    inventoryInput.removeClass('text-success text-info text-warning text-danger');
+    
+    // Update hidden elements for compatibility
+    availabilityText.text(text);
+    availabilityText.removeClass('text-success text-info text-warning text-danger');
+    
+    if (warehouse) {
+        warehouseInfo.text(`Warehouse: ${warehouse}`);
+    } else {
+        warehouseInfo.text('Select warehouse and product');
+    }
+    
+    availabilityDiv.show();
+}
+
+function clearInventoryAvailability() {
+    const inventoryInput = $('#inventoryAvailabilityInput');
+    const availabilityDiv = $('#inventoryAvailability');
+    const availabilityText = $('#availabilityText');
+    const warehouseInfo = $('#warehouseInfo');
+    
+    // Reset input field to placeholder text
+    inventoryInput.val('');
+    inventoryInput.removeClass('text-success text-info text-warning text-danger');
+    
+    // Reset hidden elements for compatibility
+    availabilityText.text('-');
+    availabilityText.removeClass('text-success text-info text-warning text-danger');
+    warehouseInfo.text('Select warehouse and product');
+    availabilityDiv.hide();
+}
+
+// Function to refresh inventory for currently selected product
+function refreshCurrentInventory() {
+    const currentStockCode = $('#StockCode').val();
+    const currentWarehouse = document.querySelector('#Warehouse')?.value;
+    
+    if (currentStockCode && currentWarehouse) {
+        // Re-fetch inventory for the currently selected product
+        fetchInventoryAvailability(currentStockCode);
+    }
+}
+
 function autoCalculateTotalPrice() {
     const uoms = SOItemsModal.getUOM();
     const totalInPieces = SOItemsModal.getTotalQuantity(uoms);
@@ -1976,6 +2313,17 @@ const SOStatus = {
 
                         SOModal.hide();
                         datatables.loadSOData();
+                        
+                        // Refresh inventory availability if SO was completed
+                        if (status === 'complete') {
+                            // Clear any cached inventory data to force refresh on next product selection
+                            clearInventoryAvailability();
+                            
+                            // If there's a product currently selected in any open modal, refresh its inventory
+                            setTimeout(() => {
+                                refreshCurrentInventory();
+                            }, 500); // Small delay to ensure inventory is updated in backend
+                        }
                     } else {
                         Swal.fire({
                             title: "Warning!",

@@ -128,13 +128,19 @@
                             <input disabled type="text" id="PostalCode" name="PostalCode" class="form-control bg-white" placeholder="Postal Code" maxlength="10">
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="mb-3">
                             <label for="PriceCode">Price Code</label>
                             <input disabled type="text" id="PriceCode" name="PriceCode" class="form-control bg-white needField" required onkeypress="return /[0-9]/.test(event.key)" maxlength="2">
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="CreditLimit">Credit Limit</label>
+                            <input disabled type="number" id="CreditLimit" name="CreditLimit" class="form-control bg-white" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="col-4">
                         <div class="mb-3">
                             <label for="holdStatus">Hold Status</label>
                             <input disabled type="text" id="holdStatus" name="holdStatus" class="form-control bg-white needField" required maxlength="1">

@@ -648,6 +648,7 @@ function storeOriginalData() {
     vendorName: $("#vendorName").val(),
     VendorContactName: $("#VendorContactName").val(),
     vendorAddress: $("#vendorAddress").val(),
+    vendorCreditLimit: $("#vendorCreditLimit").val(),
     vendorPhone: $("#vendorPhone").val(),
     shippedToName: $("#shippedToName").val(),
     shippedToContactName: $("#shippedToContactName").val(),
@@ -673,6 +674,7 @@ function hasFormChanged() {
     vendorName: $("#vendorName").val(),
     VendorContactName: $("#VendorContactName").val(),
     vendorAddress: $("#vendorAddress").val(),
+    vendorCreditLimit: $("#vendorCreditLimit").val(),
     vendorPhone: $("#vendorPhone").val(),
     shippedToName: $("#shippedToName").val(),
     shippedToContactName: $("#shippedToContactName").val(),
@@ -791,6 +793,7 @@ const initVS = {
         if (validPriceCode) {
           $("#VendorContactName").val(findVendor.ContactPerson);
           $("#vendorAddress").val(findVendor.CompleteAddress);
+          $("#vendorCreditLimit").val(findVendor.CreditLimit || 0);
 
           var mobileContact = (findVendor.ContactNo = /^9\d{9}$/.test(
             findVendor.ContactNo
@@ -823,6 +826,7 @@ const initVS = {
     $("#vendorName").on("reset", function () {
       $("#VendorContactName").val("");
       $("#vendorAddress").val("");
+      $("#vendorCreditLimit").val("");
       $("#vendorPhone").val("");
       selectedVendor = null;
     });
@@ -1117,6 +1121,7 @@ const POModal = {
     document.querySelector("#vendorName").setValue(findVendor.cID);
     $("#VendorContactName").val(findVendor.ContactPerson);
     $("#vendorAddress").val(findVendor.CompleteAddress);
+    $("#vendorCreditLimit").val(findVendor.CreditLimit || 0);
     $("#vendorPhone").val(findVendor.ContactNo);
 
     $("#shippedToContactName").val(POData.contactPerson);
@@ -1487,6 +1492,29 @@ const POItemsModal = {
     return UomAndQuantity;
   },
   itemTmpSave: (getItem) => {
+    // Check credit limit before adding item
+    if (selectedVendor && selectedVendor.CreditLimit) {
+      const currentTotal = ItemsTH.rows()
+        .data()
+        .toArray()
+        .reduce((sum, item) => sum + parseFloat(item.TotalPrice), 0);
+      
+      const newItemTotal = parseFloat(getItem.TotalPrice);
+      const newGrandTotal = currentTotal + newItemTotal;
+      const creditLimit = parseFloat(selectedVendor.CreditLimit);
+      
+      if (newGrandTotal > creditLimit) {
+        const remainingCreditLimit = creditLimit - currentTotal;
+        Swal.fire({
+          title: "Credit Limit Exceeded!",
+          text: `Adding this item would exceed the supplier's credit limit of ${formatMoney(creditLimit)}. Current total: ${formatMoney(currentTotal)}, Remaining Credit: ${formatMoney(remainingCreditLimit)}.`,
+          icon: "error",
+          confirmButtonText: "OK"
+        });
+        return; // Don't add the item
+      }
+    }
+    
     getItem = POItemsModal.itemCalculateUOM(getItem);
     itemTmpSave.unshift(getItem);
     datatables.initPOItemsDatatable(itemTmpSave);
@@ -1495,6 +1523,30 @@ const POItemsModal = {
     checkForChanges(); // Check for changes after adding item
   },
   itemTmpUpdate: (editedItem) => {
+    // Check credit limit before updating item
+    if (selectedVendor && selectedVendor.CreditLimit) {
+      const currentTotal = ItemsTH.rows()
+        .data()
+        .toArray()
+        .filter(item => item.StockCode !== selectedItem.StockCode)
+        .reduce((sum, item) => sum + parseFloat(item.TotalPrice), 0);
+      
+      const newItemTotal = parseFloat(editedItem.TotalPrice);
+      const newGrandTotal = currentTotal + newItemTotal;
+      const creditLimit = parseFloat(selectedVendor.CreditLimit);
+      
+      if (newGrandTotal > creditLimit) {
+        const remainingCreditLimit = creditLimit - currentTotal;
+        Swal.fire({
+          title: "Credit Limit Exceeded!",
+          text: `Updating this item would exceed the supplier's credit limit of ${formatMoney(creditLimit)}. Current total (excluding this item): ${formatMoney(currentTotal)}, Remaining Credit Limit: ${formatMoney(remainingCreditLimit)}.`,
+          icon: "error",
+          confirmButtonText: "OK"
+        });
+        return; // Don't update the item
+      }
+    }
+    
     // Optionally, if you want to reflect the change in currentItems
     editedItem = POItemsModal.itemCalculateUOM(editedItem);
     itemTmpSave = itemTmpSave.map((item) =>
@@ -1544,7 +1596,7 @@ const POItemsModal = {
         if (response.success) {
           Swal.fire({
             title: "Success!",
-            text: response.message,
+            text:response.message,
             icon: "success",
           });
 

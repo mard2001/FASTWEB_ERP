@@ -86,7 +86,7 @@ class SOMaster extends Model
     public function sodetails()
     {
         return $this->hasMany(SODetail::class, 'SalesOrder', 'SalesOrder')
-                    ->select(['SalesOrder', 'SalesOrderLine', 'MStockCode', 'MStockDes', 'MOrderQty', 'MPrice', 'QTYinPCS']);
+                    ->select(['SalesOrder', 'SalesOrderLine', 'MStockCode', 'MStockDes', 'MWarehouse', 'MOrderQty', 'MPrice', 'QTYinPCS', 'MProductClass']);
     }
 
     // public function sodetails()

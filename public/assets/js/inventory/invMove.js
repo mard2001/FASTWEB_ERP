@@ -148,7 +148,7 @@ const datatables = {
                         { data: 'TrnQty',  title: 'Transac Qty',
                             render: function (data, type, row) {
                                 var result;
-                                if(data.trim() != "" && row.MovementType != "S"){
+                                if(data.trim() != "" && row.MovementType == "I"){
                                     if(row.TrnType == "T"){
                                         if(row.NewWarehouse == " "){
                                             result = `<span style="color:var(--success-color, #22bb33)">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
@@ -160,6 +160,8 @@ const datatables = {
                                     } else{
                                         result = `<span style="color:var(--success-color, #22bb33)">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                     }
+                                } else if(data.trim() != "" && row.MovementType == "S"){
+                                    result = `<span style="color:var(--danger-color, #df3639)">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                 } else{
                                     result = `<span style="color:var(--danger-color, #df3639)">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
                                 }

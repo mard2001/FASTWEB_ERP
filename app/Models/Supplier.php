@@ -32,6 +32,7 @@ class Supplier extends Model
         'Municipality' ,
         'Barangay' ,
         'PriceCode',
+        'CreditLimit',
         'holdStatus',
         'lastUpdated'
     ];
