@@ -165,6 +165,95 @@
         #invMovementTable thead tr{
             white-space: nowrap;
         }
+
+        /* Enhanced Inventory Movement Table Styles */
+        .transaction-qty-tooltip {
+            cursor: help;
+            border-bottom: 1px dotted currentColor;
+            position: relative;
+        }
+
+        .transaction-qty-tooltip:hover {
+            opacity: 0.8;
+        }
+
+        .balance-display {
+            white-space: nowrap;
+        }
+
+        /* Mobile Responsive Enhancements */
+        @media (max-width: 768px) {
+            #invMovementTable {
+                font-size: 12px;
+            }
+            
+            #invMovementTable th,
+            #invMovementTable td {
+                padding: 8px 4px;
+            }
+            
+            .balance-display {
+                font-size: 10px;
+            }
+            
+            .transaction-qty-tooltip {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            #invMovementTable {
+                font-size: 11px;
+            }
+            
+            #invMovementTable th,
+            #invMovementTable td {
+                padding: 6px 3px;
+            }
+            
+            .balance-display {
+                font-size: 9px;
+            }
+        }
+
+        /* Table Header Styling */
+        #invMovementTable thead th {
+            background-color: var(--primary-color, #1b438f);
+            color: white;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary-color-dark, #0f2557);
+        }
+
+        /* Hover Effects for Rows */
+        #invMovementTable tbody tr:hover {
+            background-color: var(--primary-color-light, rgba(23, 162, 184, 0.05));
+            transition: background-color 0.2s ease;
+        }
+
+        /* Tooltip Enhancement */
+        [title] {
+            position: relative;
+        }
+
+        /* Custom Scrollbar for Table */
+        .dt-scroll-body::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .dt-scroll-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .dt-scroll-body::-webkit-scrollbar-thumb {
+            background: var(--primary-color, #1b438f);
+            border-radius: 4px;
+        }
+
+        .dt-scroll-body::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color-dark, #0f2557);
+        }
     </style>
 
     <x-contentButtonDiv downloadFunc="true"></x-contentButtonDiv>

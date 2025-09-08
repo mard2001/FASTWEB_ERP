@@ -55,7 +55,7 @@ class POItemsObserver
         $getProductPrice = ProductPrices::where('STOCKCODE', $poItem->StockCode)->where('PRICECODE', $supplier->PriceCode)->firstOrFail();
 
         $poItem->PricePerUnit = $getProductPrice->UNITPRICE;
-        $poItem->TotalPrice = $poItem->PricePerUnit * $poItem->Quantity;
+        $poItem->TotalPrice = $poItem->PricePerUnit * $poItem->TotalQtyInPCS;
         
         return $poItem;
     }

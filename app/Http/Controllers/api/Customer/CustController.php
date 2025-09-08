@@ -64,7 +64,7 @@ class CustController extends Controller
     public function index()
     {
         try {
-            $data = Customer::select('Customer', 'Name', 'ShortName', 'Salesperson', 'PriceCode', 'CustomerClass', 'Telephone', 'Contact', 'SoldToAddr1', 'SoldToAddr2', 'SoldToAddr3', 'SoldToAddr4', 'SoldPostalCode', 'SoldToGpsLat', 'SoldToGpsLong')
+            $data = Customer::select('Customer', 'Name', 'ShortName', 'Salesperson', 'PriceCode', 'CustomerClass', 'Telephone', 'Contact', 'SoldToAddr1', 'SoldToAddr2', 'SoldToAddr3', 'SoldToAddr4', 'SoldPostalCode', 'SoldToGpsLat', 'SoldToGpsLong', 'CreditLimit')
                 ->with('salesman')->get();
             
             if (count($data) == 0) {

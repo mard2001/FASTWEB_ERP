@@ -228,6 +228,13 @@ class POController
                     }
                 }
 
+                // Get current item stock codes from the request
+                $newStockCodes = collect($data['Items'])->pluck('StockCode')->toArray();
+                
+                // Delete items that are no longer in the updated list
+                $found->POItems()->whereNotIn('StockCode', $newStockCodes)->delete();
+                
+                // Update or create items from the request
                 foreach ($data['Items'] as $item) {
                     $found->POItems()->updateOrCreate(
                         ['StockCode' => $item['StockCode']], // Search condition

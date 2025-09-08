@@ -145,74 +145,102 @@ const datatables = {
                                 return result;
                             }
                         },
-                        { data: 'TrnQty',  title: 'Transac Qty',
+                        { data: 'TrnQty',  title: 'Transaction Quantity',
                             render: function (data, type, row) {
+                                if (!data || data.trim() === "") return '<span style="color:var(--muted-color, #808080)">---</span>';
+                                
+                                const qty = Math.floor(data);
+                                
                                 var result;
-                                if(data.trim() != "" && row.MovementType == "I"){
-                                    if(row.TrnType == "T"){
-                                        if(row.NewWarehouse == " "){
-                                            result = `<span style="color:var(--success-color, #22bb33)">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
-                                        } else{
-                                            result = `<span style="color:var(--danger-color, #df3639)">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
-                                        }
+                                var sign = '';
+                                var color = '';
+                                
+                                if(row.MovementType == "I"){
+                                    if(row.TrnType == "T" && row.NewWarehouse != " "){
+                                        sign = '-';
+                                        color = 'var(--danger-color, #df3639)';
                                     } else if(row.TrnType == "A"){
-                                        result = `<span style="color:var(--info-color, #076aff)">${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                        sign = '';
+                                        color = 'var(--info-color, #076aff)';
                                     } else{
-                                        result = `<span style="color:var(--success-color, #22bb33)">+${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                        sign = '+';
+                                        color = 'var(--success-color, #22bb33)';
                                     }
-                                } else if(data.trim() != "" && row.MovementType == "S"){
-                                    result = `<span style="color:var(--danger-color, #df3639)">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
-                                } else{
-                                    result = `<span style="color:var(--danger-color, #df3639)">-${Math.floor(data).toLocaleString('en-US')} pcs.</span>`;
+                                } else {
+                                    sign = '-';
+                                    color = 'var(--danger-color, #df3639)';
                                 }
+                                
+                                const displayText = `${sign}${qty.toLocaleString('en-US')} pcs`;
+                                
+                                result = `<span style="color:${color}">${displayText}</span>`;
+                                
                                 return result;
                             }
                         },
-                        { data: 'runningBal.inCS',  title: 'Bal. in CS',
-                            render: function (data, type, row){
-                                return (data != null)? data : "-";
+                        { data: 'previousBalance',  title: 'Previous Balance',
+                            render: function (data, type, row) {
+                                if (!row.previousBal) return '<span style="color:var(--muted-color, #808080)">---</span>';
+                                
+                                const cs = row.previousBal.inCS || 0;
+                                const ib = row.previousBal.inIB || 0;
+                                const pc = row.previousBal.inPC || 0;
+                                
+                                return `<span class="balance-display">${cs} CS / ${ib > 0 ? ib + ' IB' : '0'} / ${pc} PC</span>`;
                             }
                         },
-                        { data: 'runningBal.inIB',  title: 'Bal. in IB',
-                            render: function (data, type, row){
-                                return (data != null)? data : "-";
+                        { data: 'newBalance',  title: 'New Balance',
+                            render: function (data, type, row) {
+                                if (!row.runningBal) return '<span style="color:var(--muted-color, #808080)">---</span>';
+                                
+                                const cs = row.runningBal.inCS || 0;
+                                const ib = row.runningBal.inIB || 0;
+                                const pc = row.runningBal.inPC || 0;
+                                
+                                return `<span class="balance-display font-weight-bold">${cs} CS / ${ib > 0 ? ib + ' IB' : '0'} / ${pc} PC</span>`;
                             }
                         },
-                        { data: 'runningBal.inPC',  title: 'Bal. in PC',
+                        { data: 'CustomerPoNumber',  title: 'PO Number',
                             render: function (data, type, row){
-                                return (data != null)? data : "-";
+                                // Only show PO Number for non-sales order transactions
+                                if (row.MovementType == "S" && row.SalesOrder && row.SalesOrder.trim() !== "") {
+                                    return '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
+                                }
+                                return (data && data.trim() !== "") ? data : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
                             }
                         },
                         { data: 'Reference',  title: 'Reference',
                             render: function (data, type, row){
-                                // return (data.trim() !== "" && row.MovementType == "I")? data : "<span style='font-size:10px;color:#808080;'>n/a</span>";
-                                return (data.trim() !== "" && row.MovementType == "I")? data : '<span style="font-size:10px; color:var(--muted-color, #808080);">---</span>';
-
+                                return (data && data.trim() !== "" && row.MovementType == "I") ? data : '<span style="font-size:10px; color:var(--muted-color, #808080);">---</span>';
                             }
                         },
                         { data: 'SalesOrder',  title: 'SO Number',
                             render: function (data, type, row){
-                                return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
+                                return (data && data.trim() !== "" && row.MovementType == "S") ? data : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
                             }
                         },
-                        { data: 'CustomerPoNumber',  title: 'PO Number'},
                         { data: 'Customer',  title: 'Customer',
                             render: function (data, type, row){
-                                return (data.trim() != "" && row.MovementType == "S")? data : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
+                                return (data && data.trim() !== "" && row.MovementType == "S") ? data : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
                             }
                         },
                         { data: 'salesmandetails',  title: 'Salesperson',
                             render: function (data, type, row){
-                                return (data != null && row.MovementType == "S")? data.Name : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
+                                return (data != null && row.MovementType == "S") ? data.Name : '<span style="font-size:10px; color:var(--muted-color, #808080)">---</span>';
                             }
                         },
 
                     ],
                     columnDefs: [
-                        { className: "text-start", targets: [ 0, 6, 7, 8, 9, 10  ] },
-                        { className: "text-center", targets: [ 1, 2, 3, 4, 5 ] },
-                        // { className: "text-end", targets: [ 4 ] },
-                        { className: "text-nowrap", targets: '_all' } // This targets all columns
+                        { className: "text-start", targets: [ 0, 5, 6, 7, 8, 9 ] }, // Date, PO Number, Reference, SO Number, Customer, Salesperson
+                        { className: "text-center", targets: [ 1, 2, 3, 4 ] }, // Type, Transaction Qty, Previous Balance, New Balance
+                        { className: "text-nowrap", targets: '_all' }, // This targets all columns
+                        { width: "120px", targets: [ 2 ] }, // Transaction Quantity
+                        { width: "140px", targets: [ 3, 4 ] }, // Previous Balance, New Balance
+                        { responsivePriority: 1, targets: [ 0, 1, 2 ] }, // Date, Type, Transaction Qty - always visible
+                        { responsivePriority: 2, targets: [ 4, 5 ] }, // New Balance, PO Number
+                        { responsivePriority: 3, targets: [ 3, 6, 7 ] }, // Previous Balance, Reference, SO Number
+                        { responsivePriority: 4, targets: [ 8, 9 ] } // Customer, Salesperson
                     ],
                     scrollCollapse: true,
                     scrollY: '100%',

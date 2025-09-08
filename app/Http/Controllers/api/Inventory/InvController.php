@@ -112,6 +112,15 @@ public function getSKUMovement(string $StockCode, string $Warehouse)
                     $trnType = strtoupper($item->TrnType);
                     $newWarehouse = trim($item->NewWarehouse);
 
+                    // Store previous balance before updating
+                    $previousBal = $runningBal;
+                    
+                    // Calculate previous balance conversion
+                    $prevConversionKey = $item->StockCode . '_' . $previousBal;
+                    if (!isset($conversionCache[$prevConversionKey])) {
+                        $conversionCache[$prevConversionKey] = $productCalculator->originalDynamicConv($item->StockCode, $previousBal);
+                    }
+
                     if ($movementType === 'I') {
                         if ($trnType === 'A') {
                             $diff = $qty - $runningBal;
@@ -163,7 +172,8 @@ public function getSKUMovement(string $StockCode, string $Warehouse)
                         'productdetails' => $item->productdetails,
                         'salesmandetails' => $item->salesmandetails,
                         'runningPcsBal' => $runningBal,
-                        'runningBal' => $conversionCache[$conversionKey]['result']
+                        'runningBal' => $conversionCache[$conversionKey]['result'],
+                        'previousBal' => $conversionCache[$prevConversionKey]['result']
                     ];
                 }
             });

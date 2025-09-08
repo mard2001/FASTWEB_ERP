@@ -273,8 +273,8 @@
                     </div>
                     <div class="col-2">
                         <div class="">
-                            <label for="shippedToPhone" class="form-label">PHONE</label>
-                            <input type="text" disabled id="shippedToPhone" name="shippedToPhone" class="form-control" required onkeypress="return /[0-9]/.test(event.key)" maxlength="11" minlength="11">
+                            <label for="customerCreditLimit" class="form-label">CREDIT LIMIT</label>
+                            <input type="text" disabled id="customerCreditLimit" name="customerCreditLimit" class="form-control" required readonly>
                         </div>
                     </div>
                 </div>

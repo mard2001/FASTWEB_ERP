@@ -35,7 +35,7 @@ class POObserver
 
     public function deleted(PO $po)
     {
-        $po->POItems->delete();        
+        $po->POItems()->delete();        
     }
 
     private function generateNumber(string $field, string $prefix): string

@@ -926,6 +926,7 @@ const initVS = {
                 $("#shippedToContactName").val("");
                 $("#shippedToAddress").val("");
                 $("#shippedToPhone").val("");
+                $("#customerCreditLimit").val("");
             });
 
             $('#shippedToName').on('afterClose', function () {
@@ -939,6 +940,10 @@ const initVS = {
                     var mobileContact = findCustomer.Telephone = /^9\d{9}$/.test(findCustomer.Telephone) ? findCustomer.Telephone.replace(/^9/, "09") : findCustomer.Telephone;
 
                     $('#shippedToPhone').val(mobileContact);
+                    
+                    // Populate credit limit field
+                    const creditLimit = findCustomer.CreditLimit || 0;
+                    $('#customerCreditLimit').val(parseFloat(creditLimit).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
                 }
             });
         }, (xhr, status, error) => { // Error callback
@@ -1183,6 +1188,7 @@ const SOModal = {
         // $('#shippedToContactName').val('');
         // $('#shippedToAddress').val('');
         // $('#shippedToPhone').val('');
+        $('#customerCreditLimit').val('');
         if (document.querySelector('#shippedToName')?.virtualSelect) {
             document.querySelector('#shippedToName').reset();
         }
@@ -1236,6 +1242,7 @@ const SOModal = {
         $('#shippedToContactName').val(SODetails.CustomerName);
         $('#shippedToAddress').val(SODetails.ShipAddress1+", "+SODetails.ShipAddress2+", "+SODetails.ShipAddress3);
         // $('#shippedToPhone').val(SODetails.)
+        $('#customerCreditLimit').val(SODetails.CreditLimit ? parseFloat(SODetails.CreditLimit).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00');
         $('#subTotal').html((SODetails.grandTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         $('#grandTotal').html((SODetails.grandTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         $('#OrderDate').val(SODetails.OrderDate.substring(0, 10));
@@ -1496,6 +1503,29 @@ const SOItemsModal = {
     },
     itemTmpSave: (getItem) => {
         getItem = SOItemsModal.itemCalculateUOM(getItem);
+        
+        // Check credit limit before adding item
+        if (selectedShippedTo && selectedShippedTo.CreditLimit) {
+            const creditLimit = parseFloat(selectedShippedTo.CreditLimit) || 0;
+            const currentTotal = parseMoney($("#grandTotal").text()) || 0;
+            const newItemTotal = parseFloat(getItem.MPrice) || 0;
+            const newGrandTotal = currentTotal + newItemTotal;
+            
+            if (newGrandTotal > creditLimit) {
+                const remainingCreditLimit = creditLimit - currentTotal;
+                Swal.fire({
+                    title: "Credit Limit Exceeded!",
+                    html: `Adding this item would exceed the customer's credit limit.<br><br>
+                           <strong>Credit Limit:</strong> ${creditLimit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                           <strong>Current Total:</strong> ${currentTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                           <strong>Remaining Credit Limit:</strong> ${remainingCreditLimit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    icon: "warning",
+                    confirmButtonText: "OK"
+                });
+                return;
+            }
+        }
+        
         itemTmpSave.unshift(getItem);
         datatables.initSOItemsDatatable(itemTmpSave);
         calculateCost();
@@ -1504,6 +1534,30 @@ const SOItemsModal = {
     itemTmpUpdate: (editedItem) => {
         // Optionally, if you want to reflect the change in currentItems
         editedItem = SOItemsModal.itemCalculateUOM(editedItem);
+        
+        // Check credit limit before updating item
+        if (selectedShippedTo && selectedShippedTo.CreditLimit) {
+            const creditLimit = parseFloat(selectedShippedTo.CreditLimit) || 0;
+            const currentTotal = parseMoney($("#grandTotal").text()) || 0;
+            const originalItemTotal = parseFloat(selectedItem.MPrice) || 0;
+            const newItemTotal = parseFloat(editedItem.MPrice) || 0;
+            const newGrandTotal = currentTotal - originalItemTotal + newItemTotal;
+            
+            if (newGrandTotal > creditLimit) {
+                const remainingCreditLimit = creditLimit - (currentTotal - originalItemTotal);
+                Swal.fire({
+                    title: "Credit Limit Exceeded!",
+                    html: `Updating this item would exceed the customer's credit limit.<br><br>
+                           <strong>Credit Limit:</strong> ${creditLimit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                           <strong>Current Total:</strong> ${(currentTotal - originalItemTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                           <strong>Remaining Credit:</strong> ${remainingCreditLimit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    icon: "warning",
+                    confirmButtonText: "OK"
+                });
+                return;
+            }
+        }
+        
         itemTmpSave = itemTmpSave.map((item) =>
             item.MStockCode === selectedItem.MStockCode
             ? { ...item, ...editedItem }
