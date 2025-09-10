@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ReceivingReports\ReceivingRHeader;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\DB;
 
 class ReceivingRDetails extends Model
 {
@@ -13,6 +14,7 @@ class ReceivingRDetails extends Model
 
     protected $table = 'tblInvRRDetails';
     protected $primaryKey = 'id';
+    public $timestamps = false; // Add this since the table doesn't seem to have created_at/updated_at
 
     protected $fillable = [
         'SKU',
@@ -42,6 +44,7 @@ class ReceivingRDetails extends Model
 
     public function product()
     {
+        // Use a more explicit relationship that handles data type conversion properly
         return $this->belongsTo(Product::class, 'SKU', 'StockCode')
             ->select('StockCode', 'Description', 'StockUom', 'AlternateUom','OtherUom','ConvFactAltUom', 'ConvFactOthUom');
     }

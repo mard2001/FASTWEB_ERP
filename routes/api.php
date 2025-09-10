@@ -142,6 +142,7 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
     Route::prefix('report')->group(function () {
         Route::apiResource('/v2/rr', RRController::class);
         Route::post('/v2/confirm-rr', [RRController::class, 'approveRR']);
+        Route::post('/v2/create-missing-ap', [RRController::class, 'createMissingAccountsPayable']);
 
         Route::apiResource('/v2/countsheet', CountController::class);
         Route::post('/v2/countsheet/confirm/{headerID}', [CountController::class, 'confirm']);
@@ -231,6 +232,9 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
 
 // Accounts Payable API Routes
 Route::get('accounts-payable/summary', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'summary'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('accounts-payable/suppliers', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'getSuppliers'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('accounts-payable/{id}/payment', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'processPayment'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('accounts-payable/{id}/payments', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'getPaymentHistory'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::apiResource('accounts-payable', \App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class)->middleware(['auth:sanctum', 'check.user.status']);
 
 // Route::post('/auth/register', [AuthController::class, 'register']); // Disabled - Registration handled by admin through user management

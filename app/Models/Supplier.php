@@ -12,6 +12,7 @@ class Supplier extends Model
 
     protected $table = 'tblSupplier';
     protected $primaryKey = 'SupplierCode';
+    protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;
     const UPDATED_AT = null;

@@ -15,6 +15,7 @@ class Product extends Model
     protected $table = 'InvMaster';
     protected $primaryKey = 'StockCode'; 
     public $incrementing = false; 
+    protected $keyType = 'string'; // Ensure primary key is treated as string
 
     public $timestamps = false;
     protected $hidden = ['TimeStamp'];

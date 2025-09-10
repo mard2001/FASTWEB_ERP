@@ -187,37 +187,46 @@
             <table class="table ap-table table-bordered">
                 <thead>
                     <tr>
-                        <th style="width: 5%;">ID</th>
-                        <th style="width: 15%;">Branch</th>
-                        <th style="width: 10%;">Opening Balance</th>
-                        <th style="width: 10%;">Invoices</th>
-                        <th style="width: 10%;">Debit Notes</th>
-                        <th style="width: 10%;">Credit Notes</th>
-                        <th style="width: 10%;">Adjustments</th>
-                        <th style="width: 10%;">Disbursements</th>
-                        <th style="width: 10%;">Closing Balance</th>
-                        <th style="width: 10%;">Status</th>
-                        <th style="width: 10%;">Report Date</th>
+                        <th style="width: 8%;">Date</th>
+                        <th style="width: 20%;">Supplier</th>
+                        <th style="width: 12%;">RR Number</th>
+                        <th style="width: 12%;">Reference #</th>
+                        <th style="width: 10%;">Total Amount</th>
+                        <th style="width: 8%;">Terms</th>
+                        <th style="width: 8%;">Status</th>
+                        <th style="width: 10%;">Balance</th>
+                        <th style="width: 12%;">Process By</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($pageData as $report)
                     <tr>
-                        <td class="text-center">{{ $report->id }}</td>
-                        <td class="text-start">{{ $report->branch ?? 'N/A' }}</td>
-                        <td class="text-end">{{ number_format($report->opening_balance ?? 0, 2) }}</td>
-                        <td class="text-end">{{ number_format($report->invoices ?? 0, 2) }}</td>
-                        <td class="text-end">{{ number_format($report->debit_notes ?? 0, 2) }}</td>
-                        <td class="text-end">{{ number_format($report->credit_notes ?? 0, 2) }}</td>
-                        <td class="text-end">{{ number_format($report->adjustments ?? 0, 2) }}</td>
-                        <td class="text-end">{{ number_format($report->disbursements ?? 0, 2) }}</td>
-                        <td class="text-end">{{ number_format($report->closing_balance ?? 0, 2) }}</td>
-                        <td class="text-center">{{ $report->status ?? 'N/A' }}</td>
-                        <td class="text-center">{{ $report->report_date ? \Carbon\Carbon::parse($report->report_date)->format('Y-m-d') : 'N/A' }}</td>
+                        <td class="text-center">{{ $report->date ? \Carbon\Carbon::parse($report->date)->format('M d, Y') : 'N/A' }}</td>
+                        <td class="text-start">
+                            <div>{{ $report->supplier_name ?? 'N/A' }}</div>
+                            <small style="color: #666;">{{ $report->supplier_code ?? '' }}</small>
+                        </td>
+                        <td class="text-center">{{ $report->rr_number ?? 'N/A' }}</td>
+                        <td class="text-center">{{ $report->reference_number ?? 'N/A' }}</td>
+                        <td class="text-end">₱{{ number_format($report->total_amount ?? 0, 2) }}</td>
+                        <td class="text-center">{{ $report->terms ?? 'N/A' }}</td>
+                        <td class="text-center">
+                            @if($report->status === 'Pending' && $report->is_overdue)
+                                <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Overdue</span>
+                            @elseif($report->status === 'Paid')
+                                <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Paid</span>
+                            @elseif($report->status === 'Partial')
+                                <span style="background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Partial</span>
+                            @else
+                                <span style="background-color: #007bff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">{{ $report->status ?? 'Pending' }}</span>
+                            @endif
+                        </td>
+                        <td class="text-end">₱{{ number_format($report->balance_amount ?? 0, 2) }}</td>
+                        <td class="text-center">{{ $report->process_by ?? 'N/A' }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11" class="text-center">No accounts payable data found</td>
+                        <td colspan="9" class="text-center">No accounts payable data found</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -240,8 +249,12 @@
                                     <td style="padding-left:20px; font-size: 12px; font-weight: bold;">{{ $totalRecords }}</td>
                                 </tr>
                                 <tr>
-                                    <th style="font-size: 12px;">Total Closing Balance:</th>
-                                    <td style="padding-left:20px; border-bottom: 3px double #000; font-size: 12px; font-weight: bold;">{{ number_format($reports->sum('closing_balance'), 2) }}</td>
+                                    <th style="font-size: 12px;">Total Amount:</th>
+                                    <td style="padding-left:20px; font-size: 12px; font-weight: bold;">₱{{ number_format($reports->sum('total_amount'), 2) }}</td>
+                                </tr>
+                                <tr>
+                                    <th style="font-size: 12px;">Total Balance Due:</th>
+                                    <td style="padding-left:20px; border-bottom: 3px double #000; font-size: 12px; font-weight: bold;">₱{{ number_format($reports->sum('balance_amount'), 2) }}</td>
                                 </tr>
                             </tbody>
                         </table>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\AccountsPayable;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccountsPayable;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Exception;
@@ -16,48 +17,56 @@ class AccountsPayableController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = AccountsPayable::query();
+            $query = AccountsPayable::with('supplier');
 
             // Filter by date range if provided
             if ($request->has('start_date') && $request->has('end_date')) {
                 $query->byDateRange($request->start_date, $request->end_date);
             }
 
-            // Filter by branch if provided
-            if ($request->has('branch') && $request->branch != '') {
-                $query->where('branch', 'like', '%' . $request->branch . '%');
-            }
-
-            // Exclude or include total based on parameter
-            if ($request->has('exclude_total') && $request->exclude_total == 'true') {
-                $query->excludeTotal();
+            // Filter by supplier if provided
+            if ($request->has('supplier') && $request->supplier != '') {
+                $query->where(function($q) use ($request) {
+                    $q->where('supplier_code', 'like', '%' . $request->supplier . '%')
+                      ->orWhere('supplier_name', 'like', '%' . $request->supplier . '%');
+                });
             }
 
             // Filter by status
-            if ($request->has('status')) {
-                switch ($request->status) {
-                    case 'outstanding':
-                        $query->outstanding();
+            if ($request->has('status') && $request->status != '') {
+                switch (strtolower($request->status)) {
+                    case 'pending':
+                        $query->pending();
                         break;
-                    case 'settled':
-                        $query->where('closing_balance', '=', 0);
+                    case 'paid':
+                        $query->paid();
                         break;
-                    case 'credit':
-                        $query->where('closing_balance', '<', 0);
+                    case 'overdue':
+                        $query->overdue();
+                        break;
+                    default:
+                        $query->byStatus($request->status);
                         break;
                 }
             }
 
-            $data = $query->orderBy('report_date', 'desc')
-                          ->orderBy('branch', 'asc')
+            // Filter by RR number if provided
+            if ($request->has('rr_number') && $request->rr_number != '') {
+                $query->where('rr_number', 'like', '%' . $request->rr_number . '%');
+            }
+
+            $data = $query->orderBy('date', 'desc')
+                          ->orderBy('supplier_name', 'asc')
                           ->get();
 
             // Add computed fields
             $data->each(function ($item) {
-                $item->status = $item->status;
-                $item->formatted_closing_balance = $item->formatted_closing_balance;
-                $item->formatted_opening_balance = $item->formatted_opening_balance;
-                $item->formatted_invoices = $item->formatted_invoices;
+                $item->formatted_total_amount = $item->formatted_total_amount;
+                $item->formatted_payment_amount = $item->formatted_payment_amount;
+                $item->formatted_balance_amount = $item->formatted_balance_amount;
+                $item->balance_amount = $item->balance_amount;
+                $item->is_overdue = $item->is_overdue;
+                $item->due_date = $item->due_date;
             });
 
             if ($data->isEmpty()) {
@@ -89,18 +98,16 @@ class AccountsPayableController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'branch' => 'required|string|max:100',
-                'opening_balance' => 'nullable|numeric',
-                'invoices' => 'nullable|numeric',
-                'debit_notes' => 'nullable|numeric',
-                'credit_notes' => 'nullable|numeric',
-                'adjustments' => 'nullable|numeric',
-                'disbursements' => 'nullable|numeric',
-                'revaluation' => 'nullable|numeric',
-                'tax_relief' => 'nullable|numeric',
-                'withholding_tax' => 'nullable|numeric',
-                'closing_balance' => 'nullable|numeric',
-                'report_date' => 'required|date'
+                'date' => 'required|date',
+                'supplier_code' => 'required|string|max:50',
+                'supplier_name' => 'required|string|max:255',
+                'rr_number' => 'required|string|max:50|unique:tblAccountsPayable,rr_number',
+                'reference_number' => 'required|string|max:100',
+                'total_amount' => 'required|numeric|min:0',
+                'terms' => 'nullable|string|max:100',
+                'status' => 'nullable|in:Pending,Paid',
+                'remarks' => 'nullable|string|max:500',
+                'process_by' => 'nullable|string|max:100'
             ]);
 
             if ($validator->fails()) {
@@ -111,7 +118,14 @@ class AccountsPayableController extends Controller
                 ], 422);
             }
 
-            $accountsPayable = AccountsPayable::create($request->all());
+            $data = $request->all();
+            $data['status'] = $data['status'] ?? 'Pending';
+            $data['process_by'] = $data['process_by'] ?? auth()->user()->name ?? 'System';
+
+            $accountsPayable = AccountsPayable::create($data);
+
+            // Load the relationship
+            $accountsPayable->load('supplier');
 
             return response()->json([
                 'success' => true,
@@ -133,18 +147,20 @@ class AccountsPayableController extends Controller
     public function show($id)
     {
         try {
-            $accountsPayable = AccountsPayable::findOrFail($id);
+            $accountsPayable = AccountsPayable::with('supplier')->findOrFail($id);
 
-        // Add formatted attributes
-        $accountsPayable->status = $accountsPayable->status;
-        $accountsPayable->formatted_closing_balance = $accountsPayable->formatted_closing_balance;
-        $accountsPayable->formatted_opening_balance = $accountsPayable->formatted_opening_balance;
-        $accountsPayable->formatted_invoices = $accountsPayable->formatted_invoices;
+            // Add computed attributes
+            $accountsPayable->formatted_total_amount = $accountsPayable->formatted_total_amount;
+            $accountsPayable->formatted_payment_amount = $accountsPayable->formatted_payment_amount;
+            $accountsPayable->formatted_balance_amount = $accountsPayable->formatted_balance_amount;
+            $accountsPayable->balance_amount = $accountsPayable->balance_amount;
+            $accountsPayable->is_overdue = $accountsPayable->is_overdue;
+            $accountsPayable->due_date = $accountsPayable->due_date;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Accounts Payable record retrieved successfully',
-            'data' => $accountsPayable
+            return response()->json([
+                'success' => true,
+                'message' => 'Accounts Payable record retrieved successfully',
+                'data' => $accountsPayable
             ], 200);
 
         } catch (Exception $e) {
@@ -164,18 +180,16 @@ class AccountsPayableController extends Controller
             $accountsPayable = AccountsPayable::findOrFail($id);
 
             $validator = Validator::make($request->all(), [
-                'branch' => 'sometimes|required|string|max:100',
-                'opening_balance' => 'nullable|numeric',
-                'invoices' => 'nullable|numeric',
-                'debit_notes' => 'nullable|numeric',
-                'credit_notes' => 'nullable|numeric',
-                'adjustments' => 'nullable|numeric',
-                'disbursements' => 'nullable|numeric',
-                'revaluation' => 'nullable|numeric',
-                'tax_relief' => 'nullable|numeric',
-                'withholding_tax' => 'nullable|numeric',
-                'closing_balance' => 'nullable|numeric',
-                'report_date' => 'sometimes|required|date'
+                'date' => 'sometimes|required|date',
+                'supplier_code' => 'sometimes|required|string|max:50',
+                'supplier_name' => 'sometimes|required|string|max:255',
+                'rr_number' => 'sometimes|required|string|max:50|unique:tblAccountsPayable,rr_number,' . $id,
+                'reference_number' => 'sometimes|required|string|max:100',
+                'total_amount' => 'sometimes|required|numeric|min:0',
+                'terms' => 'nullable|string|max:100',
+                'status' => 'nullable|in:Pending,Paid',
+                'remarks' => 'nullable|string|max:500',
+                'process_by' => 'nullable|string|max:100'
             ]);
 
             if ($validator->fails()) {
@@ -187,6 +201,7 @@ class AccountsPayableController extends Controller
             }
 
             $accountsPayable->update($request->all());
+            $accountsPayable->load('supplier');
 
             return response()->json([
                 'success' => true,
@@ -230,21 +245,27 @@ class AccountsPayableController extends Controller
     public function summary(Request $request)
     {
         try {
-            $query = AccountsPayable::excludeTotal();
+            $query = AccountsPayable::query();
 
             // Filter by date range if provided
             if ($request->has('start_date') && $request->has('end_date')) {
                 $query->byDateRange($request->start_date, $request->end_date);
             }
 
+            $totalPending = $query->clone()->pending()->sum('total_amount');
+            $totalPaid = $query->clone()->paid()->sum('total_amount');
+            $totalOverdue = $query->clone()->overdue()->sum('total_amount');
+            $pendingBalance = $query->clone()->pending()->get()->sum('balance_amount');
+
             $summary = [
-                'total_outstanding' => $query->clone()->where('closing_balance', '>', 0)->sum('closing_balance'),
-                'total_credit_balance' => abs($query->clone()->where('closing_balance', '<', 0)->sum('closing_balance')),
-                'total_invoices' => $query->clone()->sum('invoices'),
-                'total_disbursements' => abs($query->clone()->sum('disbursements')),
-                'count_outstanding' => $query->clone()->where('closing_balance', '>', 0)->count(),
-                'count_settled' => $query->clone()->where('closing_balance', '=', 0)->count(),
-                'count_credit' => $query->clone()->where('closing_balance', '<', 0)->count()
+                'total_pending_amount' => $totalPending,
+                'total_paid_amount' => $totalPaid,
+                'total_overdue_amount' => $totalOverdue,
+                'total_pending_balance' => $pendingBalance,
+                'count_pending' => $query->clone()->pending()->count(),
+                'count_paid' => $query->clone()->paid()->count(),
+                'count_overdue' => $query->clone()->overdue()->count(),
+                'count_total' => $query->clone()->count()
             ];
 
             return response()->json([
@@ -257,6 +278,138 @@ class AccountsPayableController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error retrieving summary: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process payment for an accounts payable record
+     */
+    public function processPayment(Request $request, $id)
+    {
+        try {
+            $accountsPayable = AccountsPayable::findOrFail($id);
+
+            $validator = Validator::make($request->all(), [
+                'payment_amount' => 'required|numeric|min:0.01',
+                'payment_type' => 'required|in:full,partial',
+                'payment_method' => 'nullable|string|max:50',
+                'reference_number' => 'nullable|string|max:100',
+                'remarks' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Validate payment amount
+            $paymentAmount = $request->payment_amount;
+            $currentBalance = $accountsPayable->balance_amount;
+
+            if ($paymentAmount > $currentBalance) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment amount cannot exceed the balance amount of ₱' . number_format($currentBalance, 2)
+                ], 422);
+            }
+
+            // Create payment record
+            $payment = Payment::create([
+                'accounts_payable_id' => $accountsPayable->id,
+                'payment_amount' => $paymentAmount,
+                'payment_type' => $request->payment_type,
+                'payment_date' => now(),
+                'payment_method' => $request->payment_method,
+                'reference_number' => $request->reference_number,
+                'remarks' => $request->remarks,
+                'process_by' => auth()->user()->name ?? 'System'
+            ]);
+
+            // Calculate new balance after payment
+            $totalPaid = $accountsPayable->payments()->sum('payment_amount');
+            $newBalance = $accountsPayable->total_amount - $totalPaid;
+
+            // Update status based on payment
+            if ($newBalance <= 0 || $request->payment_type === 'full') {
+                $accountsPayable->status = 'Paid';
+            } else {
+                // Partial payment with remaining balance
+                $accountsPayable->status = 'Partial';
+            }
+            // Don't update balance_amount as it's a computed column
+            $accountsPayable->save();
+
+            // Reload relationships
+            $accountsPayable->load('supplier', 'payments');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment processed successfully',
+                'data' => $accountsPayable,
+                'payment' => $payment,
+                'new_balance' => $newBalance
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing payment: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get payment history for an accounts payable record
+     */
+    public function getPaymentHistory($id)
+    {
+        try {
+            $accountsPayable = AccountsPayable::with(['payments' => function($query) {
+                $query->orderBy('payment_date', 'desc');
+            }, 'supplier'])->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'accounts_payable' => $accountsPayable,
+                    'payments' => $accountsPayable->payments,
+                    'total_paid' => $accountsPayable->total_paid_amount,
+                    'balance' => $accountsPayable->balance_amount
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching payment history: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get suppliers for dropdown
+     */
+    public function getSuppliers()
+    {
+        try {
+            $suppliers = \App\Models\Supplier::select('SupplierCode', 'SupplierName')
+                                            ->orderBy('SupplierName')
+                                            ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Suppliers retrieved successfully',
+                'data' => $suppliers
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving suppliers: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -286,8 +439,8 @@ class AccountsPayableController extends Controller
     public function printPage()
     {
         try{
-            // Always print all accounts payable data
-            $data = AccountsPayable::all();
+            // Always print all accounts payable data with supplier relationship
+            $data = AccountsPayable::with('supplier')->orderBy('date', 'desc')->get();
             
             // Get user from session or cache if available
             $user = null;

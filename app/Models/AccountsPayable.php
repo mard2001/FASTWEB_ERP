@@ -13,86 +13,130 @@ class AccountsPayable extends Model
     protected $table = 'tblAccountsPayable';
 
     protected $fillable = [
-        'branch',
-        'opening_balance',
-        'invoices',
-        'debit_notes',
-        'credit_notes',
-        'adjustments',
-        'disbursements',
-        'revaluation',
-        'tax_relief',
-        'withholding_tax',
-        'closing_balance',
-        'report_date'
+        'date',
+        'supplier_code',
+        'supplier_name',
+        'rr_number',
+        'reference_number',
+        'total_amount',
+        'terms',
+        'status',
+        'remarks',
+        'process_by',
+        'payment_type',
+        'payment_amount',
+        'payment_date',
+        'payment_remarks'
     ];
 
     protected $casts = [
-        'opening_balance' => 'decimal:2',
-        'invoices' => 'decimal:2',
-        'debit_notes' => 'decimal:2',
-        'credit_notes' => 'decimal:2',
-        'adjustments' => 'decimal:2',
-        'disbursements' => 'decimal:2',
-        'revaluation' => 'decimal:2',
-        'tax_relief' => 'decimal:2',
-        'withholding_tax' => 'decimal:2',
-        'closing_balance' => 'decimal:2',
-        'report_date' => 'date'
+        'date' => 'date',
+        'total_amount' => 'decimal:2',
+        'payment_amount' => 'decimal:2',
+        'payment_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     /**
-     * Get the status of the account based on closing balance
+     * Relationship with Supplier
      */
-    public function getStatusAttribute()
+    public function supplier()
     {
-        if ($this->closing_balance > 0) {
-            return 'Outstanding';
-        } elseif ($this->closing_balance == 0) {
-            return 'Settled';
-        } else {
-            return 'Credit Balance';
+        return $this->belongsTo(Supplier::class, 'supplier_code', 'SupplierCode');
+    }
+
+    /**
+     * Relationship with Payments
+     */
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'accounts_payable_id', 'id');
+    }
+
+    /**
+     * Get the balance amount (calculated field based on total payments)
+     */
+    public function getBalanceAmountAttribute()
+    {
+        $totalPaid = $this->payments()->sum('payment_amount') ?? 0;
+        return $this->total_amount - $totalPaid;
+    }
+
+    /**
+     * Get total paid amount
+     */
+    public function getTotalPaidAmountAttribute()
+    {
+        return $this->payments()->sum('payment_amount') ?? 0;
+    }
+
+    /**
+     * Get formatted total amount
+     */
+    public function getFormattedTotalAmountAttribute()
+    {
+        return number_format($this->total_amount, 2);
+    }
+
+    /**
+     * Get formatted payment amount
+     */
+    public function getFormattedPaymentAmountAttribute()
+    {
+        return number_format($this->payment_amount ?? 0, 2);
+    }
+
+    /**
+     * Get formatted balance amount
+     */
+    public function getFormattedBalanceAmountAttribute()
+    {
+        return number_format($this->balance_amount, 2);
+    }
+
+    /**
+     * Check if payment is overdue
+     */
+    public function getIsOverdueAttribute()
+    {
+        if ($this->status === 'Paid') {
+            return false;
         }
+
+        // Extract days from terms (e.g., "30 Days" -> 30)
+        preg_match('/(\d+)/', $this->terms ?? '0', $matches);
+        $termDays = isset($matches[1]) ? (int)$matches[1] : 30;
+        
+        $dueDate = $this->date->addDays($termDays);
+        return now()->gt($dueDate);
     }
 
     /**
-     * Get formatted closing balance
+     * Get the due date
      */
-    public function getFormattedClosingBalanceAttribute()
+    public function getDueDateAttribute()
     {
-        return number_format($this->closing_balance, 2);
+        preg_match('/(\d+)/', $this->terms ?? '0', $matches);
+        $termDays = isset($matches[1]) ? (int)$matches[1] : 30;
+        
+        return $this->date->addDays($termDays);
     }
 
     /**
-     * Get formatted opening balance
+     * Scope to filter by status
      */
-    public function getFormattedOpeningBalanceAttribute()
+    public function scopeByStatus($query, $status)
     {
-        return number_format($this->opening_balance, 2);
+        return $query->where('status', $status);
     }
 
     /**
-     * Get formatted invoices amount
+     * Scope to filter by supplier
      */
-    public function getFormattedInvoicesAttribute()
+    public function scopeBySupplier($query, $supplierCode)
     {
-        return number_format($this->invoices, 2);
-    }
-
-    /**
-     * Scope to exclude total rows
-     */
-    public function scopeExcludeTotal($query)
-    {
-        return $query->where('branch', '!=', 'TOTAL');
-    }
-
-    /**
-     * Scope to get only total rows
-     */
-    public function scopeOnlyTotal($query)
-    {
-        return $query->where('branch', '=', 'TOTAL');
+        return $query->where('supplier_code', $supplierCode);
     }
 
     /**
@@ -100,14 +144,51 @@ class AccountsPayable extends Model
      */
     public function scopeByDateRange($query, $startDate, $endDate)
     {
-        return $query->whereBetween('report_date', [$startDate, $endDate]);
+        return $query->whereBetween('date', [$startDate, $endDate]);
     }
 
     /**
-     * Scope to get outstanding balances only
+     * Scope to get pending payments only
      */
-    public function scopeOutstanding($query)
+    public function scopePending($query)
     {
-        return $query->where('closing_balance', '>', 0);
+        return $query->where('status', 'Pending');
+    }
+
+    /**
+     * Scope to get paid payments only
+     */
+    public function scopePaid($query)
+    {
+        return $query->where('status', 'Paid');
+    }
+
+    /**
+     * Scope to get overdue payments
+     */
+    public function scopeOverdue($query)
+    {
+        return $query->where('status', 'Pending')
+                    ->whereRaw("DATEADD(day, CAST(SUBSTRING(ISNULL(terms, '30'), PATINDEX('%[0-9]%', ISNULL(terms, '30')), PATINDEX('%[^0-9]%', SUBSTRING(ISNULL(terms, '30'), PATINDEX('%[0-9]%', ISNULL(terms, '30')), LEN(ISNULL(terms, '30')))) - 1) AS INT), date) < GETDATE()");
+    }
+
+    /**
+     * Update payment information
+     */
+    public function updatePayment($amount, $type = 'Full', $remarks = null)
+    {
+        $this->payment_amount = $amount;
+        $this->payment_type = $type;
+        $this->payment_date = now();
+        $this->payment_remarks = $remarks;
+        
+        // If full payment or payment equals total amount, mark as paid
+        if ($type === 'Full' || $amount >= $this->total_amount) {
+            $this->status = 'Paid';
+            $this->payment_amount = $this->total_amount;
+        }
+        
+        $this->save();
+        return $this;
     }
 }

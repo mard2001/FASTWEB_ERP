@@ -5,9 +5,11 @@ namespace App\Http\Controllers\api\ReceivingReports;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Orders\PO;
+use App\Models\AccountsPayable;
 use Illuminate\Http\Request;
 use App\Services\InventoryManager;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Services\ProductCalculator;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
@@ -108,12 +110,8 @@ class RRController extends Controller
             $data = ReceivingRHeader::select('RRNo', 'Reference', 'RRDATE', 'Status', 'RECEIVEDBY', 'PO_NUMBER', 'Total')
                 ->with([
                     'rrdetails' => function ($query) {
-                        $query->with(['product' => function ($productQuery) {
-                            $productQuery->whereIn('StockCode', function ($subQuery) {
-                                $subQuery->selectRaw("CAST(SKU AS VARCHAR)") // Ensure SKU is treated as VARCHAR
-                                    ->from('tblInvRRDetails');
-                            });
-                        }]);
+                        // Simply load the product relationship without the complex whereIn subquery
+                        $query->with('product');
                     },
                     'poincluded' => function ($query) {
                         $query->selectRaw('PONumber, TRIM(SupplierCode) as SupplierCode') // Fetch only required columns from PO
@@ -126,6 +124,23 @@ class RRController extends Controller
                 ->get()
                 ->map(function ($header) {
                     foreach ($header->rrdetails as $detail) {
+                        // If product relationship fails due to data type mismatch, try to find manually
+                        if (!$detail->product) {
+                            try {
+                                $product = Product::where('StockCode', $detail->SKU)
+                                    ->orWhereRaw('CAST(StockCode AS VARCHAR) = ?', [$detail->SKU])
+                                    ->select('StockCode', 'Description', 'StockUom', 'AlternateUom','OtherUom','ConvFactAltUom', 'ConvFactOthUom')
+                                    ->first();
+                                
+                                if ($product) {
+                                    $detail->setRelation('product', $product);
+                                }
+                            } catch (\Exception $e) {
+                                // Log the issue but don't break the flow
+                                Log::warning("Failed to load product for SKU: {$detail->SKU}", ['error' => $e->getMessage()]);
+                            }
+                        }
+                        
                         if ($detail->product) {
                             // Call the convertProductToLargesttUnit method
                             $uoms = array_map('strval', [
@@ -286,12 +301,8 @@ class RRController extends Controller
                 $data = ReceivingRHeader::select('RRNo', 'Reference', 'RRDATE', 'Status', 'RECEIVEDBY', 'PO_NUMBER', 'Total')
                     ->with([
                         'rrdetails' => function ($query) {
-                            $query->with(['product' => function ($productQuery) {
-                                $productQuery->whereIn('StockCode', function ($subQuery) {
-                                    $subQuery->selectRaw("CAST(SKU AS VARCHAR)") // Ensure SKU is treated as VARCHAR
-                                        ->from('tblInvRRDetails');
-                                });
-                            }]);
+                            // Simply load the product relationship without the complex whereIn subquery
+                            $query->with('product');
                         },
                         'poincluded' => function ($query) {
                             $query->selectRaw('PONumber, TRIM(SupplierCode) as SupplierCode') // Fetch only required columns from PO
@@ -306,6 +317,23 @@ class RRController extends Controller
                     if ($data) {
                         tap($data, function ($header) {
                             foreach ($header->rrdetails as $detail) {
+                                // If product relationship fails due to data type mismatch, try to find manually
+                                if (!$detail->product) {
+                                    try {
+                                        $product = Product::where('StockCode', $detail->SKU)
+                                            ->orWhereRaw('CAST(StockCode AS VARCHAR) = ?', [$detail->SKU])
+                                            ->select('StockCode', 'Description', 'StockUom', 'AlternateUom','OtherUom','ConvFactAltUom', 'ConvFactOthUom')
+                                            ->first();
+                                        
+                                        if ($product) {
+                                            $detail->setRelation('product', $product);
+                                        }
+                                    } catch (\Exception $e) {
+                                        // Log the issue but don't break the flow
+                                        Log::warning("Failed to load product for SKU: {$detail->SKU}", ['error' => $e->getMessage()]);
+                                    }
+                                }
+                                
                                 if ($detail->product) {
                                     $uoms = array_map('strval', [
                                         $detail->product->StockUom, $detail->product->AlternateUom, $detail->product->OtherUom
@@ -404,6 +432,20 @@ class RRController extends Controller
                 $InventoryManager->InvMovement($rrHeaderDetails,  $detail, 'I', 'R');
             }
 
+            // Create Accounts Payable record after confirming RR
+            try {
+                $this->createAccountsPayableFromRR($header, $details, $user);
+                Log::info("Successfully created Accounts Payable for RR {$rrNo} by user {$user}");
+            } catch (\Exception $e) {
+                Log::error("Failed to create Accounts Payable for RR {$rrNo}: " . $e->getMessage(), [
+                    'exception' => $e,
+                    'rr_no' => $rrNo,
+                    'user' => $user
+                ]);
+                // Don't fail the RR confirmation if AP creation fails, just log it
+                // But we might want to notify the user
+            }
+
             // Log confirmation activity
             try {
                 activity('receiving_report')
@@ -424,15 +466,121 @@ class RRController extends Controller
             }
 
             return response()->json([
-                'message' => 'Receiving Report confirmed successfully',
+                'message' => 'Receiving Report confirmed successfully and Accounts Payable created',
                 'success' => true,
                 // 'data' => $data
             ]);
         } catch (\Exception $e) {
+            Log::error("Error confirming RR: " . $e->getMessage(), [
+                'exception' => $e,
+                'request_data' => $request->all()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage(),
             ], 500);  // HTTP 500 Internal Server Error
+        }
+    }
+
+    /**
+     * Create Accounts Payable record from confirmed RR
+     */
+    private function createAccountsPayableFromRR($rrHeader, $rrDetails, $user)
+    {
+        // Check if AP record already exists for this RR
+        $existingAP = AccountsPayable::where('rr_number', $rrHeader->RRNo)->first();
+        if ($existingAP) {
+            Log::info("Accounts Payable record already exists for RR {$rrHeader->RRNo}");
+            return $existingAP;
+        }
+
+        // Calculate total amount from RR details
+        $totalAmount = 0;
+        foreach ($rrDetails as $detail) {
+            $totalAmount += floatval($detail['Gross'] ?? 0);
+        }
+
+        // Get supplier information
+        $supplierCode = $rrHeader->poincluded->SupplierCode ?? null;
+        $supplier = null;
+        
+        if ($supplierCode) {
+            $supplier = Supplier::where('SupplierCode', trim($supplierCode))->first();
+        }
+
+        // Get terms from supplier or default to "30 Days"
+        $terms = "30 Days";
+        if ($supplier && !empty($supplier->TermsCode)) {
+            $terms = $supplier->TermsCode;
+        }
+
+        // Create the Accounts Payable record
+        $accountsPayable = AccountsPayable::create([
+            'date' => $rrHeader->RRDATE,
+            'supplier_code' => trim($supplierCode),
+            'supplier_name' => $supplier ? $supplier->SupplierName : 'Unknown Supplier',
+            'rr_number' => $rrHeader->RRNo,
+            'reference_number' => $rrHeader->Reference ?? $rrHeader->RRNo,
+            'total_amount' => $totalAmount,
+            'terms' => $terms,
+            'status' => 'Pending',
+            'remarks' => "Auto-created from RR confirmation: {$rrHeader->RRNo}",
+            'process_by' => $user,
+        ]);
+
+        Log::info("Successfully created Accounts Payable record", [
+            'ap_id' => $accountsPayable->id,
+            'rr_no' => $rrHeader->RRNo,
+            'total_amount' => $totalAmount,
+            'supplier_code' => $supplierCode,
+            'supplier_name' => $supplier ? $supplier->SupplierName : 'Unknown Supplier'
+        ]);
+
+        return $accountsPayable;
+    }
+
+    /**
+     * Manually create Accounts Payable records for confirmed RRs that don't have them yet
+     * This is useful for backfilling existing data
+     */
+    public function createMissingAccountsPayable(Request $request)
+    {
+        try {
+            // Get all confirmed RRs that don't have corresponding Accounts Payable records
+            $confirmedRRs = ReceivingRHeader::where('Status', 2)
+                ->with(['poincluded', 'rrdetails'])
+                ->whereNotIn('RRNo', function($query) {
+                    $query->select('rr_number')
+                          ->from('tblAccountsPayable')
+                          ->whereNotNull('rr_number');
+                })
+                ->get();
+
+            $created = 0;
+            $errors = [];
+
+            foreach ($confirmedRRs as $rr) {
+                try {
+                    $this->createAccountsPayableFromRR($rr, $rr->rrdetails->toArray(), 'System');
+                    $created++;
+                } catch (\Exception $e) {
+                    $errors[] = "RR {$rr->RRNo}: " . $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Created {$created} Accounts Payable records",
+                'created_count' => $created,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating missing Accounts Payable records: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
