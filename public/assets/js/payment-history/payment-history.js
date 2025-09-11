@@ -178,6 +178,17 @@ function initPaymentHistoryDataTable() {
                 }
             },
             { 
+                data: 'bank_name', 
+                title: 'Bank Name',
+                render: function(data, type, row) {
+                    if (row.payment_type && row.payment_type.toLowerCase() === 'bank') {
+                        return data || 'N/A';
+                    } else {
+                        return '<span class="text-muted">-</span>';
+                    }
+                }
+            },
+            { 
                 data: 'reference_number', 
                 title: 'Reference #',
                 render: function(data, type, row) {
@@ -398,6 +409,14 @@ function fillPaymentHistoryModal(data) {
     $('#view_payment_amount').val(formatCurrency(data.payment_amount || 0));
     $('#view_payment_status').val(data.payment_status ? (data.payment_status.charAt(0).toUpperCase() + data.payment_status.slice(1) + ' Payment') : 'Full Payment');
     $('#view_payment_type').val(data.payment_type ? (data.payment_type.charAt(0).toUpperCase() + data.payment_type.slice(1)) : 'Cash');
+    
+    // Show bank name only for bank payments
+    if (data.payment_type && data.payment_type.toLowerCase() === 'bank') {
+        $('#view_bank_name').val(data.bank_name || 'N/A');
+    } else {
+        $('#view_bank_name').val('-');
+    }
+    
     $('#view_terms').val(data.terms || 'N/A');
     $('#view_process_by').val(data.process_by || 'System');
     $('#view_remarks').val(data.remarks || '');
@@ -483,7 +502,7 @@ function exportToCSV() {
     let csvContent = "data:text/csv;charset=utf-8,";
     
     // Add headers
-    csvContent += "Payment Date,Supplier Code,Supplier Name,RR Number,Reference Number,Invoice Date,Invoice Amount,Payment Amount,Payment Status,Payment Type,Terms,Process By,Remarks\n";
+    csvContent += "Payment Date,Supplier Code,Supplier Name,RR Number,Payment Type,Bank Name,Reference Number,Invoice Date,Invoice Amount,Payment Amount,Payment Status,Terms,Process By,Remarks\n";
     
     // Add data rows
     filteredData.forEach(function(row) {
@@ -492,12 +511,13 @@ function exportToCSV() {
             row.supplier_code || '',
             `"${row.supplier_name || ''}"`,
             row.rr_number || '',
+            row.payment_type || 'cash',
+            `"${(row.payment_type && row.payment_type.toLowerCase() === 'bank') ? (row.bank_name || 'N/A') : '-'}"`,
             row.reference_number || '',
             row.invoice_date || '',
             row.invoice_amount || '0',
             row.payment_amount || '0',
             row.payment_status || 'full',
-            row.payment_type || 'cash',
             `"${row.terms || ''}"`,
             `"${row.process_by || 'System'}"`,
             `"${row.remarks || ''}"`

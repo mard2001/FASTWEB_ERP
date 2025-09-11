@@ -12,6 +12,7 @@ let supplierFilterVS;
 let filteredStartDate;
 let filteredEndDate;
 let suppliersData = [];
+let banksData = [];
 
 // Initialize page
 $(document).ready(function() {
@@ -19,6 +20,9 @@ $(document).ready(function() {
     initDateRangePicker();
     loadSuppliersData();
     loadAccountsPayableData();
+    
+    // Initialize number formatting for amount fields
+    initializeAmountFormatting();
 });
 
 // Load suppliers data for dropdown
@@ -51,6 +55,74 @@ function loadSuppliersData() {
                 console.warn('Authentication required for suppliers data');
             } else if (xhr.status >= 500) {
                 console.error('Server error loading suppliers data');
+            }
+        }
+    });
+}
+
+// Load banks data for payment dropdown
+function loadBanksData() {
+    $.ajax({
+        url: '/api/accounts-payable/banks',
+        type: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        success: function(response) {
+            if (response.success && response.data) {
+                banksData = response.data;
+                populateBankDropdown();
+            } else {
+                console.warn('No bank data received or invalid response format');
+                banksData = [];
+            }
+        },
+        error: function(xhr) {
+            console.error('Failed to load banks data:', xhr);
+            banksData = [];
+            
+            if (xhr.status === 401) {
+                console.warn('Authentication required for banks data');
+            } else if (xhr.status >= 500) {
+                console.error('Server error loading banks data');
+            }
+        }
+    });
+}
+
+// Load banks data specifically for modal (with better error handling)
+function loadBanksDataForModal() {
+    $.ajax({
+        url: '/api/accounts-payable/banks',
+        type: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        success: function(response) {
+            if (response.success && response.data && Array.isArray(response.data)) {
+                banksData = response.data;
+                populateBankDropdown();
+            } else {
+                console.warn('No bank data received or invalid response format:', response);
+                banksData = [];
+                populateBankDropdown();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Failed to load banks data:', xhr.status, xhr.statusText);
+            console.error('Response:', xhr.responseText);
+            banksData = [];
+            populateBankDropdown(); // Still call to show empty dropdown
+            
+            // Show user-friendly error for critical failures
+            if (xhr.status === 401) {
+                console.warn('Authentication required for banks data');
+            } else if (xhr.status === 404) {
+                console.warn('Banks API endpoint not found');
+            } else if (xhr.status >= 500) {
+                console.error('Server error loading banks data');
             }
         }
     });
@@ -125,6 +197,19 @@ function populateSupplierDropdowns() {
         } catch (error) {
             console.error('Error initializing supplier form dropdown:', error);
         }
+    }
+}
+
+// Populate bank dropdown for payment modal
+function populateBankDropdown() {
+    const bankSelect = $('#bank_selection');
+    bankSelect.empty().append('<option value="">Choose Bank...</option>');
+    
+    if (banksData && banksData.length > 0) {
+        banksData.forEach(bank => {
+            const option = `<option value="${bank.BankID}" data-bank='${JSON.stringify(bank)}'>${bank.BankName}</option>`;
+            bankSelect.append(option);
+        });
     }
 }
 
@@ -496,16 +581,30 @@ function fillAccountsPayableModal(data) {
     
     $('#rr_number').val(data.rr_number || '');
     $('#reference_number').val(data.reference_number || '');
-    $('#total_amount').val(data.total_amount || '');
+    $('#total_amount').val(formatNumberWithCommas(data.total_amount || ''));
     $('#terms').val(data.terms || '');
     $('#status').val(data.status || '');
-    $('#balance_amount').val(data.balance_amount || '');
+    $('#balance_amount').val(formatNumberWithCommas(data.balance_amount || ''));
     $('#remarks').val(data.remarks || '');
     
-    // Set supplier in Virtual Select
+    // Set supplier in Virtual Select and display field
     const supplierVS = document.querySelector('#supplier_code_VS');
     if (supplierVS && supplierVS.setValue && data.supplier_code) {
         supplierVS.setValue(data.supplier_code);
+    }
+    
+    // Set supplier display field (readonly)
+    const supplierDisplay = document.getElementById('supplier_display');
+    if (supplierDisplay && data.supplier_name) {
+        supplierDisplay.value = `${data.supplier_name} (${data.supplier_code})`;
+    } else if (supplierDisplay && data.supplier_code) {
+        // Fallback: find supplier name from suppliersData
+        const supplier = suppliersData.find(s => s.supplier_code === data.supplier_code);
+        if (supplier) {
+            supplierDisplay.value = `${supplier.supplier_name} (${supplier.supplier_code})`;
+        } else {
+            supplierDisplay.value = data.supplier_code;
+        }
     }
 }
 
@@ -517,6 +616,20 @@ function setModalMode(mode, status) {
     // Enable/disable form fields based on mode
     $('#accountsPayableForm input, #accountsPayableForm textarea').prop('disabled', !isEdit);
     $('#status, #balance_amount').prop('disabled', true); // Always disabled
+    
+    // Handle supplier field display based on mode
+    const supplierDisplay = document.getElementById('supplier_display');
+    const supplierVS = document.getElementById('supplier_code_VS');
+    
+    if (isEdit) {
+        // Edit mode: hide readonly field, show dropdown
+        if (supplierDisplay) supplierDisplay.style.display = 'none';
+        if (supplierVS) supplierVS.style.display = 'block';
+    } else {
+        // View mode: show readonly field, hide dropdown
+        if (supplierDisplay) supplierDisplay.style.display = 'block';
+        if (supplierVS) supplierVS.style.display = 'none';
+    }
     
     // Show/hide buttons based on mode and status
     $('#processPaymentBtn').toggle(isPending && !isEdit);
@@ -544,11 +657,29 @@ function showPaymentModal(rowData) {
     $('#payment_type').val('full');
     $('#payment_type_indicator').removeClass('bg-warning bg-success').addClass('bg-success').text('Full Payment');
     $('#payment_remarks').val('');
+    $('#payment_method').val(''); // Reset payment method
+    
+    // Reset and hide bank details
+    $('#bankDetailsSection').hide();
+    $('#bank_selection').val('');
+    resetBankFields();
+    
+    // Load banks data and populate dropdown
+    loadBanksDataForModal();
     
     // Store balance amount for validation
     $('#payment_amount').data('balance-amount', rowData.balance_amount);
     
     $('#paymentModal').modal('show');
+}
+
+// Reset bank fields
+function resetBankFields() {
+    $('#bank_account_name').val('');
+    $('#bank_account_number').val('');
+    $('#bank_card_number').val('');
+    $('#bank_expiration').val('');
+    $('#bank_ccv').val('');
 }
 
 // Edit record function
@@ -565,7 +696,7 @@ function editRecord(id) {
                 
                 $('#rr_number').val(data.rr_number);
                 $('#reference_number').val(data.reference_number);
-                $('#total_amount').val(data.total_amount);
+                $('#total_amount').val(formatNumberWithCommas(data.total_amount));
                 $('#terms').val(data.terms);
                 $('#remarks').val(data.remarks);
                 
@@ -779,6 +910,12 @@ function setupEventHandlers() {
         let formData = new FormData(this);
         formData.append('supplier_code', supplierCode);
         
+        // Remove commas from total_amount before submitting
+        const totalAmountValue = $('#total_amount').val();
+        if (totalAmountValue) {
+            formData.set('total_amount', removeCommas(totalAmountValue));
+        }
+        
         let id = $(this).data('id');
         let url = id ? `/api/accounts-payable/${id}` : '/api/accounts-payable';
         let method = id ? 'PUT' : 'POST';
@@ -821,6 +958,7 @@ function setupEventHandlers() {
         let enteredAmount = parseFloat(rawAmount) || 0;
         let balanceAmount = parseFloat($('#payment_amount').data('balance-amount')) || 0;
         let paymentType = $('#payment_type').val();
+        let paymentMethod = $('#payment_method').val();
         
         // Final validation before submission
         if (enteredAmount <= 0) {
@@ -837,10 +975,41 @@ function setupEventHandlers() {
             Swal.fire('Error!', 'Invalid payment amount detected.', 'error');
             return;
         }
+
+        if (!paymentMethod) {
+            Swal.fire('Error!', 'Please select a payment method.', 'error');
+            return;
+        }
+
+        // Validate bank selection if payment method is bank
+        if (paymentMethod === 'bank') {
+            const selectedBank = $('#bank_selection').val();
+            if (!selectedBank) {
+                Swal.fire('Error!', 'Please select a bank when using bank payment method.', 'error');
+                return;
+            }
+        }
         
         // Create form data and set the raw amount (without commas)
         let formData = new FormData(this);
         formData.set('payment_amount', rawAmount); // Send raw number without commas
+        formData.set('payment_type', paymentMethod); // Use the payment method (cash/bank/gcash)
+        
+        // Add bank details if bank payment method is selected
+        if (paymentMethod === 'bank') {
+            const selectedBankId = $('#bank_selection').val();
+            const bankData = $('#bank_selection').find('option:selected').data('bank');
+            
+            if (bankData) {
+                formData.append('bank_id', selectedBankId);
+                formData.append('bank_name', bankData.BankName);
+                formData.append('account_name', bankData.AccountName);
+                formData.append('account_number', bankData.AccountNumber);
+                formData.append('card_number', bankData.CardNumber);
+                formData.append('expiration_date', bankData.ExpirationDate);
+                formData.append('ccv', bankData.CCV);
+            }
+        }
         
         // Show loading state
         let submitBtn = $(this).find('button[type="submit"]');
@@ -984,10 +1153,52 @@ function setupEventHandlers() {
         }
     });
 
+    // Payment method change handler
+    $(document).on('change', '#payment_method', function() {
+        const selectedMethod = $(this).val();
+        
+        if (selectedMethod === 'bank') {
+            $('#bankDetailsSection').show();
+            // Make bank selection required when bank is chosen
+            $('#bank_selection').attr('required', true);
+        } else {
+            $('#bankDetailsSection').hide();
+            $('#bank_selection').removeAttr('required').val('');
+            resetBankFields();
+        }
+    });
+
+    // Bank selection change handler
+    $(document).on('change', '#bank_selection', function() {
+        const selectedBankId = $(this).val();
+        
+        if (selectedBankId) {
+            const selectedOption = $(this).find('option:selected');
+            const bankData = selectedOption.data('bank');
+            
+            if (bankData) {
+                // Populate bank fields with selected bank data
+                $('#bank_account_name').val(bankData.AccountName || '');
+                $('#bank_account_number').val(bankData.AccountNumber || '');
+                $('#bank_card_number').val(bankData.CardNumber || '');
+                $('#bank_expiration').val(bankData.ExpirationDate || '');
+                $('#bank_ccv').val(bankData.CCV || '');
+            } else {
+                console.warn('No bank data found for selected option');
+            }
+        } else {
+            resetBankFields();
+        }
+    });
+
     // Reset payment modal when closed
     $('#paymentModal').on('hidden.bs.modal', function() {
         $('#payment_amount').removeClass('is-invalid is-valid').next('.invalid-feedback').remove();
         $('#payment_type_indicator').removeClass('bg-warning bg-danger').addClass('bg-success').text('Full Payment');
+        $('#payment_method').val('');
+        $('#bankDetailsSection').hide();
+        $('#bank_selection').removeAttr('required').val('');
+        resetBankFields();
         $(this).find('form')[0].reset();
     });
 
@@ -1014,6 +1225,40 @@ function formatCurrency(amount) {
         style: 'currency',
         currency: 'PHP'
     }).format(amount || 0);
+}
+
+// Format number with commas (for input fields)
+function formatNumberWithCommas(amount) {
+    if (!amount || amount === '') return '';
+    return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+
+// Remove commas from formatted number (for calculations)
+function removeCommas(value) {
+    if (!value) return 0;
+    return parseFloat(value.toString().replace(/,/g, '')) || 0;
+}
+
+// Initialize amount field formatting
+function initializeAmountFormatting() {
+    // Format total_amount field on blur (when user finishes typing)
+    $('#total_amount').on('blur', function() {
+        let value = $(this).val();
+        if (value && !isNaN(removeCommas(value))) {
+            $(this).val(formatNumberWithCommas(removeCommas(value)));
+        }
+    });
+    
+    // Allow only numbers, decimal points, and commas during input
+    $('#total_amount').on('input', function() {
+        let value = $(this).val();
+        // Remove any non-numeric characters except decimal point and comma
+        value = value.replace(/[^0-9.,]/g, '');
+        $(this).val(value);
+    });
 }
 
 function getStatusBadge(status, isOverdue = false) {

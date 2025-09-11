@@ -7,6 +7,7 @@ use App\Models\AccountsPayable;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class AccountsPayableController extends Controller
@@ -297,8 +298,16 @@ class AccountsPayableController extends Controller
                 'payment_amount' => 'required|numeric|min:0.01',
                 'payment_type' => 'required|in:cash,bank,gcash',
                 'reference_number' => 'nullable|string|max:100',
-                'remarks' => 'nullable|string|max:500'
+                'remarks' => 'nullable|string|max:500',
+                'bank_id' => 'nullable|exists:tblBank,BankID'
             ]);
+
+            // Additional validation: bank_id is required when payment_type is 'bank'
+            if ($request->payment_type === 'bank' && empty($request->bank_id)) {
+                $validator->after(function ($validator) {
+                    $validator->errors()->add('bank_id', 'Bank selection is required for bank payments.');
+                });
+            }
 
             if ($validator->fails()) {
                 return response()->json([
@@ -319,12 +328,12 @@ class AccountsPayableController extends Controller
                 ], 422);
             }
 
-            // Determine payment status based on amount
-            $totalAmount = $accountsPayable->total_amount;
-            $paymentStatus = ($paymentAmount >= $totalAmount) ? 'full' : 'partial';
+            // Determine payment status based on remaining balance after this payment
+            $newBalance = $currentBalance - $paymentAmount;
+            $paymentStatus = ($newBalance <= 0.001) ? 'full' : 'partial'; // Using small tolerance for floating point comparison
 
             // Create payment record
-            $payment = Payment::create([
+            $paymentData = [
                 'accounts_payable_id' => $accountsPayable->id,
                 'payment_amount' => $paymentAmount,
                 'payment_type' => $request->payment_type, // cash, bank, gcash
@@ -333,7 +342,14 @@ class AccountsPayableController extends Controller
                 'reference_number' => $request->reference_number,
                 'remarks' => $request->remarks,
                 'process_by' => auth()->user()->name ?? 'System'
-            ]);
+            ];
+
+            // Add bank_id if payment type is bank and bank_id is provided
+            if ($request->payment_type === 'bank' && $request->bank_id) {
+                $paymentData['bank_id'] = $request->bank_id;
+            }
+
+            $payment = Payment::create($paymentData);
 
             // Calculate new balance after payment
             $totalPaid = $accountsPayable->payments()->sum('payment_amount');
@@ -416,6 +432,32 @@ class AccountsPayableController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error retrieving suppliers: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get banks for payment dropdown
+     */
+    public function getBanks()
+    {
+        try {
+            // Get all banks - since we learned that there are no 'Active' status banks,
+            // we'll return all banks for now. This can be adjusted later if needed.
+            $banks = \App\Models\Bank::select('BankID', 'BankName', 'AccountName', 'AccountNumber', 'CardNumber', 'ExpirationDate', 'CCV')
+                                    ->orderBy('BankName')
+                                    ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Banks retrieved successfully',
+                'data' => $banks
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving banks: ' . $e->getMessage()
             ], 500);
         }
     }

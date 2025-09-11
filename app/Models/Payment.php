@@ -28,7 +28,8 @@ class Payment extends Model
         'payment_status',
         'reference_number',
         'remarks',
-        'process_by'
+        'process_by',
+        'bank_id'
     ];
 
     protected $casts = [
@@ -50,6 +51,14 @@ class Payment extends Model
     public function accountsPayable()
     {
         return $this->belongsTo(AccountsPayable::class, 'accounts_payable_id', 'id');
+    }
+
+    /**
+     * Relationship: Payment belongs to Bank
+     */
+    public function bank()
+    {
+        return $this->belongsTo(Bank::class, 'bank_id', 'BankID');
     }
 
     /**

@@ -19,7 +19,7 @@ class PaymentHistoryController extends Controller
     public function index(Request $request)
     {
         try {
-            $payments = Payment::with(['accountsPayable.supplier'])
+            $payments = Payment::with(['accountsPayable.supplier', 'bank'])
                 ->select(
                     'tblPayments.id',
                     'tblPayments.accounts_payable_id',
@@ -30,6 +30,7 @@ class PaymentHistoryController extends Controller
                     'tblPayments.reference_number as payment_reference_number',
                     'tblPayments.remarks',
                     'tblPayments.process_by',
+                    'tblPayments.bank_id',
                     'tblPayments.created_at',
                     'tblPayments.updated_at',
                     'tblAccountsPayable.supplier_code',
@@ -38,9 +39,11 @@ class PaymentHistoryController extends Controller
                     'tblAccountsPayable.reference_number as ap_reference_number',
                     'tblAccountsPayable.total_amount as invoice_amount',
                     'tblAccountsPayable.terms',
-                    'tblAccountsPayable.date as invoice_date'
+                    'tblAccountsPayable.date as invoice_date',
+                    'tblBank.BankName'
                 )
                 ->leftJoin('tblAccountsPayable', 'tblPayments.accounts_payable_id', '=', 'tblAccountsPayable.id')
+                ->leftJoin('tblBank', 'tblPayments.bank_id', '=', 'tblBank.BankID')
                 ->orderBy('tblPayments.created_at', 'desc')
                 ->orderBy('tblPayments.payment_date', 'desc')
                 ->orderBy('tblPayments.id', 'desc')
@@ -59,12 +62,14 @@ class PaymentHistoryController extends Controller
                         'payment_amount' => number_format((float)$payment->payment_amount, 2, '.', ''),
                         'payment_type' => $payment->payment_type ?? 'cash',
                         'payment_status' => $payment->payment_status ?? 'full',
+                        'bank_name' => $payment->BankName ?? null,
                         'transaction_type' => 'Payable', // For now, only payables
                         'terms' => $payment->terms ?? 'N/A',
                         'payment_reference' => $payment->payment_reference_number ?? 'N/A', // Same as reference_number for compatibility
                         'remarks' => $payment->remarks ?? '',
                         'process_by' => $payment->process_by ?? 'System',
                         'accounts_payable_id' => $payment->accounts_payable_id,
+                        'bank_id' => $payment->bank_id,
                         'created_at' => $payment->created_at ? Carbon::parse($payment->created_at)->format('Y-m-d H:i:s') : null,
                         'updated_at' => $payment->updated_at ? Carbon::parse($payment->updated_at)->format('Y-m-d H:i:s') : null,
                         'sort_timestamp' => $payment->created_at ? Carbon::parse($payment->created_at)->timestamp : 0
@@ -91,7 +96,7 @@ class PaymentHistoryController extends Controller
     public function show($id)
     {
         try {
-            $payment = Payment::with(['accountsPayable.supplier'])
+            $payment = Payment::with(['accountsPayable.supplier', 'bank'])
                 ->select(
                     'tblPayments.*',
                     'tblAccountsPayable.supplier_code',
@@ -102,9 +107,11 @@ class PaymentHistoryController extends Controller
                     'tblAccountsPayable.terms',
                     'tblAccountsPayable.date as invoice_date',
                     'tblAccountsPayable.status as invoice_status',
-                    'tblAccountsPayable.balance_amount'
+                    'tblAccountsPayable.balance_amount',
+                    'tblBank.BankName'
                 )
                 ->leftJoin('tblAccountsPayable', 'tblPayments.accounts_payable_id', '=', 'tblAccountsPayable.id')
+                ->leftJoin('tblBank', 'tblPayments.bank_id', '=', 'tblBank.BankID')
                 ->where('tblPayments.id', $id)
                 ->first();
 
@@ -127,12 +134,14 @@ class PaymentHistoryController extends Controller
                 'payment_amount' => number_format((float)$payment->payment_amount, 2, '.', ''),
                 'payment_type' => $payment->payment_type ?? 'cash',
                 'payment_status' => $payment->payment_status ?? 'full',
+                'bank_name' => $payment->BankName ?? null,
                 'transaction_type' => 'Payable', // For now, only payables
                 'terms' => $payment->terms ?? 'N/A',
                 'payment_reference' => $payment->reference_number ?? 'N/A',
                 'remarks' => $payment->remarks ?? '',
                 'process_by' => $payment->process_by ?? 'System',
                 'accounts_payable_id' => $payment->accounts_payable_id,
+                'bank_id' => $payment->bank_id,
                 'invoice_status' => $payment->invoice_status ?? 'N/A',
                 'balance_amount' => number_format((float)$payment->balance_amount, 2, '.', ''),
                 'created_at' => $payment->created_at ? Carbon::parse($payment->created_at)->format('Y-m-d H:i:s') : null,
