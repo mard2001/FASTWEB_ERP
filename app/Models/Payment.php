@@ -25,7 +25,7 @@ class Payment extends Model
         'payment_amount',
         'payment_type',
         'payment_date',
-        'payment_method',
+        'payment_status',
         'reference_number',
         'remarks',
         'process_by'
@@ -85,11 +85,19 @@ class Payment extends Model
     }
 
     /**
-     * Get payment type label
+     * Get payment type label (method of payment)
      */
-    public function getPaymentTypeLabelAttribute()
+    public function getPaymentTypeLabel()
     {
         return ucfirst($this->payment_type) . ' Payment';
+    }
+
+    /**
+     * Get payment status label (full/partial)
+     */
+    public function getPaymentStatusLabel()
+    {
+        return ucfirst($this->payment_status) . ' Payment';
     }
 
     /**
@@ -97,7 +105,7 @@ class Payment extends Model
      */
     public function isFullPayment()
     {
-        return $this->payment_type === 'full';
+        return $this->payment_status === 'full';
     }
 
     /**
@@ -105,6 +113,6 @@ class Payment extends Model
      */
     public function isPartialPayment()
     {
-        return $this->payment_type === 'partial';
+        return $this->payment_status === 'partial';
     }
 }

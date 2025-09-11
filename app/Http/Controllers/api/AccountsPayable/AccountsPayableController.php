@@ -55,8 +55,9 @@ class AccountsPayableController extends Controller
                 $query->where('rr_number', 'like', '%' . $request->rr_number . '%');
             }
 
-            $data = $query->orderBy('date', 'desc')
-                          ->orderBy('supplier_name', 'asc')
+            $data = $query->orderBy('created_at', 'desc')
+                          ->orderBy('date', 'desc')
+                          ->orderBy('id', 'desc')
                           ->get();
 
             // Add computed fields
@@ -67,6 +68,8 @@ class AccountsPayableController extends Controller
                 $item->balance_amount = $item->balance_amount;
                 $item->is_overdue = $item->is_overdue;
                 $item->due_date = $item->due_date;
+                // Add sort timestamp for precise frontend sorting
+                $item->sort_timestamp = $item->created_at ? $item->created_at->timestamp : 0;
             });
 
             if ($data->isEmpty()) {
@@ -292,8 +295,7 @@ class AccountsPayableController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'payment_amount' => 'required|numeric|min:0.01',
-                'payment_type' => 'required|in:full,partial',
-                'payment_method' => 'nullable|string|max:50',
+                'payment_type' => 'required|in:cash,bank,gcash',
                 'reference_number' => 'nullable|string|max:100',
                 'remarks' => 'nullable|string|max:500'
             ]);
@@ -317,13 +319,17 @@ class AccountsPayableController extends Controller
                 ], 422);
             }
 
+            // Determine payment status based on amount
+            $totalAmount = $accountsPayable->total_amount;
+            $paymentStatus = ($paymentAmount >= $totalAmount) ? 'full' : 'partial';
+
             // Create payment record
             $payment = Payment::create([
                 'accounts_payable_id' => $accountsPayable->id,
                 'payment_amount' => $paymentAmount,
-                'payment_type' => $request->payment_type,
+                'payment_type' => $request->payment_type, // cash, bank, gcash
+                'payment_status' => $paymentStatus, // full, partial
                 'payment_date' => now(),
-                'payment_method' => $request->payment_method,
                 'reference_number' => $request->reference_number,
                 'remarks' => $request->remarks,
                 'process_by' => auth()->user()->name ?? 'System'
@@ -334,7 +340,7 @@ class AccountsPayableController extends Controller
             $newBalance = $accountsPayable->total_amount - $totalPaid;
 
             // Update status based on payment
-            if ($newBalance <= 0 || $request->payment_type === 'full') {
+            if ($newBalance <= 0 || $paymentStatus === 'full') {
                 $accountsPayable->status = 'Paid';
             } else {
                 // Partial payment with remaining balance

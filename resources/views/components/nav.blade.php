@@ -43,6 +43,12 @@
                             <span class="ms-2 px-1">Account's Payable</span>
                         </a>
                     </li>
+                    <li class="">
+                        <a href="{{ route('payment-history') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Payment History</span>
+                        </a>
+                    </li>
                 </div>
             </ul>
         </li>
@@ -130,6 +136,12 @@
                         <a href="{{ route('warehouse') }}" class="sidebar-link">
                             <span class="mdi mdi-ray-start-arrow"></span>
                             <span class="ms-2 px-1">Warehouse</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="{{ route('bank') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Bank</span>
                         </a>
                     </li>
                 </div>

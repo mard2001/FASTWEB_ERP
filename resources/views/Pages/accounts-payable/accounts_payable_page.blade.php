@@ -295,6 +295,24 @@
                         </div>
                         
                         <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="payment_method" name="payment_type" required>
+                                <option value="">Select payment type</option>
+                                <option value="cash">Cash</option>
+                                <option value="bank">Bank</option>
+                                <option value="gcash">GCash</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="payment_reference_number" class="form-label">Reference Number</label>
+                            <input type="text" class="form-control" id="payment_reference_number" name="reference_number" placeholder="Enter reference number (optional)">
+                            <div class="form-text">
+                                <small class="text-muted">Enter check number, transaction ID, or other reference</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
                             <label for="payment_remarks" class="form-label">Payment Remarks</label>
                             <textarea class="form-control" id="payment_remarks" name="remarks" rows="3"></textarea>
                         </div>

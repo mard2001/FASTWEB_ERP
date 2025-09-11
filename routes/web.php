@@ -218,6 +218,11 @@ Route::get('/transactions/accounts-payable', function () {
     return page_view('accounts-payable/accounts_payable_page');
 })->name('accounts-payable')->middleware('check.user.status');
 
+// PAYMENT HISTORY MODULE
+Route::get('/transactions/payment-history', function () {
+    return page_view('payment-history/payment_history_page');
+})->name('payment-history')->middleware('check.user.status');
+
 
 // SUPPLIER MAINTENANCE MODULE
 Route::get('/master-data/supplier', function () {
@@ -229,6 +234,11 @@ Route::get('/master-data/supplier', function () {
 Route::get('/master-data/warehouse', function () {
     return page_view('warehouse/warehouse_page');
 })->name('warehouse')->middleware('check.user.status');
+
+// BANK MAINTENANCE MODULE
+Route::get('/master-data/bank', function () {
+    return page_view('bank/bank_page');
+})->name('bank')->middleware('check.user.status');
 
 // ACTIVITY LOGS MODULE - Restricted to developers only
 Route::get('/reports/activity-logs', function () {

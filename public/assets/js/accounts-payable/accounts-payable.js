@@ -222,6 +222,10 @@ function initAccountsPayableDataTable() {
                 data: 'date', 
                 title: 'Date',
                 render: function(data, type, row) {
+                    if (type === 'sort') {
+                        // For sorting, use the sort_timestamp for precise ordering
+                        return row.sort_timestamp || 0;
+                    }
                     return moment(data).format('MMM DD, YYYY');
                 }
             },

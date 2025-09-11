@@ -47,6 +47,7 @@ use App\Http\Controllers\api\MasterData\PAMasterListController;
 use App\Http\Controllers\api\Warehouse\WHTaggingController;
 use App\Http\Controllers\api\ActivityLog\ActivityLogController;
 use App\Http\Controllers\api\ThemeController;
+use App\Http\Controllers\api\BankController;
 
 
 Route::middleware(['auth:sanctum', 'check.user.status', DynamicDatabase::class])->group(function () {
@@ -188,6 +189,7 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
     Route::apiResource('/customer', CustomerController::class);
     Route::apiResource('/vendors', SupplierController::class);
     Route::apiResource('/supplier-shipped-to', SupplierShipToController::class);
+    Route::apiResource('/bank', BankController::class);
 
     // Activity Log routes
     Route::prefix('activity-log')->group(function () {
@@ -236,6 +238,12 @@ Route::get('accounts-payable/suppliers', [\App\Http\Controllers\api\AccountsPaya
 Route::post('accounts-payable/{id}/payment', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'processPayment'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::get('accounts-payable/{id}/payments', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'getPaymentHistory'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::apiResource('accounts-payable', \App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class)->middleware(['auth:sanctum', 'check.user.status']);
+
+// Payment History API Routes
+Route::get('payment-history', [\App\Http\Controllers\api\PaymentHistory\PaymentHistoryController::class, 'index'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('payment-history/suppliers', [\App\Http\Controllers\api\PaymentHistory\PaymentHistoryController::class, 'getSuppliers'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('payment-history/statistics', [\App\Http\Controllers\api\PaymentHistory\PaymentHistoryController::class, 'getStatistics'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('payment-history/{id}', [\App\Http\Controllers\api\PaymentHistory\PaymentHistoryController::class, 'show'])->middleware(['auth:sanctum', 'check.user.status']);
 
 // Route::post('/auth/register', [AuthController::class, 'register']); // Disabled - Registration handled by admin through user management
 Route::post('/auth/login', [AuthController::class, 'login']);
