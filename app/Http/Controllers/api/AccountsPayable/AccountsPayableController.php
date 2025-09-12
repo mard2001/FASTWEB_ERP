@@ -299,13 +299,21 @@ class AccountsPayableController extends Controller
                 'payment_type' => 'required|in:cash,bank,gcash',
                 'reference_number' => 'nullable|string|max:100',
                 'remarks' => 'nullable|string|max:500',
-                'bank_id' => 'nullable|exists:tblBank,BankID'
+                'bank_id' => 'nullable|integer',
+                'gcash_id' => 'nullable|integer'
             ]);
 
             // Additional validation: bank_id is required when payment_type is 'bank'
             if ($request->payment_type === 'bank' && empty($request->bank_id)) {
                 $validator->after(function ($validator) {
                     $validator->errors()->add('bank_id', 'Bank selection is required for bank payments.');
+                });
+            }
+
+            // Additional validation: gcash_id is required when payment_type is 'gcash'
+            if ($request->payment_type === 'gcash' && empty($request->gcash_id)) {
+                $validator->after(function ($validator) {
+                    $validator->errors()->add('gcash_id', 'GCash account selection is required for GCash payments.');
                 });
             }
 
@@ -347,6 +355,11 @@ class AccountsPayableController extends Controller
             // Add bank_id if payment type is bank and bank_id is provided
             if ($request->payment_type === 'bank' && $request->bank_id) {
                 $paymentData['bank_id'] = $request->bank_id;
+            }
+
+            // Add gcash_id if payment type is gcash and gcash_id is provided
+            if ($request->payment_type === 'gcash' && $request->gcash_id) {
+                $paymentData['gcash_id'] = $request->gcash_id;
             }
 
             $payment = Payment::create($paymentData);

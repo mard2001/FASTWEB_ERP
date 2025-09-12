@@ -13,6 +13,7 @@ let filteredStartDate;
 let filteredEndDate;
 let suppliersData = [];
 let banksData = [];
+let gcashData = [];
 
 // Initialize page
 $(document).ready(function() {
@@ -20,6 +21,7 @@ $(document).ready(function() {
     initDateRangePicker();
     loadSuppliersData();
     loadAccountsPayableData();
+    loadGcashData(); // Load GCash data for payment dropdown
     
     // Initialize number formatting for amount fields
     initializeAmountFormatting();
@@ -128,6 +130,37 @@ function loadBanksDataForModal() {
     });
 }
 
+// Load GCash data for payment dropdown
+function loadGcashData() {
+    $.ajax({
+        url: '/api/gcash',
+        type: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        success: function(response) {
+            if (response.success && response.data) {
+                gcashData = response.data;
+                populateGcashDropdown();
+            } else {
+                console.warn('No GCash data received or invalid response format');
+                gcashData = [];
+            }
+        },
+        error: function(xhr) {
+            console.error('Failed to load GCash data:', xhr);
+            gcashData = [];
+            
+            if (xhr.status === 401) {
+                console.warn('Authentication required for GCash data');
+            } else if (xhr.status >= 500) {
+                console.error('Server error loading GCash data');
+            }
+        }
+    });
+}
+
 // Populate supplier dropdowns
 function populateSupplierDropdowns() {
     // Check if VirtualSelect is available
@@ -209,6 +242,19 @@ function populateBankDropdown() {
         banksData.forEach(bank => {
             const option = `<option value="${bank.BankID}" data-bank='${JSON.stringify(bank)}'>${bank.BankName}</option>`;
             bankSelect.append(option);
+        });
+    }
+}
+
+// Populate GCash dropdown for payment modal
+function populateGcashDropdown() {
+    const gcashSelect = $('#gcash_selection');
+    gcashSelect.empty().append('<option value="">Choose GCash Account...</option>');
+    
+    if (gcashData && gcashData.length > 0) {
+        gcashData.forEach(gcash => {
+            const option = `<option value="${gcash.GcashID}" data-gcash='${JSON.stringify(gcash)}'>${gcash.AccountName}</option>`;
+            gcashSelect.append(option);
         });
     }
 }
@@ -587,6 +633,14 @@ function fillAccountsPayableModal(data) {
     $('#balance_amount').val(formatNumberWithCommas(data.balance_amount || ''));
     $('#remarks').val(data.remarks || '');
     
+    // Control balance amount visibility based on status
+    const status = data.status || '';
+    if (status.toLowerCase() === 'pending') {
+        $('#balance_amount_container').hide();
+    } else {
+        $('#balance_amount_container').show();
+    }
+    
     // Set supplier in Virtual Select and display field
     const supplierVS = document.querySelector('#supplier_code_VS');
     if (supplierVS && supplierVS.setValue && data.supplier_code) {
@@ -638,6 +692,13 @@ function setModalMode(mode, status) {
     $('#editAPBtn').toggle(!isEdit);
     $('#cancelEditAPBtn').toggle(isEdit);
     
+    // Control balance amount visibility based on status
+    if (status && status.toLowerCase() === 'pending') {
+        $('#balance_amount_container').hide();
+    } else {
+        $('#balance_amount_container').show();
+    }
+    
     // Update modal title
     const titleElement = $('#accountsPayableModal .modalHeaderTitle');
     if (isEdit) {
@@ -652,23 +713,48 @@ function showPaymentModal(rowData) {
     $('#payment_ap_id').val(rowData.id);
     $('#payment_total_amount').text(formatCurrency(rowData.total_amount));
     $('#payment_balance_amount').text(formatCurrency(rowData.balance_amount));
-    $('#payment_amount').attr('max', rowData.balance_amount);
-    $('#payment_amount').val('');
+    
+    // Set max and data attributes for all payment amount fields
+    const balanceAmount = rowData.balance_amount;
+    $('#cash_payment_amount, #bank_payment_amount, #gcash_payment_amount').each(function() {
+        $(this).attr('max', balanceAmount);
+        $(this).data('balance-amount', balanceAmount);
+        $(this).val('');
+    });
+    
     $('#payment_type').val('full');
-    $('#payment_type_indicator').removeClass('bg-warning bg-success').addClass('bg-success').text('Full Payment');
+    
+    // Reset all payment type indicators
+    $('#cash_payment_type_indicator, #bank_payment_type_indicator, #gcash_payment_type_indicator')
+        .removeClass('bg-warning bg-success').addClass('bg-success').text('Full Payment');
+    
     $('#payment_remarks').val('');
     $('#payment_method').val(''); // Reset payment method
+    
+    // Control current balance visibility based on status
+    const status = rowData.status || '';
+    if (status.toLowerCase() === 'pending') {
+        $('#payment_balance_container').hide();
+    } else {
+        $('#payment_balance_container').show();
+    }
     
     // Reset and hide bank details
     $('#bankDetailsSection').hide();
     $('#bank_selection').val('');
     resetBankFields();
     
+    // Reset and hide GCash details
+    $('#gcashDetailsSection').hide();
+    $('#gcash_selection').val('');
+    resetGcashFields();
+    
+    // Reset and hide cash details
+    $('#cashPaymentFields').hide();
+    resetCashFields();
+    
     // Load banks data and populate dropdown
     loadBanksDataForModal();
-    
-    // Store balance amount for validation
-    $('#payment_amount').data('balance-amount', rowData.balance_amount);
     
     $('#paymentModal').modal('show');
 }
@@ -680,6 +766,44 @@ function resetBankFields() {
     $('#bank_card_number').val('');
     $('#bank_expiration').val('');
     $('#bank_ccv').val('');
+}
+
+// Reset GCash fields
+function resetGcashFields() {
+    $('#gcash_account_name').val('');
+    $('#gcash_account_number').val('');
+}
+
+// Reset Cash fields
+function resetCashFields() {
+    $('#cash_payment_amount').val('');
+    $('#cash_payment_type_indicator').removeClass('bg-warning bg-danger').addClass('bg-success').text('Full Payment');
+}
+
+// Helper function to get the current payment amount field based on selected method
+function getCurrentPaymentAmountField() {
+    const paymentMethod = $('#payment_method').val();
+    switch(paymentMethod) {
+        case 'bank':
+            return $('#bank_payment_amount');
+        case 'gcash':
+            return $('#gcash_payment_amount');
+        default: // cash
+            return $('#cash_payment_amount');
+    }
+}
+
+// Helper function to get the current payment status indicator based on selected method
+function getCurrentPaymentStatusIndicator() {
+    const paymentMethod = $('#payment_method').val();
+    switch(paymentMethod) {
+        case 'bank':
+            return $('#bank_payment_type_indicator');
+        case 'gcash':
+            return $('#gcash_payment_type_indicator');
+        default: // cash
+            return $('#cash_payment_type_indicator');
+    }
 }
 
 // Edit record function
@@ -717,7 +841,7 @@ function editRecord(id) {
         }
     });
 }
-
+ 
 // Setup event handlers
 function setupEventHandlers() {
     // Row click handler for viewing/editing records
@@ -954,9 +1078,10 @@ function setupEventHandlers() {
         e.preventDefault();
         
         let id = $('#payment_ap_id').val();
-        let rawAmount = $('#payment_amount').val().replace(/,/g, ''); // Remove commas for calculation
+        let currentAmountField = getCurrentPaymentAmountField();
+        let rawAmount = currentAmountField.val().replace(/,/g, ''); // Remove commas for calculation
         let enteredAmount = parseFloat(rawAmount) || 0;
-        let balanceAmount = parseFloat($('#payment_amount').data('balance-amount')) || 0;
+        let balanceAmount = parseFloat(currentAmountField.data('balance-amount')) || 0;
         let paymentType = $('#payment_type').val();
         let paymentMethod = $('#payment_method').val();
         
@@ -989,6 +1114,15 @@ function setupEventHandlers() {
                 return;
             }
         }
+
+        // Validate GCash selection if payment method is GCash
+        if (paymentMethod === 'gcash') {
+            const selectedGcash = $('#gcash_selection').val();
+            if (!selectedGcash) {
+                Swal.fire('Error!', 'Please select a GCash account when using GCash payment method.', 'error');
+                return;
+            }
+        }
         
         // Create form data and set the raw amount (without commas)
         let formData = new FormData(this);
@@ -1008,6 +1142,18 @@ function setupEventHandlers() {
                 formData.append('card_number', bankData.CardNumber);
                 formData.append('expiration_date', bankData.ExpirationDate);
                 formData.append('ccv', bankData.CCV);
+            }
+        }
+
+        // Add GCash details if GCash payment method is selected
+        if (paymentMethod === 'gcash') {
+            const selectedGcashId = $('#gcash_selection').val();
+            const gcashData = $('#gcash_selection').find('option:selected').data('gcash');
+            
+            if (gcashData) {
+                formData.append('gcash_id', selectedGcashId);
+                formData.append('gcash_account_name', gcashData.AccountName);
+                formData.append('gcash_account_number', gcashData.AccountNumber);
             }
         }
         
@@ -1092,13 +1238,22 @@ function setupEventHandlers() {
     });
 
     // Payment amount change handler - automated payment type detection
-    $('#payment_amount').on('input keyup change', function() {
+    $(document).on('input keyup change', '#cash_payment_amount, #bank_payment_amount, #gcash_payment_amount', function() {
         let rawValue = $(this).val().replace(/,/g, ''); // Remove existing commas
         let enteredAmount = parseFloat(rawValue) || 0;
         let balanceAmount = parseFloat($(this).data('balance-amount')) || 0;
         let paymentTypeField = $('#payment_type');
-        let indicator = $('#payment_type_indicator');
         let amountField = $(this);
+        
+        // Get the corresponding indicator based on the field ID
+        let indicator;
+        if ($(this).attr('id') === 'cash_payment_amount') {
+            indicator = $('#cash_payment_type_indicator');
+        } else if ($(this).attr('id') === 'bank_payment_amount') {
+            indicator = $('#bank_payment_type_indicator');
+        } else if ($(this).attr('id') === 'gcash_payment_amount') {
+            indicator = $('#gcash_payment_type_indicator');
+        }
         
         // Format the input value with commas
         if (rawValue && !isNaN(rawValue)) {
@@ -1159,12 +1314,31 @@ function setupEventHandlers() {
         
         if (selectedMethod === 'bank') {
             $('#bankDetailsSection').show();
+            $('#gcashDetailsSection').hide();
+            $('#cashPaymentFields').hide();
             // Make bank selection required when bank is chosen
             $('#bank_selection').attr('required', true);
-        } else {
+            $('#gcash_selection').removeAttr('required').val('');
+            resetGcashFields();
+            resetCashFields();
+        } else if (selectedMethod === 'gcash') {
+            $('#gcashDetailsSection').show();
             $('#bankDetailsSection').hide();
+            $('#cashPaymentFields').hide();
+            // Make gcash selection required when gcash is chosen
+            $('#gcash_selection').attr('required', true);
             $('#bank_selection').removeAttr('required').val('');
             resetBankFields();
+            resetCashFields();
+        } else {
+            // Cash payment
+            $('#bankDetailsSection').hide();
+            $('#gcashDetailsSection').hide();
+            $('#cashPaymentFields').show();
+            $('#bank_selection').removeAttr('required').val('');
+            $('#gcash_selection').removeAttr('required').val('');
+            resetBankFields();
+            resetGcashFields();
         }
     });
 
@@ -1191,14 +1365,44 @@ function setupEventHandlers() {
         }
     });
 
+    // GCash selection change handler
+    $(document).on('change', '#gcash_selection', function() {
+        const selectedGcashId = $(this).val();
+        
+        if (selectedGcashId) {
+            const selectedOption = $(this).find('option:selected');
+            const gcashData = selectedOption.data('gcash');
+            
+            if (gcashData) {
+                // Populate GCash fields with selected GCash data
+                $('#gcash_account_name').val(gcashData.AccountName || '');
+                $('#gcash_account_number').val(gcashData.AccountNumber || '');
+            } else {
+                console.warn('No GCash data found for selected option');
+            }
+        } else {
+            resetGcashFields();
+        }
+    });
+
     // Reset payment modal when closed
     $('#paymentModal').on('hidden.bs.modal', function() {
-        $('#payment_amount').removeClass('is-invalid is-valid').next('.invalid-feedback').remove();
-        $('#payment_type_indicator').removeClass('bg-warning bg-danger').addClass('bg-success').text('Full Payment');
+        // Reset all payment amount fields
+        $('#cash_payment_amount, #bank_payment_amount, #gcash_payment_amount').removeClass('is-invalid is-valid').next('.invalid-feedback').remove();
+        
+        // Reset all payment type indicators
+        $('#cash_payment_type_indicator, #bank_payment_type_indicator, #gcash_payment_type_indicator')
+            .removeClass('bg-warning bg-danger').addClass('bg-success').text('Full Payment');
+        
         $('#payment_method').val('');
         $('#bankDetailsSection').hide();
+        $('#gcashDetailsSection').hide();
+        $('#cashPaymentFields').hide();
         $('#bank_selection').removeAttr('required').val('');
+        $('#gcash_selection').removeAttr('required').val('');
         resetBankFields();
+        resetGcashFields();
+        resetCashFields();
         $(this).find('form')[0].reset();
     });
 

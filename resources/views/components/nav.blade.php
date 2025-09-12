@@ -144,6 +144,12 @@
                             <span class="ms-2 px-1">Bank</span>
                         </a>
                     </li>
+                    <li class="">
+                        <a href="{{ route('gcash') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">GCash</span>
+                        </a>
+                    </li>
                 </div>
             </ul>
         </li>

@@ -410,11 +410,18 @@ function fillPaymentHistoryModal(data) {
     $('#view_payment_status').val(data.payment_status ? (data.payment_status.charAt(0).toUpperCase() + data.payment_status.slice(1) + ' Payment') : 'Full Payment');
     $('#view_payment_type').val(data.payment_type ? (data.payment_type.charAt(0).toUpperCase() + data.payment_type.slice(1)) : 'Cash');
     
-    // Show bank name only for bank payments
+    // Handle payment method info dynamically based on payment type
     if (data.payment_type && data.payment_type.toLowerCase() === 'bank') {
-        $('#view_bank_name').val(data.bank_name || 'N/A');
+        $('#payment_method_info_label').text('Bank Name');
+        $('#view_payment_method_info').val(data.bank_name || 'N/A');
+        $('#payment_method_info_container').show();
+    } else if (data.payment_type && data.payment_type.toLowerCase() === 'gcash') {
+        $('#payment_method_info_label').text('GCash Account');
+        $('#view_payment_method_info').val(data.gcash_account_number || 'N/A');
+        $('#payment_method_info_container').show();
     } else {
-        $('#view_bank_name').val('-');
+        // For cash payments, hide the payment method info section
+        $('#payment_method_info_container').hide();
     }
     
     $('#view_terms').val(data.terms || 'N/A');

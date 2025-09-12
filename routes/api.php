@@ -48,6 +48,7 @@ use App\Http\Controllers\api\Warehouse\WHTaggingController;
 use App\Http\Controllers\api\ActivityLog\ActivityLogController;
 use App\Http\Controllers\api\ThemeController;
 use App\Http\Controllers\api\BankController;
+use App\Http\Controllers\api\GcashController;
 
 
 Route::middleware(['auth:sanctum', 'check.user.status', DynamicDatabase::class])->group(function () {
@@ -190,6 +191,7 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
     Route::apiResource('/vendors', SupplierController::class);
     Route::apiResource('/supplier-shipped-to', SupplierShipToController::class);
     Route::apiResource('/bank', BankController::class);
+    Route::apiResource('/gcash', GcashController::class);
 
     // Activity Log routes
     Route::prefix('activity-log')->group(function () {

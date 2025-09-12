@@ -19,7 +19,7 @@ class PaymentHistoryController extends Controller
     public function index(Request $request)
     {
         try {
-            $payments = Payment::with(['accountsPayable.supplier', 'bank'])
+            $payments = Payment::with(['accountsPayable.supplier', 'bank', 'gcash'])
                 ->select(
                     'tblPayments.id',
                     'tblPayments.accounts_payable_id',
@@ -31,6 +31,7 @@ class PaymentHistoryController extends Controller
                     'tblPayments.remarks',
                     'tblPayments.process_by',
                     'tblPayments.bank_id',
+                    'tblPayments.gcash_id',
                     'tblPayments.created_at',
                     'tblPayments.updated_at',
                     'tblAccountsPayable.supplier_code',
@@ -40,10 +41,13 @@ class PaymentHistoryController extends Controller
                     'tblAccountsPayable.total_amount as invoice_amount',
                     'tblAccountsPayable.terms',
                     'tblAccountsPayable.date as invoice_date',
-                    'tblBank.BankName'
+                    'tblBank.BankName',
+                    'tblGcash.AccountName as GcashAccountName',
+                    'tblGcash.AccountNumber as GcashAccountNumber'
                 )
                 ->leftJoin('tblAccountsPayable', 'tblPayments.accounts_payable_id', '=', 'tblAccountsPayable.id')
                 ->leftJoin('tblBank', 'tblPayments.bank_id', '=', 'tblBank.BankID')
+                ->leftJoin('tblGcash', 'tblPayments.gcash_id', '=', 'tblGcash.GcashID')
                 ->orderBy('tblPayments.created_at', 'desc')
                 ->orderBy('tblPayments.payment_date', 'desc')
                 ->orderBy('tblPayments.id', 'desc')
@@ -63,6 +67,8 @@ class PaymentHistoryController extends Controller
                         'payment_type' => $payment->payment_type ?? 'cash',
                         'payment_status' => $payment->payment_status ?? 'full',
                         'bank_name' => $payment->BankName ?? null,
+                        'gcash_account_name' => $payment->GcashAccountName ?? null,
+                        'gcash_account_number' => $payment->GcashAccountNumber ?? null,
                         'transaction_type' => 'Payable', // For now, only payables
                         'terms' => $payment->terms ?? 'N/A',
                         'payment_reference' => $payment->payment_reference_number ?? 'N/A', // Same as reference_number for compatibility
@@ -96,7 +102,7 @@ class PaymentHistoryController extends Controller
     public function show($id)
     {
         try {
-            $payment = Payment::with(['accountsPayable.supplier', 'bank'])
+            $payment = Payment::with(['accountsPayable.supplier', 'bank', 'gcash'])
                 ->select(
                     'tblPayments.*',
                     'tblAccountsPayable.supplier_code',
@@ -108,10 +114,13 @@ class PaymentHistoryController extends Controller
                     'tblAccountsPayable.date as invoice_date',
                     'tblAccountsPayable.status as invoice_status',
                     'tblAccountsPayable.balance_amount',
-                    'tblBank.BankName'
+                    'tblBank.BankName',
+                    'tblGcash.AccountName as GcashAccountName',
+                    'tblGcash.AccountNumber as GcashAccountNumber'
                 )
                 ->leftJoin('tblAccountsPayable', 'tblPayments.accounts_payable_id', '=', 'tblAccountsPayable.id')
                 ->leftJoin('tblBank', 'tblPayments.bank_id', '=', 'tblBank.BankID')
+                ->leftJoin('tblGcash', 'tblPayments.gcash_id', '=', 'tblGcash.GcashID')
                 ->where('tblPayments.id', $id)
                 ->first();
 

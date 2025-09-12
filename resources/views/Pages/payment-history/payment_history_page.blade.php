@@ -202,9 +202,9 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Bank Name</label>
-                                <input type="text" class="form-control form-control-sm" id="view_bank_name" readonly>
+                            <div class="mb-2" id="payment_method_info_container">
+                                <label class="form-label fw-semibold small" id="payment_method_info_label">Payment Method Info</label>
+                                <input type="text" class="form-control form-control-sm" id="view_payment_method_info" readonly>
                             </div>
                         </div>
                         <div class="col-md-4">

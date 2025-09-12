@@ -248,7 +248,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-2">
+                                <div class="mb-2" id="balance_amount_container">
                                     <label for="balance_amount" class="form-label fw-semibold small">Balance Amount</label>
                                     <input type="text" class="form-control form-control-sm text-end fw-bold text-danger" id="balance_amount" name="balance_amount" readonly>
                                 </div>
@@ -322,7 +322,7 @@
                                         <label class="form-label fw-semibold small">Total Amount</label>
                                         <div id="payment_total_amount" class="form-control form-control-sm fw-bold bg-light"></div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-6" id="payment_balance_container">
                                         <label class="form-label fw-semibold small">Current Balance</label>
                                         <div id="payment_balance_amount" class="form-control form-control-sm fw-bold text-danger bg-light"></div>
                                     </div>
@@ -336,25 +336,6 @@
                                 <h6 class="card-title mb-0 fs-6"><i class="fas fa-money-bill-wave me-2"></i>Payment Details</h6>
                             </div>
                             <div class="card-body py-2">
-                                <div class="row g-2">
-                                    <div class="col-md-8">
-                                        <div class="mb-2">
-                                            <label for="payment_amount" class="form-label fw-semibold small">Payment Amount <span class="text-danger">*</span></label>
-                                            <input type="text" step="0.01" class="form-control form-control-sm" id="payment_amount" name="payment_amount" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="mb-2">
-                                            <label class="form-label fw-semibold small">Payment Type</label>
-                                            <span id="payment_type_indicator" class="badge bg-success d-block text-center py-2 mt-1">Full Payment</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-md-12">
-                                        <small class="text-muted">Enter amount less than balance for partial payment, exact amount for full payment</small>
-                                    </div>
-                                </div>
                                 <div class="row g-2 mt-1">
                                     <div class="col-md-6">
                                         <div class="mb-2">
@@ -371,6 +352,29 @@
                                         <div class="mb-2">
                                             <label for="payment_reference_number" class="form-label fw-semibold small">Reference Number</label>
                                             <input type="text" class="form-control form-control-sm" id="payment_reference_number" name="reference_number" placeholder="Enter reference number">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Cash Payment Fields - Hidden by default -->
+                                <div id="cashPaymentFields" style="display: none;">
+                                    <div class="row g-2">
+                                        <div class="col-md-8">
+                                            <div class="mb-2">
+                                                <label for="cash_payment_amount" class="form-label fw-semibold small">Payment Amount <span class="text-danger">*</span></label>
+                                                <input type="text" step="0.01" class="form-control form-control-sm" id="cash_payment_amount" name="cash_payment_amount">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-2">
+                                                <label class="form-label fw-semibold small">Payment Status</label>
+                                                <span id="cash_payment_type_indicator" class="badge bg-success d-block text-center py-2 mt-1">Full Payment</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-md-12">
+                                            <small class="text-muted">Enter amount less than balance for partial payment, exact amount for full payment</small>
                                         </div>
                                     </div>
                                 </div>
@@ -414,6 +418,77 @@
                                         <div class="col-md-3 mb-2">
                                             <label for="bank_ccv" class="form-label fw-semibold small">CCV</label>
                                             <input type="text" class="form-control form-control-sm" id="bank_ccv" name="bank_ccv" readonly>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Bank Payment Amount and Status -->
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-md-8">
+                                            <div class="mb-2">
+                                                <label for="bank_payment_amount" class="form-label fw-semibold small">Payment Amount <span class="text-danger">*</span></label>
+                                                <input type="text" step="0.01" class="form-control form-control-sm" id="bank_payment_amount" name="bank_payment_amount">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-2">
+                                                <label class="form-label fw-semibold small">Payment Status</label>
+                                                <span id="bank_payment_type_indicator" class="badge bg-success d-block text-center py-2 mt-1">Full Payment</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-md-12">
+                                            <small class="text-muted">Enter amount less than balance for partial payment, exact amount for full payment</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GCash Details Section - Hidden by default -->
+                        <div id="gcashDetailsSection" class="mb-3" style="display: none;">
+                            <div class="card">
+                                <div class="card-header text-white py-2" style="background-color: var(--accent-color);">
+                                    <h6 class="card-title mb-0 fs-6"><i class="fas fa-mobile-alt me-2"></i>GCash Details</h6>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row g-2">
+                                        <div class="col-md-12 mb-2">
+                                            <label for="gcash_selection" class="form-label fw-semibold small">Select GCash Account <span class="text-danger">*</span></label>
+                                            <select class="form-select form-select-sm" id="gcash_selection" name="gcash_selection">
+                                                <option value="">Choose GCash Account...</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-md-6 mb-2">
+                                            <label for="gcash_account_name" class="form-label fw-semibold small">Account Name</label>
+                                            <input type="text" class="form-control form-control-sm" id="gcash_account_name" name="gcash_account_name" readonly>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label for="gcash_account_number" class="form-label fw-semibold small">Account Number</label>
+                                            <input type="text" class="form-control form-control-sm" id="gcash_account_number" name="gcash_account_number" readonly>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- GCash Payment Amount and Status -->
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-md-8">
+                                            <div class="mb-2">
+                                                <label for="gcash_payment_amount" class="form-label fw-semibold small">Payment Amount <span class="text-danger">*</span></label>
+                                                <input type="text" step="0.01" class="form-control form-control-sm" id="gcash_payment_amount" name="gcash_payment_amount">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-2">
+                                                <label class="form-label fw-semibold small">Payment Status</label>
+                                                <span id="gcash_payment_type_indicator" class="badge bg-success d-block text-center py-2 mt-1">Full Payment</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-md-12">
+                                            <small class="text-muted">Enter amount less than balance for partial payment, exact amount for full payment</small>
                                         </div>
                                     </div>
                                 </div>

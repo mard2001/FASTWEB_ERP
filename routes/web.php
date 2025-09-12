@@ -240,6 +240,11 @@ Route::get('/master-data/bank', function () {
     return page_view('bank/bank_page');
 })->name('bank')->middleware('check.user.status');
 
+// GCASH MAINTENANCE MODULE
+Route::get('/master-data/gcash', function () {
+    return page_view('gcash/gcash_page');
+})->name('gcash')->middleware('check.user.status');
+
 // ACTIVITY LOGS MODULE - Restricted to developers only
 Route::get('/reports/activity-logs', function () {
     return view('Pages.activity-log.activityLog_page');
