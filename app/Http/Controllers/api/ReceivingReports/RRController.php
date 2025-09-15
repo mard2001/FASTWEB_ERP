@@ -525,7 +525,7 @@ class RRController extends Controller
             'total_amount' => $totalAmount,
             'terms' => $terms,
             'status' => 'Pending',
-            'remarks' => "Auto-created from RR confirmation: {$rrHeader->RRNo}",
+            'remarks' => null,
             'process_by' => $user,
         ]);
 

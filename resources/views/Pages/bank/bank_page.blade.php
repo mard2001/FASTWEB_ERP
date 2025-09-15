@@ -20,6 +20,9 @@
             <td class="col">Account Name</td>
             <td class="col">Account Number</td>
             <td class="col">Card Number</td>
+            <td class="col">Address</td>
+            <td class="col">Contact Number</td>
+            <td class="col">Account Type</td>
             <td class="col">Expiration Date</td>
             <td class="col">Status</td>
             <td class="col">Date Created</td>
@@ -66,6 +69,39 @@
                         <div class="mb-3">
                             <label for="CCV">CCV</label>
                             <input disabled type="text" id="CCV" name="CCV" class="form-control bg-white" maxlength="4" placeholder="Optional">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="Address">Address</label>
+                            <textarea disabled id="Address" name="Address" class="form-control bg-white" rows="3" maxlength="255" placeholder="Bank branch address"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="ContactNumber">Contact Number</label>
+                            <input disabled type="text" id="ContactNumber" name="ContactNumber" class="form-control bg-white" maxlength="11" placeholder="Bank contact number">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="AccountType">Account Type</label>
+                            <select disabled class="form-select" aria-label="Select Account Type" id="AccountType" name="AccountType" required>
+                                <option value="">Select Account Type</option>
+                                <option value="Savings">Savings Account</option>
+                                <option value="Checking">Checking Account</option>
+                                <option value="Current">Current Account</option>
+                                <option value="Business">Business Account</option>
+                                <option value="Joint">Joint Account</option>
+                                <option value="Time Deposit">Time Deposit Account</option>
+                                <option value="Foreign Currency">Foreign Currency Account</option>
+                            </select>
                         </div>
                     </div>
                 </div>

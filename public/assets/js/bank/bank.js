@@ -54,6 +54,14 @@ $(document).ready(async function () {
         $(this).val(value);
     });
 
+    // Format Contact Number (allow only numbers, +, -, (, ), and spaces)
+    $('#ContactNumber').on('input', function() {
+        let value = $(this).val();
+        // Allow only numbers, +, -, (, ), and spaces
+        value = value.replace(/[^0-9+\-() ]/g, '');
+        $(this).val(value);
+    });
+
     await datatables.loadBankData();
     await initVS.liteDataVS();
 
@@ -338,6 +346,21 @@ const datatables = {
                                 return data ? data : 'N/A';
                             }
                         },
+                        { data: 'Address',  title: 'Address',
+                            render: function(data, type, row){
+                                return data ? data : 'N/A';
+                            }
+                        },
+                        { data: 'ContactNumber',  title: 'Contact Number',
+                            render: function(data, type, row){
+                                return data ? data : 'N/A';
+                            }
+                        },
+                        { data: 'AccountType',  title: 'Account Type',
+                            render: function(data, type, row){
+                                return data ? data : 'N/A';
+                            }
+                        },
                         { data: 'ExpirationDate',  title: 'Expiration Date',
                             render: function (data, type, row) {
                                 if (!data) return 'N/A';
@@ -457,6 +480,17 @@ const BankModal = {
             });
             return false;
         }
+
+        // Validate Account Type
+        const accountType = $('#AccountType').val();
+        if (!accountType) {
+            Swal.fire({
+                title: "Validation Error",
+                text: "Account Type is required",
+                icon: "warning"
+            });
+            return false;
+        }
         
         // Validate card number format if provided
         const cardNumber = $('#CardNumber').val().trim();
@@ -480,11 +514,14 @@ const BankModal = {
     clear: () => {
         $('#modalFields input[type="text"]').val('');
         $('#modalFields input[type="date"]').val('');
-        $('#modalFields select').val('A');
+        $('#modalFields textarea').val('');
+        $('#modalFields select#Status').val('A');
+        $('#modalFields select#AccountType').val('');
     },
     enable: (enable) => {
         $('#modalFields input[type="text"]').prop('disabled', !enable);
         $('#modalFields input[type="date"]').prop('disabled', !enable);
+        $('#modalFields textarea').prop('disabled', !enable);
         $('#modalFields select').prop('disabled', !enable);
     },
     viewMode: async (bankData) => {
@@ -506,6 +543,9 @@ const BankModal = {
         $('#AccountNumber').val(bankData.AccountNumber);
         $('#CardNumber').val(bankData.CardNumber);
         $('#CCV').val(bankData.CCV);
+        $('#Address').val(bankData.Address);
+        $('#ContactNumber').val(bankData.ContactNumber);
+        $('#AccountType').val(bankData.AccountType);
         $('#Status').val(bankData.Status);
         
         // Handle date formatting
@@ -553,6 +593,9 @@ const BankModal = {
             CardNumber : $('#CardNumber').val() || null,
             ExpirationDate : $('#ExpirationDate').val() || null,
             CCV : $('#CCV').val() || null,
+            Address : $('#Address').val() || null,
+            ContactNumber : $('#ContactNumber').val() || null,
+            AccountType : $('#AccountType').val(),
             Status : $('#Status').val(),
         }
         return data;

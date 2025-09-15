@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api\AccountsPayable;
 use App\Http\Controllers\Controller;
 use App\Models\AccountsPayable;
 use App\Models\Payment;
+use App\Models\Check;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -300,7 +301,14 @@ class AccountsPayableController extends Controller
                 'reference_number' => 'nullable|string|max:100',
                 'remarks' => 'nullable|string|max:500',
                 'bank_id' => 'nullable|integer',
-                'gcash_id' => 'nullable|integer'
+                'gcash_id' => 'nullable|integer',
+                // Check-related fields
+                'pay_by_check' => 'nullable|boolean',
+                'check_payee' => 'nullable|string|max:255',
+                'check_date' => 'nullable|date',
+                'check_number' => 'nullable|string|max:50',
+                'check_amount' => 'nullable|numeric|min:0.01',
+                'check_amount_in_words' => 'nullable|string|max:500'
             ]);
 
             // Additional validation: bank_id is required when payment_type is 'bank'
@@ -315,6 +323,25 @@ class AccountsPayableController extends Controller
                 $validator->after(function ($validator) {
                     $validator->errors()->add('gcash_id', 'GCash account selection is required for GCash payments.');
                 });
+            }
+
+            // Additional validation: check fields are required when pay_by_check is true
+            if ($request->pay_by_check) {
+                if (empty($request->check_payee)) {
+                    $validator->after(function ($validator) {
+                        $validator->errors()->add('check_payee', 'Payee name is required for check payments.');
+                    });
+                }
+                if (empty($request->check_date)) {
+                    $validator->after(function ($validator) {
+                        $validator->errors()->add('check_date', 'Check date is required for check payments.');
+                    });
+                }
+                if (empty($request->check_amount_in_words)) {
+                    $validator->after(function ($validator) {
+                        $validator->errors()->add('check_amount_in_words', 'Amount in words is required for check payments.');
+                    });
+                }
             }
 
             if ($validator->fails()) {
@@ -362,6 +389,47 @@ class AccountsPayableController extends Controller
                 $paymentData['gcash_id'] = $request->gcash_id;
             }
 
+            // Handle check payment if enabled
+            $checkId = null;
+            
+            // Debug: Log the values to see what's being received
+            Log::info('Check payment debug', [
+                'pay_by_check' => $request->pay_by_check,
+                'payment_type' => $request->payment_type,
+                'check_payee' => $request->check_payee,
+                'check_date' => $request->check_date
+            ]);
+            
+            // Check if pay_by_check is truthy (could be '1', 1, true, 'true', etc.)
+            if (($request->pay_by_check == '1' || $request->pay_by_check === true || $request->pay_by_check === 'true') && $request->payment_type === 'bank') {
+                Log::info('Creating check record...');
+                
+                // Create check record
+                $checkData = [
+                    'BankID' => $request->bank_id,
+                    'Payee' => $request->check_payee,
+                    'AmountInWords' => $request->check_amount_in_words,
+                    'CheckDate' => $request->check_date,
+                    'CheckAmount' => $paymentAmount,
+                    'CheckNumber' => $request->check_number,
+                    'Status' => 'Active',
+                    'CreatedBy' => auth()->user()->name ?? 'System',
+                    'Remarks' => 'Payment for AP #' . $accountsPayable->id
+                ];
+
+                Log::info('Check data to create', $checkData);
+
+                $check = Check::create($checkData);
+                $checkId = $check->CheckID;
+
+                Log::info('Check created with ID: ' . $checkId);
+
+                // Add check_id to payment data
+                $paymentData['check_id'] = $checkId;
+            } else {
+                Log::info('Check payment not enabled or not bank payment');
+            }
+
             $payment = Payment::create($paymentData);
 
             // Calculate new balance after payment
@@ -381,13 +449,21 @@ class AccountsPayableController extends Controller
             // Reload relationships
             $accountsPayable->load('supplier', 'payments');
 
-            return response()->json([
+            $responseData = [
                 'success' => true,
                 'message' => 'Payment processed successfully',
                 'data' => $accountsPayable,
                 'payment' => $payment,
                 'new_balance' => $newBalance
-            ], 200);
+            ];
+
+            // Include check information if check was created
+            if ($checkId) {
+                $responseData['check'] = Check::find($checkId);
+                $responseData['message'] = 'Payment and check processed successfully';
+            }
+
+            return response()->json($responseData, 200);
 
         } catch (Exception $e) {
             return response()->json([

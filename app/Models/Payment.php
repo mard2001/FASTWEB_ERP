@@ -30,7 +30,8 @@ class Payment extends Model
         'remarks',
         'process_by',
         'bank_id',
-        'gcash_id'
+        'gcash_id',
+        'check_id'
     ];
 
     protected $casts = [
@@ -68,6 +69,14 @@ class Payment extends Model
     public function gcash()
     {
         return $this->belongsTo(Gcash::class, 'gcash_id', 'GcashID');
+    }
+
+    /**
+     * Relationship: Payment belongs to Check
+     */
+    public function check()
+    {
+        return $this->belongsTo(Check::class, 'check_id', 'CheckID');
     }
 
     /**

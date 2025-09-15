@@ -5,33 +5,37 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Bank extends Model
+class Check extends Model
 {
     use HasFactory;
 
-    protected $table = 'tblBank';
-    protected $primaryKey = 'BankID';
+    protected $table = 'tblCheck';
+    protected $primaryKey = 'CheckID';
     public $incrementing = true;
 
     const UPDATED_AT = 'DateUpdated';
     const CREATED_AT = 'DateCreated';
 
     protected $fillable = [
-        'BankName',
-        'AccountName',
-        'AccountNumber',
-        'CardNumber',
-        'ExpirationDate',
-        'CCV',
-        'Address',
-        'ContactNumber',
-        'AccountType',
+        'BankID',
+        'Payee',
+        'AmountInWords',
+        'CheckDate',
+        'CheckAmount',
+        'CheckNumber',
         'Status',
+        'CreatedBy',
+        'Remarks'
     ];
 
     protected $dates = [
-        'ExpirationDate',
+        'CheckDate',
         'DateCreated',
         'DateUpdated',
+    ];
+
+    protected $casts = [
+        'CheckDate' => 'date',
+        'CheckAmount' => 'decimal:2'
     ];
 }

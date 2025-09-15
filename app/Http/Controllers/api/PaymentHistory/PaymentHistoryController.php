@@ -19,7 +19,7 @@ class PaymentHistoryController extends Controller
     public function index(Request $request)
     {
         try {
-            $payments = Payment::with(['accountsPayable.supplier', 'bank', 'gcash'])
+            $payments = Payment::with(['accountsPayable.supplier', 'bank', 'gcash', 'check'])
                 ->select(
                     'tblPayments.id',
                     'tblPayments.accounts_payable_id',
@@ -32,6 +32,7 @@ class PaymentHistoryController extends Controller
                     'tblPayments.process_by',
                     'tblPayments.bank_id',
                     'tblPayments.gcash_id',
+                    'tblPayments.check_id',
                     'tblPayments.created_at',
                     'tblPayments.updated_at',
                     'tblAccountsPayable.supplier_code',
@@ -43,11 +44,17 @@ class PaymentHistoryController extends Controller
                     'tblAccountsPayable.date as invoice_date',
                     'tblBank.BankName',
                     'tblGcash.AccountName as GcashAccountName',
-                    'tblGcash.AccountNumber as GcashAccountNumber'
+                    'tblGcash.AccountNumber as GcashAccountNumber',
+                    'tblCheck.Payee as CheckPayee',
+                    'tblCheck.CheckDate',
+                    'tblCheck.CheckAmount',
+                    'tblCheck.CheckNumber',
+                    'tblCheck.AmountInWords as CheckAmountInWords'
                 )
                 ->leftJoin('tblAccountsPayable', 'tblPayments.accounts_payable_id', '=', 'tblAccountsPayable.id')
                 ->leftJoin('tblBank', 'tblPayments.bank_id', '=', 'tblBank.BankID')
                 ->leftJoin('tblGcash', 'tblPayments.gcash_id', '=', 'tblGcash.GcashID')
+                ->leftJoin('tblCheck', 'tblPayments.check_id', '=', 'tblCheck.CheckID')
                 ->orderBy('tblPayments.created_at', 'desc')
                 ->orderBy('tblPayments.payment_date', 'desc')
                 ->orderBy('tblPayments.id', 'desc')
@@ -69,6 +76,11 @@ class PaymentHistoryController extends Controller
                         'bank_name' => $payment->BankName ?? null,
                         'gcash_account_name' => $payment->GcashAccountName ?? null,
                         'gcash_account_number' => $payment->GcashAccountNumber ?? null,
+                        'check_payee' => $payment->CheckPayee ?? null,
+                        'check_date' => $payment->CheckDate ? Carbon::parse($payment->CheckDate)->format('Y-m-d') : null,
+                        'check_amount' => $payment->CheckAmount ? number_format((float)$payment->CheckAmount, 2, '.', '') : null,
+                        'check_number' => $payment->CheckNumber ?? null,
+                        'check_amount_in_words' => $payment->CheckAmountInWords ?? null,
                         'transaction_type' => 'Payable', // For now, only payables
                         'terms' => $payment->terms ?? 'N/A',
                         'payment_reference' => $payment->payment_reference_number ?? 'N/A', // Same as reference_number for compatibility
@@ -102,7 +114,7 @@ class PaymentHistoryController extends Controller
     public function show($id)
     {
         try {
-            $payment = Payment::with(['accountsPayable.supplier', 'bank', 'gcash'])
+            $payment = Payment::with(['accountsPayable.supplier', 'bank', 'gcash', 'check'])
                 ->select(
                     'tblPayments.*',
                     'tblAccountsPayable.supplier_code',
@@ -116,11 +128,17 @@ class PaymentHistoryController extends Controller
                     'tblAccountsPayable.balance_amount',
                     'tblBank.BankName',
                     'tblGcash.AccountName as GcashAccountName',
-                    'tblGcash.AccountNumber as GcashAccountNumber'
+                    'tblGcash.AccountNumber as GcashAccountNumber',
+                    'tblCheck.Payee as CheckPayee',
+                    'tblCheck.CheckDate',
+                    'tblCheck.CheckAmount',
+                    'tblCheck.CheckNumber',
+                    'tblCheck.AmountInWords as CheckAmountInWords'
                 )
                 ->leftJoin('tblAccountsPayable', 'tblPayments.accounts_payable_id', '=', 'tblAccountsPayable.id')
                 ->leftJoin('tblBank', 'tblPayments.bank_id', '=', 'tblBank.BankID')
                 ->leftJoin('tblGcash', 'tblPayments.gcash_id', '=', 'tblGcash.GcashID')
+                ->leftJoin('tblCheck', 'tblPayments.check_id', '=', 'tblCheck.CheckID')
                 ->where('tblPayments.id', $id)
                 ->first();
 
@@ -144,6 +162,11 @@ class PaymentHistoryController extends Controller
                 'payment_type' => $payment->payment_type ?? 'cash',
                 'payment_status' => $payment->payment_status ?? 'full',
                 'bank_name' => $payment->BankName ?? null,
+                'check_payee' => $payment->CheckPayee ?? null,
+                'check_date' => $payment->CheckDate ? Carbon::parse($payment->CheckDate)->format('Y-m-d') : null,
+                'check_amount' => $payment->CheckAmount ? number_format((float)$payment->CheckAmount, 2, '.', '') : null,
+                'check_number' => $payment->CheckNumber ?? null,
+                'check_amount_in_words' => $payment->CheckAmountInWords ?? null,
                 'transaction_type' => 'Payable', // For now, only payables
                 'terms' => $payment->terms ?? 'N/A',
                 'payment_reference' => $payment->reference_number ?? 'N/A',

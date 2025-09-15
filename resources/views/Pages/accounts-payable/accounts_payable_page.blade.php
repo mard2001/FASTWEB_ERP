@@ -411,13 +411,59 @@
                                             <label for="bank_card_number" class="form-label fw-semibold small">Card Number</label>
                                             <input type="text" class="form-control form-control-sm" id="bank_card_number" name="bank_card_number" readonly>
                                         </div>
-                                        <div class="col-md-3 mb-2">
+                                        <div class="col-md-6 mb-2">
                                             <label for="bank_expiration" class="form-label fw-semibold small">Expiry Date</label>
                                             <input type="text" class="form-control form-control-sm" id="bank_expiration" name="bank_expiration" readonly>
                                         </div>
-                                        <div class="col-md-3 mb-2">
-                                            <label for="bank_ccv" class="form-label fw-semibold small">CCV</label>
-                                            <input type="text" class="form-control form-control-sm" id="bank_ccv" name="bank_ccv" readonly>
+                                    </div>
+                                    
+                                    <!-- Check Payment Option -->
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-md-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="pay_by_check" name="pay_by_check" disabled>
+                                                <label class="form-check-label fw-semibold small" for="pay_by_check">
+                                                    Pay by Check <small class="text-muted">(Select a bank first)</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Check Details Section - Hidden by default -->
+                                    <div id="checkDetailsSection" class="mt-3" style="display: none;">
+                                        <div class="card">
+                                            <div class="card-header text-white py-2" style="background-color: var(--info-color, #17a2b8);">
+                                                <h6 class="card-title mb-0 fs-6"><i class="fas fa-money-check me-2"></i>Check Details</h6>
+                                            </div>
+                                            <div class="card-body py-2">
+                                                <div class="row g-2">
+                                                    <div class="col-md-6 mb-2">
+                                                        <label for="check_payee" class="form-label fw-semibold small">Payee <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control form-control-sm" id="check_payee" name="check_payee" placeholder="Enter payee name">
+                                                    </div>
+                                                    <div class="col-md-6 mb-2">
+                                                        <label for="check_date" class="form-label fw-semibold small">Check Date <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control form-control-sm" id="check_date" name="check_date">
+                                                    </div>
+                                                </div>
+                                                <div class="row g-2">
+                                                    <div class="col-md-6 mb-2">
+                                                        <label for="check_number" class="form-label fw-semibold small">Check Number</label>
+                                                        <input type="text" class="form-control form-control-sm" id="check_number" name="check_number" placeholder="Enter check number (optional)">
+                                                    </div>
+                                                    <div class="col-md-6 mb-2">
+                                                        <label for="check_amount_display" class="form-label fw-semibold small">Check Amount <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control form-control-sm" id="check_amount_display" name="check_amount_display" placeholder="Enter check amount" readonly>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-2">
+                                                    <div class="col-md-12 mb-2">
+                                                        <label for="check_amount_in_words" class="form-label fw-semibold small">Amount in Words <span class="text-danger">*</span></label>
+                                                        <textarea class="form-control form-control-sm" id="check_amount_in_words" name="check_amount_in_words" rows="2" placeholder="Amount will be converted to words automatically..." readonly></textarea>
+                                                        <small class="text-muted">This will be automatically filled when you enter the payment amount below</small>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     

@@ -753,6 +753,9 @@ function showPaymentModal(rowData) {
     $('#cashPaymentFields').hide();
     resetCashFields();
     
+    // Reset check details
+    resetCheckFields();
+    
     // Load banks data and populate dropdown
     loadBanksDataForModal();
     
@@ -765,7 +768,100 @@ function resetBankFields() {
     $('#bank_account_number').val('');
     $('#bank_card_number').val('');
     $('#bank_expiration').val('');
-    $('#bank_ccv').val('');
+}
+
+// Reset check fields
+function resetCheckFields() {
+    $('#check_payee').val('');
+    $('#check_date').val('');
+    $('#check_number').val('');
+    $('#check_amount_display').val('');
+    $('#check_amount_in_words').val('');
+    $('#pay_by_check').prop('checked', false).prop('disabled', true);
+    $('label[for="pay_by_check"]').html('Pay by Check <small class="text-muted">(Select a bank first)</small>');
+    $('#checkDetailsSection').hide();
+}
+
+// Convert number to words (Philippine English format)
+function numberToWords(amount) {
+    if (!amount || isNaN(amount)) return '';
+    
+    const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    
+    function convertThreeDigit(num) {
+        let result = '';
+        const hundreds = Math.floor(num / 100);
+        const remainder = num % 100;
+        
+        if (hundreds > 0) {
+            result += ones[hundreds] + ' hundred ';
+        }
+        
+        if (remainder >= 20) {
+            result += tens[Math.floor(remainder / 10)];
+            if (remainder % 10 > 0) {
+                result += ' ' + ones[remainder % 10];
+            }
+        } else if (remainder >= 10) {
+            result += teens[remainder - 10];
+        } else if (remainder > 0) {
+            result += ones[remainder];
+        }
+        
+        return result.trim();
+    }
+    
+    function convertNumber(num) {
+        if (num === 0) return 'zero';
+        
+        let result = '';
+        
+        // Billions
+        if (num >= 1000000000) {
+            result += convertThreeDigit(Math.floor(num / 1000000000)) + ' billion ';
+            num %= 1000000000;
+        }
+        
+        // Millions
+        if (num >= 1000000) {
+            result += convertThreeDigit(Math.floor(num / 1000000)) + ' million ';
+            num %= 1000000;
+        }
+        
+        // Thousands
+        if (num >= 1000) {
+            result += convertThreeDigit(Math.floor(num / 1000)) + ' thousand ';
+            num %= 1000;
+        }
+        
+        // Hundreds, tens, and ones
+        if (num > 0) {
+            result += convertThreeDigit(num);
+        }
+        
+        return result.trim();
+    }
+    
+    const pesos = Math.floor(amount);
+    const centavos = Math.round((amount - pesos) * 100);
+    
+    let result = '';
+    
+    if (pesos > 0) {
+        result = convertNumber(pesos) + ' peso' + (pesos > 1 ? 's' : '');
+    }
+    
+    if (centavos > 0) {
+        if (result) result += ' and ';
+        result += convertNumber(centavos) + ' centavo' + (centavos > 1 ? 's' : '');
+    }
+    
+    if (!result) result = 'zero pesos';
+    
+    // Capitalize first letter
+    return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
 // Reset GCash fields
@@ -1113,6 +1209,22 @@ function setupEventHandlers() {
                 Swal.fire('Error!', 'Please select a bank when using bank payment method.', 'error');
                 return;
             }
+            
+            // Additional validation for check payment
+            if ($('#pay_by_check').is(':checked')) {
+                const payee = $('#check_payee').val().trim();
+                const checkDate = $('#check_date').val();
+                
+                if (!payee) {
+                    Swal.fire('Error!', 'Please enter the payee name for the check.', 'error');
+                    return;
+                }
+                
+                if (!checkDate) {
+                    Swal.fire('Error!', 'Please select the check date.', 'error');
+                    return;
+                }
+            }
         }
 
         // Validate GCash selection if payment method is GCash
@@ -1141,7 +1253,16 @@ function setupEventHandlers() {
                 formData.append('account_number', bankData.AccountNumber);
                 formData.append('card_number', bankData.CardNumber);
                 formData.append('expiration_date', bankData.ExpirationDate);
-                formData.append('ccv', bankData.CCV);
+                
+                // Add check details if check payment is selected
+                if ($('#pay_by_check').is(':checked')) {
+                    formData.append('pay_by_check', '1');
+                    formData.append('check_payee', $('#check_payee').val().trim());
+                    formData.append('check_date', $('#check_date').val());
+                    formData.append('check_number', $('#check_number').val().trim());
+                    formData.append('check_amount', rawAmount);
+                    formData.append('check_amount_in_words', $('#check_amount_in_words').val());
+                }
             }
         }
 
@@ -1235,6 +1356,51 @@ function setupEventHandlers() {
                 });
             }
         });
+    });
+
+    // Check payment checkbox handler
+    $(document).on('change', '#pay_by_check', function() {
+        const selectedBank = $('#bank_selection').val();
+        
+        if ($(this).is(':checked')) {
+            // Validate that a bank is selected first
+            if (!selectedBank) {
+                // Uncheck the checkbox
+                $(this).prop('checked', false);
+                
+                // Show error message
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Bank Selection Required',
+                    text: 'Please select a bank first before enabling check payment.',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+            
+            $('#checkDetailsSection').slideDown();
+            // Set default check date to today
+            $('#check_date').val(moment().format('YYYY-MM-DD'));
+            // Update check amount and words when amount is already entered
+            const currentAmount = $('#bank_payment_amount').val().replace(/,/g, '');
+            if (currentAmount && !isNaN(currentAmount)) {
+                updateCheckAmountFields(parseFloat(currentAmount));
+            }
+        } else {
+            $('#checkDetailsSection').slideUp();
+            resetCheckFields();
+        }
+    });
+
+    // Update check amount fields when bank payment amount changes
+    $(document).on('input keyup change', '#bank_payment_amount', function() {
+        const rawValue = $(this).val().replace(/,/g, '');
+        const amount = parseFloat(rawValue) || 0;
+        
+        // If check payment is enabled, update check fields
+        if ($('#pay_by_check').is(':checked') && amount > 0) {
+            updateCheckAmountFields(amount);
+        }
     });
 
     // Payment amount change handler - automated payment type detection
@@ -1355,13 +1521,37 @@ function setupEventHandlers() {
                 $('#bank_account_name').val(bankData.AccountName || '');
                 $('#bank_account_number').val(bankData.AccountNumber || '');
                 $('#bank_card_number').val(bankData.CardNumber || '');
-                $('#bank_expiration').val(bankData.ExpirationDate || '');
-                $('#bank_ccv').val(bankData.CCV || '');
+                
+                // Format expiration date to MM/YY format
+                let expirationDate = '';
+                if (bankData.ExpirationDate) {
+                    const date = new Date(bankData.ExpirationDate);
+                    if (!isNaN(date.getTime())) {
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = String(date.getFullYear()).slice(-2);
+                        expirationDate = `${month}/${year}`;
+                    }
+                }
+                $('#bank_expiration').val(expirationDate);
+                
+                // Enable check payment option when bank is selected
+                $('#pay_by_check').prop('disabled', false);
+                $('label[for="pay_by_check"]').html('Pay by Check');
             } else {
                 console.warn('No bank data found for selected option');
             }
         } else {
             resetBankFields();
+            
+            // If no bank is selected, disable check payment option
+            $('#pay_by_check').prop('disabled', true).prop('checked', false);
+            $('label[for="pay_by_check"]').html('Pay by Check <small class="text-muted">(Select a bank first)</small>');
+            
+            // Hide check details if currently shown
+            if ($('#checkDetailsSection').is(':visible')) {
+                $('#checkDetailsSection').slideUp();
+                resetCheckFields();
+            }
         }
     });
 
@@ -1385,6 +1575,15 @@ function setupEventHandlers() {
         }
     });
 
+    // Function to update check amount fields
+    function updateCheckAmountFields(amount) {
+        const formattedAmount = formatNumberWithCommas(amount);
+        const amountInWords = numberToWords(amount);
+        
+        $('#check_amount_display').val(formattedAmount);
+        $('#check_amount_in_words').val(amountInWords);
+    }
+
     // Reset payment modal when closed
     $('#paymentModal').on('hidden.bs.modal', function() {
         // Reset all payment amount fields
@@ -1403,6 +1602,7 @@ function setupEventHandlers() {
         resetBankFields();
         resetGcashFields();
         resetCashFields();
+        resetCheckFields();
         $(this).find('form')[0].reset();
     });
 

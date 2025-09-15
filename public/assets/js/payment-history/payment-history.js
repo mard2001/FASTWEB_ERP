@@ -415,13 +415,27 @@ function fillPaymentHistoryModal(data) {
         $('#payment_method_info_label').text('Bank Name');
         $('#view_payment_method_info').val(data.bank_name || 'N/A');
         $('#payment_method_info_container').show();
+        
+        // Show check details if check data is available
+        if (data.check_payee || data.check_number || data.check_date) {
+            $('#view_check_number').val(data.check_number || 'N/A');
+            $('#view_check_date').val(data.check_date || '');
+            $('#view_check_payee').val(data.check_payee || 'N/A');
+            $('#view_check_amount').val(data.check_amount ? formatCurrency(data.check_amount) : 'N/A');
+            $('#view_check_amount_in_words').val(data.check_amount_in_words || 'N/A');
+            $('#checkDetailsSection').show();
+        } else {
+            $('#checkDetailsSection').hide();
+        }
     } else if (data.payment_type && data.payment_type.toLowerCase() === 'gcash') {
         $('#payment_method_info_label').text('GCash Account');
         $('#view_payment_method_info').val(data.gcash_account_number || 'N/A');
         $('#payment_method_info_container').show();
+        $('#checkDetailsSection').hide(); // Hide check details for GCash payments
     } else {
-        // For cash payments, hide the payment method info section
+        // For cash payments, hide the payment method info section and check details
         $('#payment_method_info_container').hide();
+        $('#checkDetailsSection').hide();
     }
     
     $('#view_terms').val(data.terms || 'N/A');

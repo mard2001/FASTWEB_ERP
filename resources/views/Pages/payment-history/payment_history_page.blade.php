@@ -217,6 +217,51 @@
                 </div>
             </div>
 
+            <!-- Check Details Section - Hidden by default, shown only for bank check payments -->
+            <div class="card mb-2" id="checkDetailsSection" style="display: none;">
+                <div class="card-header text-white py-2" style="background-color: var(--info-color, #17a2b8);">
+                    <h6 class="card-title mb-0 fs-6"><i class="fas fa-money-check me-2"></i>Check Details</h6>
+                </div>
+                <div class="card-body py-2">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small">Check Number</label>
+                                <input type="text" class="form-control form-control-sm" id="view_check_number" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small">Check Date</label>
+                                <input type="date" class="form-control form-control-sm" id="view_check_date" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small">Payee</label>
+                                <input type="text" class="form-control form-control-sm" id="view_check_payee" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small">Check Amount</label>
+                                <input type="text" class="form-control form-control-sm text-end fw-bold" id="view_check_amount" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-12">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small">Amount in Words</label>
+                                <textarea class="form-control form-control-sm" id="view_check_amount_in_words" rows="2" readonly placeholder="Amount in words..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Supplier Information Section -->
             <div class="card mb-2">
                 <div class="card-header text-white py-2" style="background-color: var(--secondary-color);">
