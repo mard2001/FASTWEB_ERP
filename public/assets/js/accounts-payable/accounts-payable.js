@@ -413,6 +413,16 @@ function initAccountsPayableDataTable() {
                 }
             },
             { 
+                data: 'CreditMemo', 
+                title: 'Credit Memo',
+                render: function(data, type, row) {
+                    if (data && data > 0) {
+                        return formatCurrency(data);
+                    }
+                    return '<span class="text-muted">-</span>';
+                }
+            },
+            { 
                 data: 'process_by', 
                 title: 'Process By',
                 render: function(data, type, row) {
@@ -595,13 +605,10 @@ function loadStatistics() {
 
 // Show main modal for record interaction
 function showAccountsPayableModal(rowData, mode = 'view') {
-    // First, hide all buttons to prevent the glitch
-    $('#processPaymentBtn, #deleteAPBtn, #saveAPBtn, #editAPBtn, #cancelEditAPBtn').hide();
-    
     // Fill modal with data first
     fillAccountsPayableModal(rowData);
     
-    // Set modal mode (this will show/hide the correct buttons)
+    // Set modal mode (view only)
     setModalMode(mode, rowData.status);
     
     // Store data in modal for later use
@@ -633,6 +640,14 @@ function fillAccountsPayableModal(data) {
     $('#balance_amount').val(formatNumberWithCommas(data.balance_amount || ''));
     $('#remarks').val(data.remarks || '');
     
+    // Handle Credit Memo display
+    if (data.CreditMemo && data.CreditMemo > 0) {
+        $('#credit_memo').val(formatCurrency(data.CreditMemo));
+        $('#credit_memo_container').show();
+    } else {
+        $('#credit_memo_container').hide();
+    }
+    
     // Control balance amount visibility based on status
     const status = data.status || '';
     if (status.toLowerCase() === 'pending') {
@@ -662,35 +677,22 @@ function fillAccountsPayableModal(data) {
     }
 }
 
-// Set modal mode (view/edit)
+// Set modal mode (view only - no edit functionality)
 function setModalMode(mode, status) {
     const isPending = status === 'Pending' || status === 'Partial';
-    const isEdit = mode === 'edit';
     
-    // Enable/disable form fields based on mode
-    $('#accountsPayableForm input, #accountsPayableForm textarea').prop('disabled', !isEdit);
-    $('#status, #balance_amount').prop('disabled', true); // Always disabled
+    // All form fields are always disabled (view-only)
+    $('#accountsPayableForm input, #accountsPayableForm textarea').prop('disabled', true);
     
-    // Handle supplier field display based on mode
+    // Always show readonly field, hide dropdown (view-only mode)
     const supplierDisplay = document.getElementById('supplier_display');
     const supplierVS = document.getElementById('supplier_code_VS');
     
-    if (isEdit) {
-        // Edit mode: hide readonly field, show dropdown
-        if (supplierDisplay) supplierDisplay.style.display = 'none';
-        if (supplierVS) supplierVS.style.display = 'block';
-    } else {
-        // View mode: show readonly field, hide dropdown
-        if (supplierDisplay) supplierDisplay.style.display = 'block';
-        if (supplierVS) supplierVS.style.display = 'none';
-    }
+    if (supplierDisplay) supplierDisplay.style.display = 'block';
+    if (supplierVS) supplierVS.style.display = 'none';
     
-    // Show/hide buttons based on mode and status
-    $('#processPaymentBtn').toggle(isPending && !isEdit);
-    $('#deleteAPBtn').toggle(!isEdit);
-    $('#saveAPBtn').toggle(isEdit);
-    $('#editAPBtn').toggle(!isEdit);
-    $('#cancelEditAPBtn').toggle(isEdit);
+    // Show/hide buttons - only Process Payment for pending/partial records
+    $('#processPaymentBtn').toggle(isPending);
     
     // Control balance amount visibility based on status
     if (status && status.toLowerCase() === 'pending') {
@@ -699,13 +701,11 @@ function setModalMode(mode, status) {
         $('#balance_amount_container').show();
     }
     
-    // Update modal title
+    // Note: Credit memo visibility is handled in fillAccountsPayableModal based on data
+    
+    // Update modal title (always view mode)
     const titleElement = $('#accountsPayableModal .modalHeaderTitle');
-    if (isEdit) {
-        titleElement.text('EDIT ACCOUNTS PAYABLE RECORD');
-    } else {
-        titleElement.text('ACCOUNTS PAYABLE RECORD');
-    }
+    titleElement.text('ACCOUNTS PAYABLE RECORD');
 }
 
 // Show payment modal
@@ -713,6 +713,9 @@ function showPaymentModal(rowData) {
     $('#payment_ap_id').val(rowData.id);
     $('#payment_total_amount').text(formatCurrency(rowData.total_amount));
     $('#payment_balance_amount').text(formatCurrency(rowData.balance_amount));
+    
+    // Store supplier code for payee auto-population
+    $('#paymentModal').data('supplier-code', rowData.supplier_code);
     
     // Set max and data attributes for all payment amount fields
     const balanceAmount = rowData.balance_amount;
@@ -782,13 +785,38 @@ function resetCheckFields() {
     $('#checkDetailsSection').hide();
 }
 
+// Auto-populate payee field with supplier contact person
+function autoPopulatePayeeField() {
+    const supplierCode = $('#paymentModal').data('supplier-code');
+    
+    if (!supplierCode || !suppliersData || suppliersData.length === 0) {
+        console.warn('No supplier code found or suppliers data not loaded');
+        return;
+    }
+    
+    // Find the supplier in the suppliersData array
+    const supplier = suppliersData.find(s => s.SupplierCode === supplierCode);
+    
+    if (supplier && supplier.ContactPerson) {
+        $('#check_payee').val(supplier.ContactPerson);
+        console.log(`Auto-populated payee field with: ${supplier.ContactPerson} for supplier: ${supplier.SupplierName}`);
+    } else if (supplier) {
+        // Don't populate if no contact person found
+        console.warn(`No contact person found for supplier ${supplier.SupplierName}, payee field left empty`);
+        $('#check_payee').val('');
+    } else {
+        console.warn(`Supplier with code ${supplierCode} not found in suppliers data`);
+        $('#check_payee').val('');
+    }
+}
+
 // Convert number to words (Philippine English format)
 function numberToWords(amount) {
     if (!amount || isNaN(amount)) return '';
     
-    const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
-    const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-    const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
     
     function convertThreeDigit(num) {
         let result = '';
@@ -796,7 +824,7 @@ function numberToWords(amount) {
         const remainder = num % 100;
         
         if (hundreds > 0) {
-            result += ones[hundreds] + ' hundred ';
+            result += ones[hundreds] + ' Hundred ';
         }
         
         if (remainder >= 20) {
@@ -814,54 +842,57 @@ function numberToWords(amount) {
     }
     
     function convertNumber(num) {
-        if (num === 0) return 'zero';
+        if (num === 0) return 'Zero';
         
-        let result = '';
+        let resultParts = [];
         
         // Billions
         if (num >= 1000000000) {
-            result += convertThreeDigit(Math.floor(num / 1000000000)) + ' billion ';
+            resultParts.push(convertThreeDigit(Math.floor(num / 1000000000)) + ' Billion');
             num %= 1000000000;
         }
         
         // Millions
         if (num >= 1000000) {
-            result += convertThreeDigit(Math.floor(num / 1000000)) + ' million ';
+            resultParts.push(convertThreeDigit(Math.floor(num / 1000000)) + ' Million');
             num %= 1000000;
         }
         
         // Thousands
         if (num >= 1000) {
-            result += convertThreeDigit(Math.floor(num / 1000)) + ' thousand ';
+            resultParts.push(convertThreeDigit(Math.floor(num / 1000)) + ' Thousand');
             num %= 1000;
         }
         
         // Hundreds, tens, and ones
         if (num > 0) {
-            result += convertThreeDigit(num);
+            resultParts.push(convertThreeDigit(num));
         }
         
-        return result.trim();
+        return resultParts.join(', ');
     }
     
     const pesos = Math.floor(amount);
     const centavos = Math.round((amount - pesos) * 100);
     
-    let result = '';
+    let resultParts = [];
     
     if (pesos > 0) {
-        result = convertNumber(pesos) + ' peso' + (pesos > 1 ? 's' : '');
+        resultParts.push(convertNumber(pesos) + ' Peso' + (pesos > 1 ? 's' : ''));
     }
     
     if (centavos > 0) {
-        if (result) result += ' and ';
-        result += convertNumber(centavos) + ' centavo' + (centavos > 1 ? 's' : '');
+        resultParts.push(convertNumber(centavos) + ' Centavo' + (centavos > 1 ? 's' : ''));
     }
     
-    if (!result) result = 'zero pesos';
+    if (resultParts.length === 0) {
+        resultParts.push('Zero Pesos');
+    }
     
-    // Capitalize first letter
-    return result.charAt(0).toUpperCase() + result.slice(1);
+    let result = resultParts.join(' And ');
+    
+    // Add "Only" at the end
+    return result + ' Only';
 }
 
 // Reset GCash fields
@@ -953,20 +984,6 @@ function setupEventHandlers() {
     });
 
     // Modal button handlers
-    $(document).on('click', '#editAPBtn', function() {
-        setModalMode('edit', $('#status').val());
-    });
-
-    $(document).on('click', '#cancelEditAPBtn', function() {
-        // Try to get record data from form first, then modal
-        let recordData = $('#accountsPayableForm').data('record-data') || $('#accountsPayableModal').data('record-data');
-        
-        if (recordData) {
-            fillAccountsPayableModal(recordData);
-            setModalMode('view', recordData.status);
-        }
-    });
-
     $(document).on('click', '#processPaymentBtn', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -1016,71 +1033,6 @@ function setupEventHandlers() {
         });
     });
 
-    $(document).on('click', '#deleteAPBtn', function() {
-        const id = $('#accountsPayableForm').data('id');
-        if (id) {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `/api/accounts-payable/${id}`,
-                        type: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire('Deleted!', response.message, 'success');
-                                $('#accountsPayableModal').modal('hide');
-                                loadAccountsPayableData();
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error!', 'Failed to delete record.', 'error');
-                        }
-                    });
-                }
-            });
-        }
-    });
-
-    $(document).on('click', '#saveAPBtn', function() {
-        $('#accountsPayableForm').submit();
-    });
-
-    // Add new record
-    $(document).on('click', '.addNewBtn', function() {
-        // Hide all buttons first to prevent glitch
-        $('#processPaymentBtn, #deleteAPBtn, #saveAPBtn, #editAPBtn, #cancelEditAPBtn').hide();
-        
-        // Clear form
-        $('#accountsPayableForm')[0].reset();
-        $('#accountsPayableForm').removeData('id');
-        $('#accountsPayableForm').removeData('record-data');
-        
-        // Reset Virtual Select
-        const supplierVS = document.querySelector('#supplier_code_VS');
-        if (supplierVS && supplierVS.reset) {
-            supplierVS.reset();
-        }
-        
-        // Set to edit mode for new record (this will show correct buttons)
-        setModalMode('edit', 'Pending');
-        $('#accountsPayableModal .modalHeaderTitle').text('ADD NEW ACCOUNTS PAYABLE RECORD');
-        
-        // Set default date to today
-        $('#date').val(moment().format('YYYY-MM-DD'));
-        
-        $('#accountsPayableModal').modal('show');
-    });
-
     // Print all table data functionality
     $('#apPrintAllBtn').on('click', function() {
         // Store the current filtered data for printing
@@ -1110,65 +1062,6 @@ function setupEventHandlers() {
         });
     });
 
-    // Form submission
-    $('#accountsPayableForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        // Get supplier code from Virtual Select
-        const supplierVS = document.querySelector('#supplier_code_VS');
-        let supplierCode = '';
-        
-        if (supplierVS && supplierVS.value !== undefined) {
-            supplierCode = supplierVS.value;
-        }
-        
-        if (!supplierCode) {
-            Swal.fire('Error!', 'Please select a supplier.', 'error');
-            return;
-        }
-        
-        let formData = new FormData(this);
-        formData.append('supplier_code', supplierCode);
-        
-        // Remove commas from total_amount before submitting
-        const totalAmountValue = $('#total_amount').val();
-        if (totalAmountValue) {
-            formData.set('total_amount', removeCommas(totalAmountValue));
-        }
-        
-        let id = $(this).data('id');
-        let url = id ? `/api/accounts-payable/${id}` : '/api/accounts-payable';
-        let method = id ? 'PUT' : 'POST';
-        
-        $.ajax({
-            url: url,
-            type: method,
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                if (response.success) {
-                    Swal.fire('Success!', response.message, 'success');
-                    $('#accountsPayableModal').modal('hide');
-                    loadAccountsPayableData(); // Reload data
-                }
-            },
-            error: function(xhr) {
-                let errors = xhr.responseJSON?.errors;
-                let errorMessage = 'Please check your input.';
-                
-                if (errors) {
-                    errorMessage = Object.values(errors).flat().join('\n');
-                }
-                
-                Swal.fire('Error!', errorMessage, 'error');
-            }
-        });
-    });
-
     // Payment form submission
     $('#paymentForm').on('submit', function(e) {
         e.preventDefault();
@@ -1187,10 +1080,7 @@ function setupEventHandlers() {
             return;
         }
         
-        if (enteredAmount > balanceAmount) {
-            Swal.fire('Error!', 'Payment amount cannot exceed the current balance of ' + formatCurrency(balanceAmount) + '.', 'error');
-            return;
-        }
+        // Overpayments are now allowed - removed balance validation
         
         if (!paymentType) {
             Swal.fire('Error!', 'Invalid payment amount detected.', 'error');
@@ -1381,6 +1271,10 @@ function setupEventHandlers() {
             $('#checkDetailsSection').slideDown();
             // Set default check date to today
             $('#check_date').val(moment().format('YYYY-MM-DD'));
+            
+            // Auto-populate payee field with supplier contact person
+            autoPopulatePayeeField();
+            
             // Update check amount and words when amount is already entered
             const currentAmount = $('#bank_payment_amount').val().replace(/,/g, '');
             if (currentAmount && !isNaN(currentAmount)) {
@@ -1421,23 +1315,28 @@ function setupEventHandlers() {
             indicator = $('#gcash_payment_type_indicator');
         }
         
-        // Format the input value with commas
-        if (rawValue && !isNaN(rawValue)) {
-            let formattedValue = parseFloat(rawValue).toLocaleString('en-US', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2
-            });
+        // Format the input value with commas, but preserve decimal point during typing
+        if (rawValue && rawValue !== '' && !isNaN(parseFloat(rawValue))) {
+            // Don't format if user is in the middle of typing a decimal (ends with . or has only one decimal point with no digits after)
+            let isTypingDecimal = rawValue.endsWith('.') || /^\d+\.\d{0,2}$/.test(rawValue);
             
-            // Only update if the formatted value is different (to prevent cursor jumping)
-            if (amountField.val() !== formattedValue) {
-                let cursorPos = amountField[0].selectionStart;
-                let oldLength = amountField.val().length;
-                amountField.val(formattedValue);
+            if (!isTypingDecimal) {
+                let formattedValue = parseFloat(rawValue).toLocaleString('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2
+                });
                 
-                // Adjust cursor position after formatting
-                let newLength = formattedValue.length;
-                let newPos = cursorPos + (newLength - oldLength);
-                amountField[0].setSelectionRange(newPos, newPos);
+                // Only update if the formatted value is different (to prevent cursor jumping)
+                if (amountField.val() !== formattedValue) {
+                    let cursorPos = amountField[0].selectionStart;
+                    let oldLength = amountField.val().length;
+                    amountField.val(formattedValue);
+                    
+                    // Adjust cursor position after formatting
+                    let newLength = formattedValue.length;
+                    let newPos = cursorPos + (newLength - oldLength);
+                    amountField[0].setSelectionRange(newPos, newPos);
+                }
             }
         }
         
@@ -1451,21 +1350,24 @@ function setupEventHandlers() {
             return;
         }
         
-        if (enteredAmount > balanceAmount) {
-            // Amount exceeds balance - not allowed
-            paymentTypeField.val('');
-            indicator.removeClass('bg-warning bg-success').addClass('bg-danger').text('Invalid Amount');
-            amountField.addClass('is-invalid');
-            
-            // Show tooltip or error message
-            if (!amountField.next('.invalid-feedback').length) {
-                amountField.after('<div class="invalid-feedback">Amount cannot exceed current balance of ' + formatCurrency(balanceAmount) + '</div>');
-            }
-        } else if (enteredAmount === balanceAmount) {
-            // Exact amount - full payment
+        if (enteredAmount >= balanceAmount) {
+            // Amount equals or exceeds balance - full payment (overpayment allowed)
             paymentTypeField.val('full');
             indicator.removeClass('bg-warning bg-danger').addClass('bg-success').text('Full Payment');
             amountField.addClass('is-valid').next('.invalid-feedback').remove();
+            
+            // Show overpayment info if amount exceeds balance
+            if (enteredAmount > balanceAmount) {
+                let overpayment = enteredAmount - balanceAmount;
+                if (!amountField.next('.overpayment-info').length) {
+                    amountField.after('<div class="overpayment-info text-success small">Overpayment of ' + formatCurrency(overpayment) + ' will be stored as Credit Memo</div>');
+                } else {
+                    amountField.next('.overpayment-info').text('Overpayment of ' + formatCurrency(overpayment) + ' will be stored as Credit Memo');
+                }
+            } else {
+                // Remove overpayment info if exact amount
+                amountField.next('.overpayment-info').remove();
+            }
         } else if (enteredAmount < balanceAmount && enteredAmount > 0) {
             // Less than balance - partial payment
             paymentTypeField.val('partial');
@@ -1537,6 +1439,11 @@ function setupEventHandlers() {
                 // Enable check payment option when bank is selected
                 $('#pay_by_check').prop('disabled', false);
                 $('label[for="pay_by_check"]').html('Pay by Check');
+                
+                // Auto-populate payee if check payment is already enabled
+                if ($('#pay_by_check').is(':checked')) {
+                    autoPopulatePayeeField();
+                }
             } else {
                 console.warn('No bank data found for selected option');
             }
@@ -1586,8 +1493,8 @@ function setupEventHandlers() {
 
     // Reset payment modal when closed
     $('#paymentModal').on('hidden.bs.modal', function() {
-        // Reset all payment amount fields
-        $('#cash_payment_amount, #bank_payment_amount, #gcash_payment_amount').removeClass('is-invalid is-valid').next('.invalid-feedback').remove();
+        // Reset all payment amount fields and remove overpayment info
+        $('#cash_payment_amount, #bank_payment_amount, #gcash_payment_amount').removeClass('is-invalid is-valid').next('.invalid-feedback, .overpayment-info').remove();
         
         // Reset all payment type indicators
         $('#cash_payment_type_indicator, #bank_payment_type_indicator, #gcash_payment_type_indicator')

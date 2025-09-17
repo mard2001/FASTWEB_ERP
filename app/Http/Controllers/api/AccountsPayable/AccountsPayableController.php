@@ -352,25 +352,28 @@ class AccountsPayableController extends Controller
                 ], 422);
             }
 
-            // Validate payment amount
+            // Process payment amount - overpayments are now allowed
             $paymentAmount = $request->payment_amount;
             $currentBalance = $accountsPayable->balance_amount;
 
+            // Calculate credit memo for overpayments
+            $creditMemo = 0;
+            $actualPaymentAmount = $paymentAmount;
+            
             if ($paymentAmount > $currentBalance) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment amount cannot exceed the balance amount of ₱' . number_format($currentBalance, 2)
-                ], 422);
+                // Overpayment detected - calculate credit memo
+                $creditMemo = $paymentAmount - $currentBalance;
+                $actualPaymentAmount = $currentBalance; // Only pay up to the balance
             }
 
-            // Determine payment status based on remaining balance after this payment
-            $newBalance = $currentBalance - $paymentAmount;
+            // Determine payment status - overpayments are considered full payment
+            $newBalance = $currentBalance - $actualPaymentAmount;
             $paymentStatus = ($newBalance <= 0.001) ? 'full' : 'partial'; // Using small tolerance for floating point comparison
 
             // Create payment record
             $paymentData = [
                 'accounts_payable_id' => $accountsPayable->id,
-                'payment_amount' => $paymentAmount,
+                'payment_amount' => $actualPaymentAmount, // Use actual payment amount (not overpayment)
                 'payment_type' => $request->payment_type, // cash, bank, gcash
                 'payment_status' => $paymentStatus, // full, partial
                 'payment_date' => now(),
@@ -410,11 +413,11 @@ class AccountsPayableController extends Controller
                     'Payee' => $request->check_payee,
                     'AmountInWords' => $request->check_amount_in_words,
                     'CheckDate' => $request->check_date,
-                    'CheckAmount' => $paymentAmount,
+                    'CheckAmount' => $paymentAmount, // Use the full entered amount for check
                     'CheckNumber' => $request->check_number,
                     'Status' => 'Active',
                     'CreatedBy' => auth()->user()->name ?? 'System',
-                    'Remarks' => 'Payment for AP #' . $accountsPayable->id
+                    'Remarks' => 'Payment for AP #' . $accountsPayable->id . ($creditMemo > 0 ? ' (includes overpayment of ₱' . number_format($creditMemo, 2) . ')' : '')
                 ];
 
                 Log::info('Check data to create', $checkData);
@@ -436,25 +439,39 @@ class AccountsPayableController extends Controller
             $totalPaid = $accountsPayable->payments()->sum('payment_amount');
             $newBalance = $accountsPayable->total_amount - $totalPaid;
 
-            // Update status based on payment
+            // Update status and credit memo
             if ($newBalance <= 0 || $paymentStatus === 'full') {
                 $accountsPayable->status = 'Paid';
             } else {
                 // Partial payment with remaining balance
                 $accountsPayable->status = 'Partial';
             }
-            // Don't update balance_amount as it's a computed column
+            
+            // Update credit memo if there's overpayment
+            if ($creditMemo > 0) {
+                $accountsPayable->CreditMemo = ($accountsPayable->CreditMemo ?? 0) + $creditMemo;
+            }
+            
             $accountsPayable->save();
 
             // Reload relationships
             $accountsPayable->load('supplier', 'payments');
 
+            // Prepare response message
+            $message = 'Payment processed successfully';
+            if ($creditMemo > 0) {
+                $message = 'Payment processed successfully. Overpayment of ₱' . number_format($creditMemo, 2) . ' stored as Credit Memo.';
+            }
+
             $responseData = [
                 'success' => true,
-                'message' => 'Payment processed successfully',
+                'message' => $message,
                 'data' => $accountsPayable,
                 'payment' => $payment,
-                'new_balance' => $newBalance
+                'new_balance' => $newBalance,
+                'credit_memo' => $creditMemo,
+                'total_payment_entered' => $paymentAmount,
+                'actual_payment_amount' => $actualPaymentAmount
             ];
 
             // Include check information if check was created
@@ -507,10 +524,10 @@ class AccountsPayableController extends Controller
     public function getSuppliers()
     {
         try {
-            $suppliers = \App\Models\Supplier::select('SupplierCode', 'SupplierName')
+            $suppliers = \App\Models\Supplier::select('SupplierCode', 'SupplierName', 'ContactPerson')
                                             ->orderBy('SupplierName')
                                             ->get();
-
+                                            
             return response()->json([
                 'success' => true,
                 'message' => 'Suppliers retrieved successfully',

@@ -146,6 +146,32 @@
         #dateRange {
             position: relative;
         }
+
+        /* Payment History Modal Form Styling - Same as Purchase Order */
+        .phheaderform .row div div label{
+            font-size: 0.53em;
+            margin-bottom: 0;
+            font-family: var(--body-font, "Inter", sans-serif);
+            color: var(--text-color, #212529);
+        }
+
+        .phheaderform .row div div input,
+        .phheaderform .row div div textarea{
+            font-size: 0.68em;
+            margin-bottom: 0;
+            font-family: var(--body-font, "Inter", sans-serif);
+            color: var(--text-color, #212529);
+        }
+
+        .phheaderSectionTitle{
+            font-size: 0.68em;
+            text-wrap: nowrap;
+            color: var(--accent-color, #33336F);
+            font-weight: 500;
+            text-transform: uppercase;
+            padding: 0 10px;
+            font-family: var(--heading-font, "Inter", sans-serif);
+        }
     </style>
 
     <x-contentButtonDiv downloadFunc="true">
@@ -168,180 +194,174 @@
 @section('modal')
     <x-mainModal mainModalTitle="paymentHistoryModal" modalDialogClass="modal-lg" modalHeaderTitle="PAYMENT HISTORY RECORD" modalSubHeaderTitle="View payment record details.">
         <x-slot:form_fields>
-            <!-- Payment Information Section -->
-            <div class="card mb-2">
-                <div class="card-header text-white py-2" style="background-color: var(--primary-color);">
-                    <h6 class="card-title mb-0 fs-6"><i class="fas fa-credit-card me-2"></i>Payment Information</h6>
+            <div class="phheaderform">
+                <!-- Payment Information Section -->
+                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                    <div style="width:100%;"><hr></div>
+                    <div class="phheaderSectionTitle">PAYMENT INFORMATION:</div>
+                    <div style="width:100%;"><hr></div>
                 </div>
-                <div class="card-body py-2">
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Payment Date</label>
-                                <input type="date" class="form-control form-control-sm" id="view_payment_date" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Payment Amount</label>
-                                <input type="text" class="form-control form-control-sm text-end fw-bold" id="view_payment_amount" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Payment Status</label>
-                                <input type="text" class="form-control form-control-sm" id="view_payment_status" readonly>
-                            </div>
+                <div class="row mb-2">
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="">
+                            <label class="form-label">PAYMENT DATE</label>
+                            <input type="date" class="form-control" id="view_payment_date" readonly>
                         </div>
                     </div>
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Payment Type</label>
-                                <input type="text" class="form-control form-control-sm" id="view_payment_type" readonly>
-                            </div>
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="">
+                            <label class="form-label">PAYMENT AMOUNT</label>
+                            <input type="text" class="form-control text-end fw-bold" id="view_payment_amount" readonly>
                         </div>
-                        <div class="col-md-4">
-                            <div class="mb-2" id="payment_method_info_container">
-                                <label class="form-label fw-semibold small" id="payment_method_info_label">Payment Method Info</label>
-                                <input type="text" class="form-control form-control-sm" id="view_payment_method_info" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Reference Number</label>
-                                <input type="text" class="form-control form-control-sm" id="view_reference_number" readonly>
-                            </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="">
+                            <label class="form-label">PAYMENT STATUS</label>
+                            <input type="text" class="form-control" id="view_payment_status" readonly>
                         </div>
                     </div>
                 </div>
-            </div>
+                <div class="row mb-2">
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="">
+                            <label class="form-label">PAYMENT TYPE</label>
+                            <input type="text" class="form-control" id="view_payment_type" readonly>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-4" id="payment_method_info_container">
+                        <div class="">
+                            <label class="form-label" id="payment_method_info_label">PAYMENT METHOD INFO</label>
+                            <input type="text" class="form-control" id="view_payment_method_info" readonly>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="">
+                            <label class="form-label">REFERENCE NUMBER</label>
+                            <input type="text" class="form-control" id="view_reference_number" readonly>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Check Details Section - Hidden by default, shown only for bank check payments -->
-            <div class="card mb-2" id="checkDetailsSection" style="display: none;">
-                <div class="card-header text-white py-2" style="background-color: var(--info-color, #17a2b8);">
-                    <h6 class="card-title mb-0 fs-6"><i class="fas fa-money-check me-2"></i>Check Details</h6>
+                <!-- Check Details Section - Hidden by default, shown only for bank check payments -->
+                <div id="checkDetailsSection" style="display: none;">
+                    <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                        <div style="width:100%;"><hr></div>
+                        <div class="phheaderSectionTitle">CHECK DETAILS:</div>
+                        <div style="width:100%;"><hr></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-12 col-sm-6 col-md-6">
+                            <div class="">
+                                <label class="form-label">CHECK NUMBER</label>
+                                <input type="text" class="form-control" id="view_check_number" readonly>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-6">
+                            <div class="">
+                                <label class="form-label">CHECK DATE</label>
+                                <input type="date" class="form-control" id="view_check_date" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-12 col-sm-6 col-md-6">
+                            <div class="">
+                                <label class="form-label">PAYEE</label>
+                                <input type="text" class="form-control" id="view_check_payee" readonly>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-6">
+                            <div class="">
+                                <label class="form-label">CHECK AMOUNT</label>
+                                <input type="text" class="form-control text-end fw-bold" id="view_check_amount" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-12">
+                            <div class="">
+                                <label class="form-label">AMOUNT IN WORDS</label>
+                                <textarea class="form-control" id="view_check_amount_in_words" rows="3" readonly placeholder="Amount in words..."></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body py-2">
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Check Number</label>
-                                <input type="text" class="form-control form-control-sm" id="view_check_number" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Check Date</label>
-                                <input type="date" class="form-control form-control-sm" id="view_check_date" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Payee</label>
-                                <input type="text" class="form-control form-control-sm" id="view_check_payee" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Check Amount</label>
-                                <input type="text" class="form-control form-control-sm text-end fw-bold" id="view_check_amount" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row g-2">
-                        <div class="col-md-12">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Amount in Words</label>
-                                <textarea class="form-control form-control-sm" id="view_check_amount_in_words" rows="2" readonly placeholder="Amount in words..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Supplier Information Section -->
-            <div class="card mb-2">
-                <div class="card-header text-white py-2" style="background-color: var(--secondary-color);">
-                    <h6 class="card-title mb-0 fs-6"><i class="fas fa-building me-2"></i>Supplier Information</h6>
+                <!-- Supplier Information Section -->
+                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                    <div style="width:100%;"><hr></div>
+                    <div class="phheaderSectionTitle">SUPPLIER INFORMATION:</div>
+                    <div style="width:100%;"><hr></div>
                 </div>
-                <div class="card-body py-2">
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Supplier Code</label>
-                                <input type="text" class="form-control form-control-sm" id="view_supplier_code" readonly>
-                            </div>
+                <div class="row mb-2">
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="">
+                            <label class="form-label">SUPPLIER CODE</label>
+                            <input type="text" class="form-control" id="view_supplier_code" readonly>
                         </div>
-                        <div class="col-md-8">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Supplier Name</label>
-                                <input type="text" class="form-control form-control-sm" id="view_supplier_name" readonly>
-                            </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-8">
+                        <div class="">
+                            <label class="form-label">SUPPLIER NAME</label>
+                            <input type="text" class="form-control" id="view_supplier_name" readonly>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Invoice & Reference Information Section -->
-            <div class="card mb-2">
-                <div class="card-header text-white py-2" style="background-color: var(--accent-color);">
-                    <h6 class="card-title mb-0 fs-6"><i class="fas fa-file-invoice me-2"></i>Invoice & Reference Information</h6>
+                <!-- Invoice & Reference Information Section -->
+                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                    <div style="width:100%;"><hr></div>
+                    <div class="phheaderSectionTitle">INVOICE & REFERENCE INFORMATION:</div>
+                    <div style="width:100%;"><hr></div>
                 </div>
-                <div class="card-body py-2">
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">RR Number</label>
-                                <input type="text" class="form-control form-control-sm" id="view_rr_number" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Terms</label>
-                                <input type="text" class="form-control form-control-sm" id="view_terms" readonly>
-                            </div>
+                <div class="row mb-2">
+                    <div class="col-12 col-sm-6 col-md-6">
+                        <div class="">
+                            <label class="form-label">RR NUMBER</label>
+                            <input type="text" class="form-control" id="view_rr_number" readonly>
                         </div>
                     </div>
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Invoice Date</label>
-                                <input type="date" class="form-control form-control-sm" id="view_invoice_date" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Invoice Amount</label>
-                                <input type="text" class="form-control form-control-sm text-end fw-bold" id="view_invoice_amount" readonly>
-                            </div>
+                    <div class="col-12 col-sm-6 col-md-6">
+                        <div class="">
+                            <label class="form-label">TERMS</label>
+                            <input type="text" class="form-control" id="view_terms" readonly>
                         </div>
                     </div>
                 </div>
-            </div>
+                <div class="row mb-2">
+                    <div class="col-12 col-sm-6 col-md-6">
+                        <div class="">
+                            <label class="form-label">INVOICE DATE</label>
+                            <input type="date" class="form-control" id="view_invoice_date" readonly>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-6">
+                        <div class="">
+                            <label class="form-label">INVOICE AMOUNT</label>
+                            <input type="text" class="form-control text-end fw-bold" id="view_invoice_amount" readonly>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Additional Information Section -->
-            <div class="card">
-                <div class="card-header bg-secondary text-white py-2">
-                    <h6 class="card-title mb-0 fs-6"><i class="fas fa-info-circle me-2"></i>Additional Information</h6>
+                <!-- Additional Information Section -->
+                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
+                    <div style="width:100%;"><hr></div>
+                    <div class="phheaderSectionTitle">ADDITIONAL INFORMATION:</div>
+                    <div style="width:100%;"><hr></div>
                 </div>
-                <div class="card-body py-2">
-                    <div class="row g-2">
-                        <div class="col-md-12">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Process By</label>
-                                <input type="text" class="form-control form-control-sm" id="view_process_by" readonly>
-                            </div>
+                <div class="row mb-2">
+                    <div class="col-12">
+                        <div class="">
+                            <label class="form-label">PROCESS BY</label>
+                            <input type="text" class="form-control" id="view_process_by" readonly>
                         </div>
                     </div>
-                    <div class="row g-2">
-                        <div class="col-md-12">
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small">Remarks</label>
-                                <textarea class="form-control form-control-sm" id="view_remarks" rows="2" readonly placeholder="No remarks available..."></textarea>
-                            </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="">
+                            <label class="form-label">REMARKS</label>
+                            <textarea class="form-control" id="view_remarks" rows="3" readonly placeholder="No remarks available..."></textarea>
                         </div>
                     </div>
                 </div>
