@@ -711,7 +711,8 @@ function setModalMode(mode, status) {
 // Show payment modal
 function showPaymentModal(rowData) {
     $('#payment_ap_id').val(rowData.id);
-    $('#payment_total_amount').text(formatCurrency(rowData.total_amount));
+    $('#payment_total_amount').text(formatCurrency(rowData.balance_amount));
+    $('#payment_original_amount').text(formatCurrency(rowData.total_amount));
     $('#payment_balance_amount').text(formatCurrency(rowData.balance_amount));
     
     // Store supplier code for payee auto-population
@@ -719,7 +720,7 @@ function showPaymentModal(rowData) {
     
     // Set max and data attributes for all payment amount fields
     const balanceAmount = rowData.balance_amount;
-    $('#cash_payment_amount, #bank_payment_amount, #gcash_payment_amount').each(function() {
+    $('#cash_amount_display, #bank_payment_amount, #gcash_amount_display, #check_amount_display').each(function() {
         $(this).attr('max', balanceAmount);
         $(this).data('balance-amount', balanceAmount);
         $(this).val('');
@@ -727,12 +728,17 @@ function showPaymentModal(rowData) {
     
     $('#payment_type').val('full');
     
-    // Reset all payment type indicators
-    $('#cash_payment_type_indicator, #bank_payment_type_indicator, #gcash_payment_type_indicator')
-        .removeClass('bg-warning bg-success').addClass('bg-success').text('Full Payment');
+    // Reset payment amount field styling
+    $('#cash_amount_display, #bank_payment_amount, #gcash_amount_display, #check_amount_display').css({
+        'border-color': '#dee2e6 !important',
+        'background-color': '#fff !important'
+    }).removeClass('is-invalid is-valid partial-payment');
+    
+    // Remove payment status indicators
+    $('.payment-status').remove();
     
     $('#payment_remarks').val('');
-    $('#payment_method').val(''); // Reset payment method
+    $('#payment_method').val(''); // No default payment method - user must select
     
     // Control current balance visibility based on status
     const status = rowData.status || '';
@@ -742,21 +748,21 @@ function showPaymentModal(rowData) {
         $('#payment_balance_container').show();
     }
     
-    // Reset and hide bank details
+    // Hide all sections first
     $('#bankDetailsSection').hide();
+    $('#gcashDetailsSection').hide();
+    $('#gcashPaymentSection').hide();
+    $('#cashPaymentSection').hide();
+    $('#checkDetailsSection').hide();
+    
+    // No sections shown by default - user must select payment method first
+    
+    // Reset all fields
     $('#bank_selection').val('');
     resetBankFields();
-    
-    // Reset and hide GCash details
-    $('#gcashDetailsSection').hide();
     $('#gcash_selection').val('');
     resetGcashFields();
-    
-    // Reset and hide cash details
-    $('#cashPaymentFields').hide();
     resetCashFields();
-    
-    // Reset check details
     resetCheckFields();
     
     // Load banks data and populate dropdown
@@ -781,7 +787,7 @@ function resetCheckFields() {
     $('#check_amount_display').val('');
     $('#check_amount_in_words').val('');
     $('#pay_by_check').prop('checked', false).prop('disabled', true);
-    $('label[for="pay_by_check"]').html('Pay by Check <small class="text-muted">(Select a bank first)</small>');
+    $('label[for="pay_by_check"]').html('Pay by Check');
     $('#checkDetailsSection').hide();
 }
 
@@ -903,8 +909,13 @@ function resetGcashFields() {
 
 // Reset Cash fields
 function resetCashFields() {
-    $('#cash_payment_amount').val('');
-    $('#cash_payment_type_indicator').removeClass('bg-warning bg-danger').addClass('bg-success').text('Full Payment');
+    $('#cash_amount_display').val('').css({
+        'border-color': '#dee2e6 !important',
+        'background-color': '#fff !important'
+    }).removeClass('is-invalid is-valid partial-payment');
+    
+    // Remove payment status indicator
+    $('#cash_amount_display').parent().find('.payment-status').remove();
 }
 
 // Helper function to get the current payment amount field based on selected method
@@ -912,26 +923,19 @@ function getCurrentPaymentAmountField() {
     const paymentMethod = $('#payment_method').val();
     switch(paymentMethod) {
         case 'bank':
+            // If pay with check is enabled, use check amount field
+            if ($('#pay_by_check').is(':checked')) {
+                return $('#check_amount_display');
+            }
             return $('#bank_payment_amount');
         case 'gcash':
-            return $('#gcash_payment_amount');
+            return $('#gcash_amount_display');
         default: // cash
-            return $('#cash_payment_amount');
+            return $('#cash_amount_display');
     }
 }
 
-// Helper function to get the current payment status indicator based on selected method
-function getCurrentPaymentStatusIndicator() {
-    const paymentMethod = $('#payment_method').val();
-    switch(paymentMethod) {
-        case 'bank':
-            return $('#bank_payment_type_indicator');
-        case 'gcash':
-            return $('#gcash_payment_type_indicator');
-        default: // cash
-            return $('#cash_payment_type_indicator');
-    }
-}
+
 
 // Edit record function
 function editRecord(id) {
@@ -1268,6 +1272,9 @@ function setupEventHandlers() {
                 return;
             }
             
+            // Hide the bank payment amount field since check amount will be used
+            $('#bankPaymentAmountColumn').hide();
+            
             $('#checkDetailsSection').slideDown();
             // Set default check date to today
             $('#check_date').val(moment().format('YYYY-MM-DD'));
@@ -1281,6 +1288,9 @@ function setupEventHandlers() {
                 updateCheckAmountFields(parseFloat(currentAmount));
             }
         } else {
+            // Show the bank payment amount field when not using check
+            $('#bankPaymentAmountColumn').show();
+            
             $('#checkDetailsSection').slideUp();
             resetCheckFields();
         }
@@ -1297,23 +1307,30 @@ function setupEventHandlers() {
         }
     });
 
+    // Update check amount in words when check amount is typed directly
+    $(document).on('input keyup change', '#check_amount_display', function() {
+        const rawValue = $(this).val().replace(/,/g, '');
+        const amount = parseFloat(rawValue) || 0;
+        
+        if (amount > 0) {
+            // Update only the amount in words field
+            const amountInWords = numberToWords(amount);
+            $('#check_amount_in_words').val(amountInWords);
+        } else {
+            // Clear the amount in words field if no amount
+            $('#check_amount_in_words').val('');
+        }
+    });
+
     // Payment amount change handler - automated payment type detection
-    $(document).on('input keyup change', '#cash_payment_amount, #bank_payment_amount, #gcash_payment_amount', function() {
+    $(document).on('input keyup change', '#cash_amount_display, #bank_payment_amount, #gcash_amount_display, #check_amount_display', function() {
         let rawValue = $(this).val().replace(/,/g, ''); // Remove existing commas
         let enteredAmount = parseFloat(rawValue) || 0;
         let balanceAmount = parseFloat($(this).data('balance-amount')) || 0;
         let paymentTypeField = $('#payment_type');
         let amountField = $(this);
         
-        // Get the corresponding indicator based on the field ID
-        let indicator;
-        if ($(this).attr('id') === 'cash_payment_amount') {
-            indicator = $('#cash_payment_type_indicator');
-        } else if ($(this).attr('id') === 'bank_payment_amount') {
-            indicator = $('#bank_payment_type_indicator');
-        } else if ($(this).attr('id') === 'gcash_payment_amount') {
-            indicator = $('#gcash_payment_type_indicator');
-        }
+        console.log('Payment validation triggered - Amount:', enteredAmount, 'Balance:', balanceAmount);
         
         // Format the input value with commas, but preserve decimal point during typing
         if (rawValue && rawValue !== '' && !isNaN(parseFloat(rawValue))) {
@@ -1344,35 +1361,85 @@ function setupEventHandlers() {
         amountField.removeClass('is-invalid is-valid');
         
         if (enteredAmount === 0) {
-            // No amount entered yet
+            // No amount entered yet - reset to default styling
             paymentTypeField.val('full');
-            indicator.removeClass('bg-warning bg-success bg-danger').addClass('bg-success').text('Full Payment');
+            
+            console.log('Resetting to default styling');
+            amountField.attr('style', amountField.attr('style').replace(/border-color:[^;]*;?/g, '').replace(/background-color:[^;]*;?/g, '') + 
+                'border-color: #dee2e6 !important; background-color: #fff !important;')
+                .removeClass('is-invalid is-valid partial-payment');
+            
+            // Remove payment status and overpayment info
+            amountField.next('.overpayment-info').remove();
+            amountField.parent().find('.payment-status').remove();
             return;
         }
         
         if (enteredAmount >= balanceAmount) {
             // Amount equals or exceeds balance - full payment (overpayment allowed)
             paymentTypeField.val('full');
-            indicator.removeClass('bg-warning bg-danger').addClass('bg-success').text('Full Payment');
-            amountField.addClass('is-valid').next('.invalid-feedback').remove();
             
             // Show overpayment info if amount exceeds balance
             if (enteredAmount > balanceAmount) {
-                let overpayment = enteredAmount - balanceAmount;
-                if (!amountField.next('.overpayment-info').length) {
-                    amountField.after('<div class="overpayment-info text-success small">Overpayment of ' + formatCurrency(overpayment) + ' will be stored as Credit Memo</div>');
+                // Over payment - green input
+                console.log('Applying overpayment styling');
+                amountField.attr('style', amountField.attr('style').replace(/border-color:[^;]*;?/g, '').replace(/background-color:[^;]*;?/g, '') + 
+                    'border-color: #28a745 !important; background-color: #d4edda !important;')
+                    .removeClass('is-invalid').addClass('is-valid');
+                
+                // Remove old indicators and add payment status text
+                amountField.next('.overpayment-info').remove();
+                amountField.parent().find('.payment-status').remove();
+                
+                // Handle different positioning for check amount field
+                if (amountField.attr('id') === 'check_amount_display') {
+                    // For check amount field, add status text to the relative container
+                    amountField.parent().append('<span class="payment-status" style="position: absolute; top: -20px; right: 0; color: #28a745; font-size: 7px; font-weight: 700; text-transform: uppercase;">Over Payment</span>');
                 } else {
-                    amountField.next('.overpayment-info').text('Overpayment of ' + formatCurrency(overpayment) + ' will be stored as Credit Memo');
+                    // For other fields, use the original method
+                    amountField.prev('label').after('<span class="payment-status" style="padding-left: 88px; color: #28a745; font-size: 7px; font-weight: 700; text-transform: uppercase;">Over Payment</span>');
                 }
             } else {
-                // Remove overpayment info if exact amount
+                // Exact payment - green input
+                console.log('Applying exact payment styling');
+                amountField.attr('style', amountField.attr('style').replace(/border-color:[^;]*;?/g, '').replace(/background-color:[^;]*;?/g, '') + 
+                    'border-color: #28a745 !important; background-color: #d4edda !important;')
+                    .removeClass('is-invalid').addClass('is-valid');
+                
+                // Remove old indicators and add payment status text
                 amountField.next('.overpayment-info').remove();
+                amountField.parent().find('.payment-status').remove();
+                
+                // Handle different positioning for check amount field
+                if (amountField.attr('id') === 'check_amount_display') {
+                    // For check amount field, add status text to the relative container
+                    amountField.parent().append('<span class="payment-status" style="position: absolute; top: -20px; right: 0; color: #28a745; font-size: 7px; font-weight: 700; text-transform: uppercase;">Full Payment</span>');
+                } else {
+                    // For other fields, use the original method
+                    amountField.prev('label').after('<span class="payment-status" style="padding-left: 90px; color: #28a745; font-size: 7px; font-weight: 700; text-transform: uppercase;">Full Payment</span>');
+                }
             }
         } else if (enteredAmount < balanceAmount && enteredAmount > 0) {
-            // Less than balance - partial payment
+            // Less than balance - partial payment - yellow input
             paymentTypeField.val('partial');
-            indicator.removeClass('bg-success bg-danger').addClass('bg-warning').text('Partial Payment');
-            amountField.addClass('is-valid').next('.invalid-feedback').remove();
+            
+            console.log('Applying partial payment styling');
+            amountField.attr('style', amountField.attr('style').replace(/border-color:[^;]*;?/g, '').replace(/background-color:[^;]*;?/g, '') + 
+                'border-color: #ffc107 !important; background-color: #fff3cd !important;')
+                .removeClass('is-invalid is-valid').addClass('partial-payment');
+            
+            // Remove old indicators and add payment status text
+            amountField.next('.overpayment-info').remove();
+            amountField.parent().find('.payment-status').remove();
+            
+            // Handle different positioning for check amount field
+            if (amountField.attr('id') === 'check_amount_display') {
+                // For check amount field, add status text to the relative container
+                amountField.parent().append('<span class="payment-status" style="position: absolute; top: -20px; right: 0; color: #ffc107; font-size: 7px; font-weight: 700; text-transform: uppercase;">Partial Payment</span>');
+            } else {
+                // For other fields, use the original method
+                amountField.prev('label').after('<span class="payment-status" style="padding-left: 78px; color: #ffc107; font-size: 7px; font-weight: 700; text-transform: uppercase;">Partial Payment</span>');
+            }
         }
     });
 
@@ -1380,10 +1447,19 @@ function setupEventHandlers() {
     $(document).on('change', '#payment_method', function() {
         const selectedMethod = $(this).val();
         
+        // Hide all sections first
+        $('#bankDetailsSection').hide();
+        $('#gcashDetailsSection').hide();
+        $('#gcashPaymentSection').hide();
+        $('#cashPaymentSection').hide();
+        $('#checkDetailsSection').hide();
+        
         if (selectedMethod === 'bank') {
             $('#bankDetailsSection').show();
-            $('#gcashDetailsSection').hide();
-            $('#cashPaymentFields').hide();
+            // Check Details will only show if checkbox is checked
+            if ($('#pay_by_check').is(':checked')) {
+                $('#checkDetailsSection').show();
+            }
             // Make bank selection required when bank is chosen
             $('#bank_selection').attr('required', true);
             $('#gcash_selection').removeAttr('required').val('');
@@ -1391,18 +1467,15 @@ function setupEventHandlers() {
             resetCashFields();
         } else if (selectedMethod === 'gcash') {
             $('#gcashDetailsSection').show();
-            $('#bankDetailsSection').hide();
-            $('#cashPaymentFields').hide();
+            $('#gcashPaymentSection').show();
             // Make gcash selection required when gcash is chosen
             $('#gcash_selection').attr('required', true);
             $('#bank_selection').removeAttr('required').val('');
             resetBankFields();
             resetCashFields();
-        } else {
+        } else if (selectedMethod === 'cash') {
             // Cash payment
-            $('#bankDetailsSection').hide();
-            $('#gcashDetailsSection').hide();
-            $('#cashPaymentFields').show();
+            $('#cashPaymentSection').show();
             $('#bank_selection').removeAttr('required').val('');
             $('#gcash_selection').removeAttr('required').val('');
             resetBankFields();
@@ -1494,16 +1567,24 @@ function setupEventHandlers() {
     // Reset payment modal when closed
     $('#paymentModal').on('hidden.bs.modal', function() {
         // Reset all payment amount fields and remove overpayment info
-        $('#cash_payment_amount, #bank_payment_amount, #gcash_payment_amount').removeClass('is-invalid is-valid').next('.invalid-feedback, .overpayment-info').remove();
+        $('#cash_amount_display, #bank_payment_amount, #gcash_amount_display, #check_amount_display').removeClass('is-invalid is-valid').next('.invalid-feedback, .overpayment-info').remove();
         
         // Reset all payment type indicators
-        $('#cash_payment_type_indicator, #bank_payment_type_indicator, #gcash_payment_type_indicator')
-            .removeClass('bg-warning bg-danger').addClass('bg-success').text('Full Payment');
+        // Reset payment amount field styling
+        $('#cash_amount_display, #bank_payment_amount, #gcash_amount_display').css({
+            'border-color': '#dee2e6 !important',
+            'background-color': '#fff !important'
+        }).removeClass('is-invalid is-valid partial-payment');
+        
+        // Remove payment status indicators
+        $('.payment-status').remove();
         
         $('#payment_method').val('');
         $('#bankDetailsSection').hide();
         $('#gcashDetailsSection').hide();
-        $('#cashPaymentFields').hide();
+        $('#gcashPaymentSection').hide();
+        $('#cashPaymentSection').hide();
+        $('#checkDetailsSection').hide();
         $('#bank_selection').removeAttr('required').val('');
         $('#gcash_selection').removeAttr('required').val('');
         resetBankFields();

@@ -1581,6 +1581,21 @@ const SOItemsModal = {
         return UomAndQuantity;
     },
     getTotalQuantity: (UomAndQuantity) => {
+        // Check if productConFact is defined before accessing its properties
+        if (!productConFact) {
+            let totalInPieces = 0;
+            Object.entries(UomAndQuantity).forEach(([key, uom]) => {
+                if (key.toUpperCase() === "PC") {
+                    totalInPieces += Number(uom);
+                }
+                // For other UOMs, just treat as pieces if conversion factors aren't available
+                else {
+                    totalInPieces += Number(uom);
+                }
+            });
+            return totalInPieces;
+        }
+
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
         let totalInPieces = 0;
@@ -1618,6 +1633,19 @@ const SOItemsModal = {
         console.log(uoms);
 
         let UomAndQuantity = {};
+        
+        // Check if productConFact is defined before accessing its properties
+        if (!productConFact) {
+            // If no conversion factors, just assign total pieces to PC
+            UomAndQuantity.PC = totalInPieces;
+            uoms.forEach((element) => {
+                if (element.value !== "PC") {
+                    UomAndQuantity[element.value] = 0;
+                }
+            });
+            return UomAndQuantity;
+        }
+
         let moduloResult = totalInPieces % productConFact.ConvFactAltUom;
 
         const { ConvFactAltUom, ConvFactOthUom } = productConFact;
@@ -1666,10 +1694,23 @@ const SOItemsModal = {
     itemCalculateUOM: (getItem) => {
         console.log("getItem",getItem);
         const uomsAndQty = getItem.UomAndQuantity;
+
+        const totalInPieces = SOItemsModal.getTotalQuantity(uomsAndQty);
+        
+        // Check if productConFact is defined before accessing its properties
+        if (!productConFact) {
+            // If no conversion factors, default to PC
+            getItem.MOrderUom = "PC";
+            getItem.MOrderQty = totalInPieces;
+            getItem.MPriceUom = getItem.MOrderUom;
+            getItem.MStockingUom = getItem.MOrderUom;
+            getItem.QTYinPCS = totalInPieces;
+            return getItem;
+        }
+
         const ConvFactAltUom = productConFact.ConvFactAltUom;
         const ConvFactOthUom = productConFact.ConvFactOthUom;
 
-        const totalInPieces = SOItemsModal.getTotalQuantity(uomsAndQty);
         if (uomsAndQty.CS) {
             getItem.MOrderUom = "CS";
             getItem.MOrderQty = (totalInPieces / ConvFactAltUom);

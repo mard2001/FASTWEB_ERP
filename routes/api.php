@@ -49,6 +49,7 @@ use App\Http\Controllers\api\ActivityLog\ActivityLogController;
 use App\Http\Controllers\api\ThemeController;
 use App\Http\Controllers\api\BankController;
 use App\Http\Controllers\api\GcashController;
+use App\Http\Controllers\api\SupplierCreditController;
 
 
 Route::middleware(['auth:sanctum', 'check.user.status', DynamicDatabase::class])->group(function () {
@@ -247,6 +248,12 @@ Route::get('payment-history', [\App\Http\Controllers\api\PaymentHistory\PaymentH
 Route::get('payment-history/suppliers', [\App\Http\Controllers\api\PaymentHistory\PaymentHistoryController::class, 'getSuppliers'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::get('payment-history/statistics', [\App\Http\Controllers\api\PaymentHistory\PaymentHistoryController::class, 'getStatistics'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::get('payment-history/{id}', [\App\Http\Controllers\api\PaymentHistory\PaymentHistoryController::class, 'show'])->middleware(['auth:sanctum', 'check.user.status']);
+
+// Supplier Credit API Routes
+Route::get('supplier-credit', [\App\Http\Controllers\api\SupplierCreditController::class, 'getSuppliersWithCredits'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('supplier-credit/{supplierCode}/transactions', [\App\Http\Controllers\api\SupplierCreditController::class, 'getSupplierTransactions'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('supplier-credit/{supplierCode}/print-statement', [\App\Http\Controllers\api\SupplierCreditController::class, 'printStatement'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('supplier-credit/{supplierCode}/print-counter-receipt', [\App\Http\Controllers\api\SupplierCreditController::class, 'printCounterReceipt'])->middleware(['auth:sanctum', 'check.user.status']);
 
 // Route::post('/auth/register', [AuthController::class, 'register']); // Disabled - Registration handled by admin through user management
 Route::post('/auth/login', [AuthController::class, 'login']);

@@ -395,14 +395,19 @@ class POController
 
     public function generatePDF(string $poid)
     {
-        dd("HELLOW");
-        $data = PO::with('POItems')->where('PONumber', $poid)->firstOrFail();
-        $data->SupplierCode = trim($data->SupplierCode);
-        $data->posupplier = $data->posupplier->toArray();
-        $data->POItems = $data->POItems->toArray();
-        // dd($data->toArray());
+        try {
+            $data = PO::with('POItems')->where('PONumber', $poid)->firstOrFail();
+            $data->SupplierCode = trim($data->SupplierCode);
+            $data->posupplier = $data->posupplier->toArray();
+            $data->POItems = $data->POItems->toArray();
 
-        return view('Pages.PurchaseOrder-PDF', ['po' => $data]); // Pass the user to the view
+            return view('Pages.PurchaseOrder-PDF', ['po' => $data]); // Pass the user to the view
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Purchase order not found or error generating PDF: ' . $e->getMessage(),
+            ], 404);
+        }
 
 
         // $pdf = PDF::loadView('Pages.PurchaseOrder-PDF', ['po' => $data])

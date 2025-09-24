@@ -342,7 +342,13 @@ const datatables = {
                         { data: 'SoldToAddr1',  title: 'Location' },
                         { data: 'SoldToAddr2',  title: 'Municipality' },
                         { data: 'SoldToAddr3',  title: 'Province' },
-                        { data: 'salesman.Name',  title: 'Salesperson' },
+                        { 
+                            data: null,
+                            title: 'Salesperson',
+                            render: function(data, type, row) {
+                                return row.salesman && row.salesman.Name ? row.salesman.Name : '';
+                            }
+                        },
                     ],
                     columnDefs: [
                         { className: "text-start", targets: [ 0, 1, 4, 5, 6 ] },
@@ -492,7 +498,7 @@ const CustomerModal = {
         $('#Name').val(custData.Name);
         $('#ShortName').val(custData.ShortName);
         $('#mdCode').val(custData.Salesperson);
-        $('#Salesman').val(custData.salesman.Name);
+        $('#Salesman').val(custData.salesman && custData.salesman.Name ? custData.salesman.Name : '');
         $('#PriceCode').val(custData.PriceCode);
         $('#CustomerClass').val(custData.CustomerClass);
         $('#Telephone').val(custData.Telephone);

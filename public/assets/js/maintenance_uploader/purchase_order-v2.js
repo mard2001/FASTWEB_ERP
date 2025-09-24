@@ -81,6 +81,16 @@ $(document).ready(async function () {
   function printPurchaseOrder(PONumbers) {
     const PONumber = PONumbers ? PONumbers : selectedMain.PONumber;
 
+    // Check if PONumber is valid
+    if (!PONumber) {
+      Swal.fire({
+        title: "Error",
+        text: "No purchase order number available for printing.",
+        icon: "error",
+      });
+      return;
+    }
+
     // Get screen width and height
     let screenWidth = window.screen.width;
     let screenHeight = window.screen.height;
@@ -93,13 +103,25 @@ $(document).ready(async function () {
     let left = (screenWidth - popupWidth) / 2;
     let top = (screenHeight - popupHeight) / 2;
 
-    window.open(
-      "api/print/po/" + PONumber, // URL to open
+    // Construct the full URL using web route for session-based authentication
+    const printUrl = globalApi + "transactions/print/po/" + PONumber;
+
+    // Open popup window with direct URL
+    const popup = window.open(
+      printUrl, // Direct URL to open
       "popupWindow", // Window name
-      `width=${popupWidth},height=${popupHeight}, left = ${left}, top = ${top},toolbar=yes,location=no,status=yes,menubar=no,scrollbars=no,resizable=no`
+      `width=${popupWidth},height=${popupHeight}, left=${left}, top=${top},toolbar=yes,location=no,status=yes,menubar=no,scrollbars=no,resizable=no`
     );
 
-    // window.open(', "_blank");
+    // Check if popup was blocked
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      Swal.fire({
+        title: "Popup Blocked",
+        text: "Please allow popups for this site to print the purchase order.",
+        icon: "warning",
+      });
+      return;
+    }
   }
 
   $("#modalFields").on("hidden.bs.modal", function () {

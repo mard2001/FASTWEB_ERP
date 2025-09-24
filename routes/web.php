@@ -229,6 +229,11 @@ Route::get('/master-data/supplier', function () {
     return page_view('supplier-maintenance/supplier_page');
 })->name('supplier')->middleware('check.user.status');
 
+// SUPPLIER CREDIT MODULE
+Route::get('/transactions/supplier-credit', function () {
+    return page_view('supplier-credit/supplier_credit_page');
+})->name('supplier-credit')->middleware('check.user.status');
+
 
 // WAREHOUSE MAINTENANCE MODULE
 Route::get('/master-data/warehouse', function () {
@@ -280,6 +285,9 @@ Route::get('/account-deactivated', function () {
 Route::get('/transactions/print', function () {
     return page_view('PurchaseOrder-PDF');
 })->name('print')->middleware('check.user.status');
+
+// PO Print Route - Web based for session authentication
+Route::get('/transactions/print/po/{poid}', [\App\Http\Controllers\api\Orders\POController::class, 'generatePDF'])->name('web.print.po')->middleware('check.user.status');
 
 
 

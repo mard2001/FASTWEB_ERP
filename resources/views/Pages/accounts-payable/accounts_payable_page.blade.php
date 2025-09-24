@@ -4,6 +4,70 @@
     <title>Accounts Payable - FASTWEB ERP</title>
     <link href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom Light Blue Tooltip Styles */
+        .custom-tooltip {
+            position: absolute;
+            background: #DFE9FF;
+            color: #6E6E6E;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            max-width: 250px;
+            z-index: 1060;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #5188FD;
+            display: none;
+            word-wrap: break-word;
+        }
+
+        .custom-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            right: 15px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid #DFE9FF;
+        }
+
+        .custom-tooltip::after {
+            content: '';
+            position: absolute;
+            top: -7px;
+            right: 15px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid #5188FD;
+        }
+
+        .custom-tooltip.show {
+            display: block;
+            animation: fadeInTooltip 0.2s ease-in-out;
+        }
+
+        @keyframes fadeInTooltip {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .custom-tooltip-trigger:hover {
+            color: #5188FD !important;
+        }
+    </style>
 @endsection
 
 @section('title_header')
@@ -127,7 +191,7 @@
         }
         
         .status-credit {
-            background-color: var(--info-color, #007bff);
+            background-color: var(--info-color, #5188FD);
             color: var(--text-color-light, white);
             padding: 4px 8px;
             border-radius: 4px;
@@ -208,6 +272,118 @@
             text-transform: uppercase;
             padding: 0 10px;
             font-family: var(--heading-font, "Inter", sans-serif);
+        }
+
+        /* Process Payment Modal Custom Styling */
+        #paymentModal .modal-content {
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+
+        #paymentModal .form-control:focus,
+        #paymentModal .form-select:focus {
+            border-color: #5188FD;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.1);
+            outline: none;
+        }
+
+        #paymentModal .form-check-input:checked {
+            background-color: #5188FD;
+            border-color: #5188FD;
+        }
+
+        #paymentModal .form-check-input:focus {
+            border-color: #5188FD;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.1);
+        }
+
+        #paymentModal .btn:hover {
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+
+        #paymentModal .btn:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        /* Poppins font for entire payment modal */
+        #paymentModal,
+        #paymentModal * {
+            font-family: 'Poppins', sans-serif !important;
+        }
+
+        #paymentModal .modal-title {
+            font-family: 'Poppins', sans-serif !important;
+        }
+
+        #paymentModal h6,
+        #paymentModal .form-label,
+        #paymentModal .form-control,
+        #paymentModal .form-select,
+        #paymentModal textarea,
+        #paymentModal input,
+        #paymentModal button,
+        #paymentModal .btn {
+            font-family: 'Poppins', sans-serif !important;
+        }
+
+        /* Custom input styling to match Figma specifications */
+        #paymentModal .form-control {
+            width: 245px !important;
+            height: 32px !important;
+            padding: 0 11px !important;
+            border-radius: 5px !important;
+            border: 1px solid #C9C9C9 !important;
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            gap: 10px;
+            opacity: 1;
+            font-size: 12px !important;
+            line-height: 30px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        /* Separate styling for select dropdowns to preserve arrows */
+        #paymentModal .form-select {
+            width: 245px !important;
+            height: 32px !important;
+            padding: 0px 11px !important;
+            border-radius: 5px !important;
+            border: 1px solid #C9C9C9 !important;
+            background: #FFFFFF !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23000000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 11px center !important;
+            background-size: 16px 12px !important;
+            color: #000000 !important;
+            opacity: 1;
+            font-size: 12px !important;
+        }
+
+        /* Special handling for read-only fields */
+        #paymentModal .form-control[readonly] {
+            background-color: #f8f9fa !important;
+        }
+
+        /* Override for textarea to maintain proper height */
+        #paymentModal textarea.form-control {
+            height: auto !important;
+            min-height: 32px !important;
+        }
+
+        /* Override for full-width display fields like payment amounts */
+        #paymentModal #payment_total_amount,
+        #paymentModal #payment_original_amount {
+            width: 100% !important;
+        }
+
+        /* Override for full-width textarea fields */
+        #paymentModal #payment_remarks,
+        #paymentModal #check_amount_in_words {
+            width: 100% !important;
         }
     </style>
 
@@ -347,289 +523,240 @@
 
     <!-- Payment Modal -->
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="paymentModalLabel"><i class="fas fa-credit-card me-2"></i>Process Payment</h5>
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 550px;">
+            <div class="modal-content" style="max-height: 857px; height: auto; min-height: 400px;">
+                <div class="modal-header d-flex justify-content-between align-items-center" style="background: #f8f9fa; padding: 14px 24px; border-bottom: 1px solid #e9ecef;">
+                    <div class="d-flex align-items-center">
+                        <i class="mdi mdi-receipt me-2" style="font-size: 20px; color: #495057;"></i>
+                        <h5 class="modal-title mb-0" id="paymentModalLabel" style="font-weight: 600; color: #495057; font-size: 16px;">Process Payment</h5>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="padding: 20px 20px 0px; overflow-y: auto; max-height: calc(90vh - 120px);">
                     <div class="paymentform">
                         <form id="paymentForm">
                             <input type="hidden" id="payment_ap_id" name="ap_id">
                             <input type="hidden" id="payment_type" name="payment_type" value="full">
                             
-                            <!-- Account Balance Information -->
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="paymentSectionTitle">ACCOUNT BALANCE:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label class="form-label">TOTAL AMOUNT</label>
-                                        <div id="payment_total_amount" class="form-control fw-bold bg-light"></div>
-                                    </div>
+                            <!-- Account Balance Section -->
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">ACCOUNT BALANCE</h6>
+                                    <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
+                                    <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Total Amount and current balance information for the selected customer account"></i>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-6" id="payment_balance_container">
-                                    <div class="">
-                                        <label class="form-label">CURRENT BALANCE</label>
-                                        <div id="payment_balance_amount" class="form-control fw-bold text-danger bg-light"></div>
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <label class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">TOTAL AMOUNT</label>
+                                        <div id="payment_original_amount" class="form-control" style="background: #fff; border: 1px solid #dee2e6; padding: 12px; font-weight: 600; font-size: 16px; color: #495057;">P130,582.94</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">TOTAL BALANCE</label>
+                                        <div id="payment_total_amount" class="form-control" style="background: #fff; border: 1px solid #dee2e6; padding: 12px; font-weight: 600; font-size: 16px; color: #495057;">P130,582.94</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Payment Details -->
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="paymentSectionTitle">PAYMENT DETAILS:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="payment_method" class="form-label">PAYMENT TYPE <span class="text-danger">*</span></label>
+                            <!-- Payment Details Section -->
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">PAYMENT DETAILS</h6>
+                                    <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
+                                    <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Select payment type and reference number for this transaction"></i>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <label for="payment_method" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT TYPE</label>
                                         <select class="form-select" id="payment_method" name="payment_type" required>
-                                            <option value="">Select payment type</option>
-                                            <option value="cash">Cash</option>
-                                            <option value="bank">Bank</option>
-                                            <option value="gcash">GCash</option>
+                                            <option value="" disabled selected>Select Payment Type</option>
+                                            <option value="bank">BANK</option>
+                                            <option value="cash">CASH</option>
+                                            <option value="gcash">GCASH</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="payment_reference_number" class="form-label">REFERENCE NUMBER</label>
-                                        <input type="text" class="form-control" id="payment_reference_number" name="reference_number" placeholder="Enter reference number">
-                                    </div>
-                                </div>
-                            </div>
-                                
-                            <!-- Cash Payment Fields - Hidden by default -->
-                            <div id="cashPaymentFields" style="display: none;">
-                                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                    <div style="width:100%;"><hr></div>
-                                    <div class="paymentSectionTitle">CASH PAYMENT:</div>
-                                    <div style="width:100%;"><hr></div>
-                                </div>
-                                <div class="row mb-2">
-                                    <div class="col-12 col-sm-8 col-md-8">
-                                        <div class="">
-                                            <label for="cash_payment_amount" class="form-label">PAYMENT AMOUNT <span class="text-danger">*</span></label>
-                                            <input type="text" step="0.01" class="form-control" id="cash_payment_amount" name="cash_payment_amount">
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-sm-4 col-md-4">
-                                        <div class="">
-                                            <label class="form-label">PAYMENT STATUS</label>
-                                            <span id="cash_payment_type_indicator" class="badge bg-success d-block text-center py-2 mt-1">Full Payment</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row mb-2">
-                                    <div class="col-12">
-                                        <small class="text-muted">Enter amount less than balance for partial payment, exact amount for full payment</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                        <!-- Bank Details Section - Hidden by default -->
-                        <div id="bankDetailsSection" class="mb-3" style="display: none;">
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="paymentSectionTitle">BANK DETAILS:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12">
-                                    <div class="">
-                                        <label for="bank_selection" class="form-label">SELECT BANK <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="bank_selection" name="bank_selection">
-                                            <option value="">Choose Bank...</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="bank_account_name" class="form-label">ACCOUNT NAME</label>
-                                        <input type="text" class="form-control" id="bank_account_name" name="bank_account_name" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="bank_account_number" class="form-label">ACCOUNT NUMBER</label>
-                                        <input type="text" class="form-control" id="bank_account_number" name="bank_account_number" readonly>
-                                    </div>
-                                </div>
-                            </div>
-                                    
-                            <!-- Check Payment Option -->
-                            <div class="row mb-2">
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="pay_by_check" name="pay_by_check" disabled>
-                                        <label class="form-check-label" for="pay_by_check">
-                                            Pay by Check <small class="text-muted">(Select a bank first)</small>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Check Details Section - Hidden by default -->
-                            <div id="checkDetailsSection" class="mt-3" style="display: none;">
-                                <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                    <div style="width:100%;"><hr></div>
-                                    <div class="paymentSectionTitle">CHECK DETAILS:</div>
-                                    <div style="width:100%;"><hr></div>
-                                </div>
-                                <div class="row mb-2">
-                                    <div class="col-12 col-sm-6 col-md-6">
-                                        <div class="">
-                                            <label for="check_payee" class="form-label">PAYEE <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="check_payee" name="check_payee" placeholder="Enter payee name">
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-sm-6 col-md-6">
-                                        <div class="">
-                                            <label for="check_date" class="form-label">CHECK DATE <span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control" id="check_date" name="check_date">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row mb-2">
-                                    <div class="col-12 col-sm-6 col-md-6">
-                                        <div class="">
-                                            <label for="check_number" class="form-label">CHECK NUMBER</label>
-                                            <input type="text" class="form-control" id="check_number" name="check_number" placeholder="Enter check number (optional)">
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-sm-6 col-md-6">
-                                        <div class="">
-                                            <label for="check_amount_display" class="form-label">CHECK AMOUNT <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="check_amount_display" name="check_amount_display" placeholder="Enter check amount" readonly>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row mb-2">
-                                    <div class="col-12">
-                                        <div class="">
-                                            <label for="check_amount_in_words" class="form-label">AMOUNT IN WORDS <span class="text-danger">*</span></label>
-                                            <textarea class="form-control" id="check_amount_in_words" name="check_amount_in_words" rows="3" placeholder="Amount will be converted to words automatically..." readonly></textarea>
-                                            <small class="text-muted">This will be automatically filled when you enter the payment amount below</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                                    
-                            <!-- Bank Payment Amount and Status -->
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="paymentSectionTitle">BANK PAYMENT:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12 col-sm-8 col-md-8">
-                                    <div class="">
-                                        <label for="bank_payment_amount" class="form-label">PAYMENT AMOUNT <span class="text-danger">*</span></label>
-                                        <input type="text" step="0.01" class="form-control" id="bank_payment_amount" name="bank_payment_amount">
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-4 col-md-4">
-                                    <div class="">
-                                        <label class="form-label">PAYMENT STATUS</label>
-                                        <span id="bank_payment_type_indicator" class="badge bg-success d-block text-center py-2 mt-1">Full Payment</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12">
-                                    <small class="text-muted">Enter amount less than balance for partial payment, exact amount for full payment</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- GCash Details Section - Hidden by default -->
-                        <div id="gcashDetailsSection" class="mb-3" style="display: none;">
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="paymentSectionTitle">GCASH DETAILS:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12">
-                                    <div class="">
-                                        <label for="gcash_selection" class="form-label">SELECT GCASH ACCOUNT <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="gcash_selection" name="gcash_selection">
-                                            <option value="">Choose GCash Account...</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="gcash_account_name" class="form-label">ACCOUNT NAME</label>
-                                        <input type="text" class="form-control" id="gcash_account_name" name="gcash_account_name" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="gcash_account_number" class="form-label">ACCOUNT NUMBER</label>
-                                        <input type="text" class="form-control" id="gcash_account_number" name="gcash_account_number" readonly>
+                                    <div class="col-6">
+                                        <label for="payment_reference_number" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">REFERENCE NUMBER</label>
+                                        <input type="text" class="form-control" id="payment_reference_number" name="reference_number" placeholder="Enter reference number" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- GCash Payment Amount and Status -->
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="paymentSectionTitle">GCASH PAYMENT:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12 col-sm-8 col-md-8">
-                                    <div class="">
-                                        <label for="gcash_payment_amount" class="form-label">PAYMENT AMOUNT <span class="text-danger">*</span></label>
-                                        <input type="text" step="0.01" class="form-control" id="gcash_payment_amount" name="gcash_payment_amount">
+                            <!-- Bank Details Section -->
+                            <div class="mb-4" id="bankDetailsSection" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">BANK DETAILS</h6>
+                                    <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
+                                    <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Select a bank account for this payment transaction"></i>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6">
+                                        <label for="bank_selection" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">SELECT BANK</label>
+                                        <select class="form-select" id="bank_selection" name="bank_selection">
+                                            <option value="bpi" selected>BPI</option>
+                                            <option value="bdo">BDO</option>
+                                            <option value="metrobank">Metrobank</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6" id="bankPaymentAmountColumn">
+                                        <label for="bank_payment_amount" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
+                                        <input type="text" class="form-control" id="bank_payment_amount" name="bank_payment_amount" placeholder="0.00" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-4 col-md-4">
-                                    <div class="">
-                                        <label class="form-label">PAYMENT STATUS</label>
-                                        <span id="gcash_payment_type_indicator" class="badge bg-success d-block text-center py-2 mt-1">Full Payment</span>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6">
+                                        <label for="bank_account_name" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NAME</label>
+                                        <input type="text" class="form-control" id="bank_account_name" name="bank_account_name" value="FAST UNMERCHANT INC." readonly style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #f8f9fa;">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="bank_account_number" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NUMBER</label>
+                                        <input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="8234-2342-9035" readonly style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #f8f9fa;">
+                                    </div>
+                                </div>
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-6">
+                                        <div class="form-check" style="padding-bottom: 8px;">
+                                            <input class="form-check-input" type="checkbox" id="pay_by_check" name="pay_by_check" style="width: 18px; height: 18px; margin-top: 4px;">
+                                            <label class="form-check-label" for="pay_by_check" style="font-size: 14px; font-weight: 500; color: #495057; margin-left: 8px;">
+                                                Pay with Check
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="row mb-2">
-                                <div class="col-12">
-                                    <small class="text-muted">Enter amount less than balance for partial payment, exact amount for full payment</small>
+
+                            <!-- GCASH Details Section - Hidden by default -->
+                            <div class="mb-4" id="gcashDetailsSection" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">GCASH DETAILS</h6>
+                                    <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
+                                    <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Choose a GCash account for payment information and transaction details"></i>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label for="gcash_selection" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">GCASH ACCOUNT</label>
+                                        <select class="form-select" id="gcash_selection" name="gcash_selection">
+                                            <option value="">Select GCash Account</option>
+                                            <!-- Options will be populated from tblGcash -->
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="gcash_account_number" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NUMBER</label>
+                                        <input type="text" class="form-control" id="gcash_account_number" name="gcash_account_number" placeholder="Select account to view number" readonly style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #f8f9fa;">
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Additional Information -->
-                        <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                            <div style="width:100%;"><hr></div>
-                            <div class="paymentSectionTitle">ADDITIONAL INFORMATION:</div>
-                            <div style="width:100%;"><hr></div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="">
-                                    <label for="payment_remarks" class="form-label">PAYMENT REMARKS</label>
-                                    <textarea class="form-control" id="payment_remarks" name="remarks" rows="3" placeholder="Enter any additional notes or remarks..."></textarea>
+
+                            <!-- GCASH Payment Section - Hidden by default -->
+                            <div class="mb-4" id="gcashPaymentSection" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">GCASH PAYMENT</h6>
+                                    <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
+                                    <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Enter GCash Amount"></i>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="gcash_amount_display" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
+                                    <input type="text" class="form-control fw-bold" id="gcash_amount_display" name="gcash_amount_display" placeholder="0.00" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #fff; color: #495057;">
                                 </div>
                             </div>
-                        </div>
+
+                            <!-- CASH Payment Section - Hidden by default -->
+                            <div class="mb-4" id="cashPaymentSection" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">CASH PAYMENT</h6>
+                                    <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
+                                    <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Record cash payment details and reference information"></i>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="cash_amount_display" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
+                                    <input type="text" class="form-control fw-bold" id="cash_amount_display" name="cash_amount_display" placeholder="0.00" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #fff; color: #495057;">
+
+                                </div>
+                            </div>
+
+                            <!-- Check Details Section -->
+                            <div class="mb-4" id="checkDetailsSection" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-2" style="color: #5188FD; font-weight: 600; font-size: 14px; text-transform: uppercase; white-space: nowrap;">CHECK DETAILS</h6>
+                                    <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
+                                    <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Enter check number, date, and amount information"></i>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6">
+                                        <label for="check_payee" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYEE</label>
+                                        <input type="text" class="form-control" id="check_payee" name="check_payee" value="DAVEN NEMENZO" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="check_date" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NAME</label>
+                                        <input type="date" class="form-control" id="check_date" name="check_date" value="2025-09-22" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6">
+                                        <label for="check_number" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">CHECK NUMBER</label>
+                                        <input type="text" class="form-control" id="check_number" name="check_number" value="8234-2342-9035" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="check_amount_display" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">CHECK AMOUNT</label>
+                                        <div style="position: relative;">
+                                            <input type="text" class="form-control fw-bold" id="check_amount_display" name="check_amount_display" value="130,582.31" style="padding: 12px; border: 1px solid #ffc107; font-size: 14px; background-color: #fff3cd; color: #856404;">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="check_amount_in_words" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">AMOUNT IN WORDS</label>
+                                    <textarea class="form-control" id="check_amount_in_words" name="check_amount_in_words" rows="3" readonly style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #f8f9fa; resize: none; line-height: 1.4;">One hundred thirty thousand five hundred eighty-two pesos and ninety-four centavos</textarea>
+                                </div>
+                            </div>
+
+                            
+                            <!-- Additional Information Section -->
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">ADDITIONAL INFORMATION</h6>
+                                    <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
+                                    <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Additional payment notes and reference information"></i>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="payment_remarks" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT REMARKS</label>
+                                    <textarea class="form-control" id="payment_remarks" name="remarks" rows="4" placeholder="Enter remarks here..." style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; resize: none; line-height: 1.4;"></textarea>
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="paymentForm" class="btn btn-success">Process Payment</button>
+                <div class="modal-footer" style="background: #f8f9fa; padding: 14px 24px; border-top: 1px solid #e9ecef; border-radius: 0 0 12px 12px;">
+                    <div class="d-flex justify-content-end align-items-center" style="gap: 18px;">
+                        <button type="button" class="btn" data-bs-dismiss="modal" style="
+                            width: 71px; 
+                            height: 30px; 
+                            padding: 7px 11px; 
+                            background-color: #9F9F9F; 
+                            color: white; 
+                            border: none; 
+                            border-radius: 5px; 
+                            font-size: 12px; 
+                            font-weight: 600;
+                            text-align: center;
+                            line-height: 16px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;">CANCEL</button>
+                        <button type="submit" form="paymentForm" class="btn" style="
+                            width: 138px; 
+                            height: 30px; 
+                            padding: 7px 11px; 
+                            background-color: #198754; 
+                            color: white; 
+                            border: none; 
+                            border-radius: 5px; 
+                            font-size: 12px; 
+                            font-weight: 600;
+                            text-align: center;
+                            line-height: 16px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;">CONFIRM PAYMENT</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -643,4 +770,114 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('assets/js/accounts-payable/accounts-payable.js') }}"></script>
+
+<script>
+$(document).ready(function() {
+    // Load GCash accounts when page loads
+    loadGcashAccounts();
+    
+    // GCash selection change handler
+    $('#gcash_selection').change(function() {
+        const selectedOption = $(this).find('option:selected');
+        const gcashData = selectedOption.data('gcash');
+        
+        if (gcashData) {
+            $('#gcash_account_number').val(gcashData.AccountNumber);
+        } else {
+            $('#gcash_account_number').val('');
+        }
+    });
+});
+
+function loadGcashAccounts() {
+    $.ajax({
+        url: '/api/gcash',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json',
+        },
+        success: function(response) {
+            const gcashSelect = $('#gcash_selection');
+            gcashSelect.empty().append('<option value="">Select GCash Account</option>');
+            
+            if (response.success && response.data && response.data.length > 0) {
+                response.data.forEach(function(gcash) {
+                    const option = $(`<option value="${gcash.GcashID}">${gcash.AccountName}</option>`);
+                    // Store the full GCash data in the option element for later use
+                    option.data('gcash', {
+                        GcashID: gcash.GcashID,
+                        AccountName: gcash.AccountName,
+                        AccountNumber: gcash.AccountNumber
+                    });
+                    gcashSelect.append(option);
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading GCash accounts:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to load GCash accounts'
+            });
+        }
+    });
+}
+
+// Initialize Custom Tooltips
+$(document).ready(function() {
+    let currentTooltip = null;
+    
+    // Create tooltip element
+    const $tooltip = $('<div class="custom-tooltip"></div>').appendTo('body');
+    
+    // Show tooltip on hover
+    $('.custom-tooltip-trigger').on('mouseenter', function(e) {
+        const $trigger = $(this);
+        const tooltipText = $trigger.data('tooltip');
+        
+        if (tooltipText) {
+            $tooltip.text(tooltipText).addClass('show');
+            
+            // Position tooltip
+            const triggerOffset = $trigger.offset();
+            const triggerWidth = $trigger.outerWidth();
+            const triggerHeight = $trigger.outerHeight();
+            const tooltipWidth = $tooltip.outerWidth();
+            
+            // Position below the icon with arrow at upper right
+            const left = triggerOffset.left + triggerWidth - tooltipWidth + 10;
+            const top = triggerOffset.top + triggerHeight + 8;
+            
+            $tooltip.css({
+                left: left + 'px',
+                top: top + 'px'
+            });
+            
+            currentTooltip = $tooltip;
+        }
+    });
+    
+    // Hide tooltip on mouse leave
+    $('.custom-tooltip-trigger').on('mouseleave', function() {
+        $tooltip.removeClass('show');
+        setTimeout(() => {
+            if (!$tooltip.hasClass('show')) {
+                $tooltip.text('');
+            }
+        }, 200);
+        currentTooltip = null;
+    });
+    
+    // Hide tooltip when scrolling
+    $(window).on('scroll', function() {
+        if (currentTooltip) {
+            $tooltip.removeClass('show');
+            currentTooltip = null;
+        }
+    });
+});
+
+</script>
 @endsection
