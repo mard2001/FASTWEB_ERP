@@ -515,6 +515,46 @@ class RRController extends Controller
             $terms = $supplier->TermsCode;
         }
 
+        // Check for available credit memos for this supplier
+        $availableCreditMemo = 0;
+        if ($supplierCode) {
+            // Get total original credit memos
+            $totalCreditMemos = AccountsPayable::where('supplier_code', trim($supplierCode))
+                ->sum('CreditMemo') ?? 0;
+            
+            // Get total applied credit memos (from AUTO-CM- payment records)
+            $appliedCreditMemos = \App\Models\Payment::whereHas('accountsPayable', function($query) use ($supplierCode) {
+                $query->where('supplier_code', trim($supplierCode));
+            })
+            ->where('reference_number', 'LIKE', 'AUTO-CM-%')
+            ->sum('payment_amount') ?? 0;
+            
+            // Available credit memo = Original credit memos - Applied credit memos
+            $availableCreditMemo = $totalCreditMemos - $appliedCreditMemos;
+            $availableCreditMemo = max(0, $availableCreditMemo); // Ensure non-negative
+        }
+
+        // Calculate automatic credit memo application
+        $creditMemoApplied = 0;
+        $finalAmount = $totalAmount;
+        $initialStatus = 'Pending';
+        $remarks = null;
+
+        if ($availableCreditMemo > 0) {
+            if ($availableCreditMemo >= $totalAmount) {
+                // Credit memo covers the entire amount
+                $creditMemoApplied = $totalAmount;
+                $finalAmount = 0;
+                $initialStatus = 'Paid';
+                $remarks = "Automatically paid using credit memo (₱" . number_format($creditMemoApplied, 2) . ")";
+            } else {
+                // Credit memo covers partial amount
+                $creditMemoApplied = $availableCreditMemo;
+                $finalAmount = $totalAmount - $creditMemoApplied;
+                $remarks = "Partial payment applied from credit memo (₱" . number_format($creditMemoApplied, 2) . ")";
+            }
+        }
+
         // Create the Accounts Payable record
         $accountsPayable = AccountsPayable::create([
             'date' => $rrHeader->RRDATE,
@@ -524,10 +564,38 @@ class RRController extends Controller
             'reference_number' => $rrHeader->Reference ?? $rrHeader->RRNo,
             'total_amount' => $totalAmount,
             'terms' => $terms,
-            'status' => 'Pending',
-            'remarks' => null,
+            'status' => $initialStatus,
+            'remarks' => $remarks,
             'process_by' => $user,
         ]);
+
+        // Apply credit memo if available
+        if ($creditMemoApplied > 0) {
+            // Create automatic payment record for credit memo application
+            \App\Models\Payment::create([
+                'accounts_payable_id' => $accountsPayable->id,
+                'payment_amount' => $creditMemoApplied,
+                'payment_type' => 'cash',
+                'payment_status' => $finalAmount <= 0 ? 'full' : 'partial',
+                'payment_date' => now(),
+                'reference_number' => 'AUTO-CM-' . $rrHeader->RRNo,
+                'remarks' => 'Automatic credit memo application',
+                'process_by' => $user
+            ]);
+
+            // NOTE: We no longer deduct from original credit memo records to preserve them.
+            // Credit memo applications are now tracked through Payment records with AUTO-CM- reference.
+            // The available credit memo calculation will be updated to consider these payment applications.
+
+            Log::info("Applied credit memo to new AP record", [
+                'ap_id' => $accountsPayable->id,
+                'rr_no' => $rrHeader->RRNo,
+                'original_amount' => $totalAmount,
+                'credit_memo_applied' => $creditMemoApplied,
+                'final_amount' => $finalAmount,
+                'status' => $initialStatus
+            ]);
+        }
 
         Log::info("Successfully created Accounts Payable record", [
             'ap_id' => $accountsPayable->id,

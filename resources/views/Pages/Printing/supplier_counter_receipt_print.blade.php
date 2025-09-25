@@ -155,17 +155,22 @@
             $chunks = collect();
             $currentIndex = 0;
             
-            while ($currentIndex < $totalRecords) {
-                $remainingRecords = $totalRecords - $currentIndex;
-                
-                if ($remainingRecords > $regularPageSize && $remainingRecords <= $regularPageSize + $lastPageMaxSize) {
-                    $chunkSize = $remainingRecords - $lastPageMaxSize;
-                } else {
-                    $chunkSize = min($regularPageSize, $remainingRecords);
+            // If there are no records, create one empty chunk to ensure the layout is still shown
+            if ($totalRecords == 0) {
+                $chunks->push(collect()); // Empty collection for the single page
+            } else {
+                while ($currentIndex < $totalRecords) {
+                    $remainingRecords = $totalRecords - $currentIndex;
+                    
+                    if ($remainingRecords > $regularPageSize && $remainingRecords <= $regularPageSize + $lastPageMaxSize) {
+                        $chunkSize = $remainingRecords - $lastPageMaxSize;
+                    } else {
+                        $chunkSize = min($regularPageSize, $remainingRecords);
+                    }
+                    
+                    $chunks->push($pendingTransactions->slice($currentIndex, $chunkSize));
+                    $currentIndex += $chunkSize;
                 }
-                
-                $chunks->push($pendingTransactions->slice($currentIndex, $chunkSize));
-                $currentIndex += $chunkSize;
             }
             
             $totalPages = $chunks->count();
@@ -196,7 +201,11 @@
 
                 <!-- Pending Notice -->
                 <div class="pending-notice">
-                    OUTSTANDING PAYABLES - PAYMENT REQUIRED
+                    @if($totalRecords > 0)
+                        OUTSTANDING PAYABLES - PAYMENT REQUIRED
+                    @else
+                        NO OUTSTANDING PAYABLES - ALL TRANSACTIONS PAID
+                    @endif
                 </div>
 
                 <!-- Supplier Information -->
@@ -215,7 +224,7 @@
             
                 <div class="d-flex justify-content-between headerDetails">
                     <div>
-                        <p class="mb-0" style="font-size: 12px;">Report Type: <strong>Counter Receipt (Pending Payments Only)</strong></p>
+                        <p class="mb-0" style="font-size: 12px;">Report Type: <strong>Counter Receipt @if($totalRecords > 0)(Pending Payments Only)@else(No Pending Payments)@endif</strong></p>
                         <p class="mb-0" style="font-size: 12px;">Total Records: <strong>{{ $totalRecords }}</strong></p>
                     </div>
                     <div>
@@ -233,36 +242,46 @@
                         <th style="width: 12%;">Date</th>
                         <th style="width: 15%;">Reference #</th>
                         <th style="width: 15%;">RR Number</th>
-                        <th style="width: 12%;">Amount</th>
-                        <th style="width: 12%;">Paid Amount</th>
-                        <th style="width: 12%;">Balance Due</th>
-                        <th style="width: 10%;">Status</th>
-                        <th style="width: 12%;">Terms</th>
+                        <th style="width: 20%;">Description</th>
+                        <th style="width: 10%;">Amount</th>
+                        <th style="width: 10%;">Paid</th>
+                        <th style="width: 10%;">Balance</th>
+                        <th style="width: 8%;">Status</th>
+                        <th style="width: 10%;">Terms</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($pageData as $transaction)
-                    <tr>
-                        <td class="text-center">{{ $transaction->date ? \Carbon\Carbon::parse($transaction->date)->format('M d, Y') : 'N/A' }}</td>
-                        <td class="text-center">{{ $transaction->reference_number ?? 'N/A' }}</td>
-                        <td class="text-center">{{ $transaction->rr_number ?? 'N/A' }}</td>
-                        <td class="text-end">₱{{ number_format($transaction->total_amount ?? 0, 2) }}</td>
-                        <td class="text-end">₱{{ number_format($transaction->total_paid ?? 0, 2) }}</td>
-                        <td class="text-end" style="font-weight: bold;">₱{{ number_format(($transaction->total_amount ?? 0) - ($transaction->total_paid ?? 0), 2) }}</td>
-                        <td class="text-center">
-                            @if($transaction->status === 'Pending' && $transaction->is_overdue)
-                                <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Overdue</span>
-                            @elseif($transaction->status === 'Partial')
-                                <span style="background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Partial</span>
-                            @else
-                                <span style="background-color: #007bff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">{{ $transaction->status ?? 'Pending' }}</span>
+                    @forelse($pageData as $row)
+                    <tr @if($row['type']==='payment') style="background:#eaf7ff;" @elseif($row['type']==='credit_memo') style="background:#fff3cd; font-style: italic;" @endif>
+                        <td class="text-center">{{ $row['date'] ? \Carbon\Carbon::parse($row['date'])->format('M d, Y') : 'N/A' }}</td>
+                        <td class="text-center">{{ $row['reference_number'] ?? 'N/A' }}</td>
+                        <td class="text-center">{{ $row['rr_number'] ?? 'N/A' }}</td>
+                        <td class="text-start">{{ $row['description'] ?? '' }}</td>
+                        <td class="text-end">@if($row['amount']>0) ₱{{ number_format($row['amount'],2) }} @endif</td>
+                        <td class="text-end">
+                            @if($row['paid']>0)
+                                ₱{{ number_format($row['paid'],2) }}
                             @endif
                         </td>
-                        <td class="text-center">{{ $transaction->terms ?? 'N/A' }}</td>
+                        <td class="text-end">₱{{ number_format($row['balance'] ?? 0,2) }}</td>
+                        <td class="text-center">
+                            @if(($row['status'] ?? '') === 'Credit Available')
+                                <span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Credit Available</span>
+                            @elseif(($row['status'] ?? '') === 'Pending' && ($row['is_overdue'] ?? false))
+                                <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Overdue</span>
+                            @elseif(str_contains(strtolower($row['status'] ?? ''), 'partial'))
+                                <span style="background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Partial</span>
+                            @elseif(($row['status'] ?? '') === 'Paid' || ($row['status'] ?? '') === 'Fully Paid')
+                                <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Paid</span>
+                            @else
+                                <span style="background-color: #007bff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">{{ $row['status'] ?? 'Pending' }}</span>
+                            @endif
+                        </td>
+                        <td class="text-center">{{ $row['terms'] ?? 'N/A' }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center">No pending transactions found</td>
+                        <td colspan="9" class="text-center">No pending transactions found</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -274,7 +293,7 @@
             @endif
 
             <!-- Total section and footer only on last page -->
-            @if($pageIndex == $totalPages - 1 && $pendingTransactions->count() > 0)
+            @if($pageIndex == $totalPages - 1)
                 <div class="footer-section">
                 <!-- Total section immediately after last table -->
                 <div class="d-flex justify-content-end tablefooterDiv mt-3">
@@ -285,18 +304,25 @@
                                     <th style="font-size: 12px;">Total Pending Records:</th>
                                     <td style="padding-left:20px; font-size: 12px; font-weight: bold;">{{ $totalRecords }}</td>
                                 </tr>
+                                @if($totalRecords > 0)
                                 <tr>
                                     <th style="font-size: 12px;">Total Outstanding Amount:</th>
-                                    <td style="padding-left:20px; font-size: 12px; font-weight: bold;">₱{{ number_format($pendingTransactions->sum('total_amount'), 2) }}</td>
+                                    <td style="padding-left:20px; font-size: 12px; font-weight: bold;">₱{{ number_format($pendingTransactions->sum('amount'), 2) }}</td>
                                 </tr>
                                 <tr>
                                     <th style="font-size: 12px;">Total Amount Paid:</th>
-                                    <td style="padding-left:20px; font-size: 12px; font-weight: bold;">₱{{ number_format($pendingTransactions->sum('total_paid'), 2) }}</td>
+                                    <td style="padding-left:20px; font-size: 12px; font-weight: bold;">₱{{ number_format($pendingTransactions->sum('paid') + $pendingTransactions->sum('credit_memo'), 2) }}</td>
                                 </tr>
                                 <tr>
                                     <th style="font-size: 14px;">TOTAL AMOUNT DUE:</th>
-                                    <td style="padding-left:20px; border-bottom: 3px double #000; font-size: 14px; font-weight: bold;">₱{{ number_format($pendingTransactions->sum('total_amount') - $pendingTransactions->sum('total_paid'), 2) }}</td>
+                                    <td style="padding-left:20px; border-bottom: 3px double #000; font-size: 14px; font-weight: bold;">₱{{ number_format($pendingTransactions->sum('amount') - $pendingTransactions->sum('paid') - $pendingTransactions->sum('credit_memo'), 2) }}</td>
                                 </tr>
+                                @else
+                                <tr>
+                                    <th style="font-size: 14px;">STATUS:</th>
+                                    <td style="padding-left:20px; border-bottom: 3px double #000; font-size: 14px; font-weight: bold; color: #28a745;">ALL TRANSACTIONS PAID</td>
+                                </tr>
+                                @endif
                             </tbody>
                         </table>
                     </div>

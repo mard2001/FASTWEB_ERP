@@ -269,22 +269,28 @@
                                 <div style="width:100%;"><hr></div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-12 col-sm-6 col-md-4">
+                                <div class="col-12 col-sm-6 col-md-3">
                                     <div class="">
                                         <label for="totalDebt" class="form-label">TOTAL DEBT</label>
                                         <input type="text" disabled id="totalDebt" name="totalDebt" class="form-control text-danger fw-bold" readonly>
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-4">
+                                <div class="col-12 col-sm-6 col-md-3">
                                     <div class="">
                                         <label for="totalPaid" class="form-label">TOTAL PAID</label>
                                         <input type="text" disabled id="totalPaid" name="totalPaid" class="form-control text-success fw-bold" readonly>
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-4">
+                                <div class="col-12 col-sm-6 col-md-3">
                                     <div class="">
                                         <label for="balanceOwed" class="form-label">BALANCE OWED</label>
                                         <input type="text" disabled id="balanceOwed" name="balanceOwed" class="form-control fw-bold" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-3">
+                                    <div class="">
+                                        <label for="creditMemoBalance" class="form-label">CREDIT MEMO</label>
+                                        <input type="text" disabled id="creditMemoBalance" name="creditMemoBalance" class="form-control text-info fw-bold" readonly>
                                     </div>
                                 </div>
                             </div>
@@ -332,138 +338,6 @@
                     </button>
                     <button type="button" class="btn btn-success" id="printCounterReceiptBtn">
                         <i class="mdi mdi-receipt me-2"></i>View Counter Receipt
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Payable Selection Modal -->
-    <div class="modal fade" id="payableSelectionModal" tabindex="-1" aria-labelledby="payableSelectionModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="payableSelectionModalLabel">
-                        <span style='color: var(--primary-color, #0275d8);'>PAYABLE RECORD SELECTION</span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="supplierModalForm">
-                        <!-- Supplier Information Section -->
-                        <div id="supplierInfoSection">
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="supplierSectionTitle">SUPPLIER INFORMATION:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="selectionSupplierCode" class="form-label">SUPPLIER CODE</label>
-                                        <input type="text" disabled id="selectionSupplierCode" name="selectionSupplierCode" class="form-control" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="selectionSupplierName" class="form-label">SUPPLIER NAME</label>
-                                        <input type="text" disabled id="selectionSupplierName" name="selectionSupplierName" class="form-control" readonly>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Filter Options Section -->
-                        <div id="filterOptionsSection">
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="supplierSectionTitle">FILTER OPTIONS:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="filterStartDate" class="form-label">START DATE</label>
-                                        <input type="date" class="form-control" id="filterStartDate" name="start_date">
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-6">
-                                    <div class="">
-                                        <label for="filterEndDate" class="form-label">END DATE</label>
-                                        <input type="date" class="form-control" id="filterEndDate" name="end_date">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Payable Records Selection Section -->
-                        <div id="payableRecordsSection">
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="supplierSectionTitle">AVAILABLE PAYABLE RECORDS:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="table-responsive">
-                                        <table class="table table-striped transaction-table" id="payableRecordsTable">
-                                            <thead>
-                                                <tr>
-                                                    <th width="60px">Select</th>
-                                                    <th>Date</th>
-                                                    <th>Reference #</th>
-                                                    <th>RR #</th>
-                                                    <th>Amount</th>
-                                                    <th>Balance</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="payableRecordsTableBody">
-                                                <!-- Payable records will be loaded here -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div id="noPayableRecordsMessage" class="text-center py-4" style="display: none;">
-                                        <p class="text-muted">No payable records found for this supplier.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Selection Summary Section -->
-                        <div id="selectionSummarySection">
-                            <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                                <div style="width:100%;"><hr></div>
-                                <div class="supplierSectionTitle">SELECTION SUMMARY:</div>
-                                <div style="width:100%;"><hr></div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-12 col-sm-4 col-md-4">
-                                    <div class="">
-                                        <label for="selectedRecordInfo" class="form-label">SELECTED RECORD</label>
-                                        <input type="text" disabled id="selectedRecordInfo" name="selectedRecordInfo" class="form-control text-primary fw-bold" readonly value="No record selected">
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-4 col-md-4">
-                                    <div class="">
-                                        <label for="selectedAmount" class="form-label">AMOUNT</label>
-                                        <input type="text" disabled id="selectedAmount" name="selectedAmount" class="form-control text-danger fw-bold" readonly value="₱0.00">
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-4 col-md-4">
-                                    <div class="">
-                                        <label for="selectedBalance" class="form-label">BALANCE</label>
-                                        <input type="text" disabled id="selectedBalance" name="selectedBalance" class="form-control fw-bold" readonly value="₱0.00">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="viewSelectedTransactions">
-                        <i class="mdi mdi-eye me-2"></i>View Transaction History
                     </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>

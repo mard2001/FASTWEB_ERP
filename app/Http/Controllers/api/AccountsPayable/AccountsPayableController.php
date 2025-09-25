@@ -127,7 +127,60 @@ class AccountsPayableController extends Controller
             $data['status'] = $data['status'] ?? 'Pending';
             $data['process_by'] = $data['process_by'] ?? auth()->user()->name ?? 'System';
 
+            // Check for available credit memos for this supplier
+            $supplierCode = $data['supplier_code'];
+            $totalAmount = $data['total_amount'];
+            
+            // Get total original credit memos
+            $totalCreditMemos = AccountsPayable::where('supplier_code', trim($supplierCode))
+                ->sum('CreditMemo') ?? 0;
+            
+            // Get total applied credit memos (from AUTO-CM- payment records)
+            $appliedCreditMemos = Payment::whereHas('accountsPayable', function($query) use ($supplierCode) {
+                $query->where('supplier_code', trim($supplierCode));
+            })
+            ->where('reference_number', 'LIKE', 'AUTO-CM-%')
+            ->sum('payment_amount') ?? 0;
+            
+            // Available credit memo = Original credit memos - Applied credit memos
+            $availableCreditMemo = $totalCreditMemos - $appliedCreditMemos;
+            $availableCreditMemo = max(0, $availableCreditMemo); // Ensure non-negative
+
+            // Calculate automatic credit memo application
+            $creditMemoApplied = 0;
+            if ($availableCreditMemo > 0) {
+                if ($availableCreditMemo >= $totalAmount) {
+                    // Credit memo covers the entire amount
+                    $creditMemoApplied = $totalAmount;
+                    $data['status'] = 'Paid';
+                    $data['remarks'] = ($data['remarks'] ?? '') . " [Auto-paid using credit memo: ₱" . number_format($creditMemoApplied, 2) . "]";
+                } else {
+                    // Credit memo covers partial amount
+                    $creditMemoApplied = $availableCreditMemo;
+                    $data['remarks'] = ($data['remarks'] ?? '') . " [Partial payment from credit memo: ₱" . number_format($creditMemoApplied, 2) . "]";
+                }
+            }
+
             $accountsPayable = AccountsPayable::create($data);
+
+            // Apply credit memo if available
+            if ($creditMemoApplied > 0) {
+                // Create automatic payment record for credit memo application
+                Payment::create([
+                    'accounts_payable_id' => $accountsPayable->id,
+                    'payment_amount' => $creditMemoApplied,
+                    'payment_type' => 'cash',
+                    'payment_status' => ($creditMemoApplied >= $totalAmount) ? 'full' : 'partial',
+                    'payment_date' => now(),
+                    'reference_number' => 'AUTO-CM-' . $accountsPayable->id,
+                    'remarks' => 'Automatic credit memo application',
+                    'process_by' => $data['process_by']
+                ]);
+
+                // NOTE: We no longer deduct from original credit memo records to preserve them.
+                // Credit memo applications are now tracked through Payment records with AUTO-CM- reference.
+                // The available credit memo calculation will be updated to consider these payment applications.
+            }
 
             // Load the relationship
             $accountsPayable->load('supplier');

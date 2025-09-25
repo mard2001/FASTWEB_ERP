@@ -26,7 +26,8 @@ class AccountsPayable extends Model
         'payment_type',
         'payment_amount',
         'payment_date',
-        'payment_remarks'
+        'payment_remarks',
+        'CreditMemo'
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class AccountsPayable extends Model
         'total_amount' => 'decimal:2',
         'payment_amount' => 'decimal:2',
         'payment_date' => 'date',
+        'CreditMemo' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
