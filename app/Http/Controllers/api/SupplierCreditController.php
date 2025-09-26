@@ -148,6 +148,8 @@ class SupplierCreditController extends Controller
                     $transactionRecord['has_auto_credit_memo'] = true;
                     $transactionRecord['description'] = 'Invoice/Bill - ' . ($apTransaction->reference_number ?? 'N/A') . ' (CM Applied: ₱' . number_format($autoCreditMemoAmount, 2) . ')';
                     $transactionRecord['status'] = $effectiveTransactionAmount > 0 ? 'Credit Applied' : 'Fully Paid by CM';
+                    // Set payment_amount to negative for auto credit memo to display with parentheses
+                    $transactionRecord['payment_amount'] = -$autoCreditMemoAmount;
                 }
                 
                 $transactionHistory->push($transactionRecord);

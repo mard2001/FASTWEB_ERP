@@ -252,6 +252,10 @@ function populateModal(data) {
         let grandTotalAmount = 0;
         let grandTotalPaid = 0;
         let grandTotalBalance = 0;
+        let finalBalance = 0; // Track the final running balance
+        
+        // Track unique transactions to avoid double counting
+        let processedTransactionIds = new Set();
         
         sortedTransactions.forEach(function(transaction) {
             // Format the date with time if available
@@ -299,7 +303,7 @@ function populateModal(data) {
                 paidDisplay = `₱${parseFloat(transaction.payment_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 balanceDisplay = `₱${parseFloat(transaction.running_balance).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                     
-                // Add to grand totals
+                // Add to grand totals - only count actual payments
                 grandTotalPaid += parseFloat(transaction.payment_amount);
             } else {
                 // For original transaction rows (may include auto credit memo applications)
@@ -313,16 +317,22 @@ function populateModal(data) {
                         '<span class="badge bg-success">Fully Paid by CM</span>' : 
                         '<span class="badge bg-warning">Credit Applied</span>';
                     
-                    // Show the credit memo amount in the Paid column
-                    const creditMemoAmount = parseFloat(transaction.auto_credit_memo_amount);
-                    paidDisplay = `₱${creditMemoAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                    // Show the credit memo amount in the Paid column with parentheses for negative amounts
+                    const paymentAmount = parseFloat(transaction.payment_amount);
+                    if (paymentAmount < 0) {
+                        // Display negative amounts with parentheses for auto credit memos
+                        paidDisplay = `(₱-${Math.abs(paymentAmount).toLocaleString('en-US', {minimumFractionDigits: 2})})`;
+                    } else {
+                        paidDisplay = `₱${paymentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                    }
                     
                     // Calculate correct balance: original amount - credit memo amount
+                    const creditMemoAmount = parseFloat(transaction.auto_credit_memo_amount);
                     const correctBalance = originalAmount - creditMemoAmount;
                     balanceDisplay = `₱${correctBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                     
-                    // Add credit memo to grand total paid
-                    grandTotalPaid += creditMemoAmount;
+                    // Auto credit memos reduce the amount owed, they don't count as "paid" amounts
+                    // The actual payments will be counted separately when processing payment transactions
                 } else {
                     descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
                     // Status badge for original transactions
@@ -340,9 +350,15 @@ function populateModal(data) {
                 
                 amountDisplay = `₱${originalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 
-                // Add to grand totals
-                grandTotalAmount += originalAmount;
+                // Add to grand totals - only for transaction types, and only once per unique transaction
+                if (!processedTransactionIds.has(transaction.id)) {
+                    grandTotalAmount += originalAmount;
+                    processedTransactionIds.add(transaction.id);
+                }
             }
+            
+            // Track the final running balance (use the last transaction's running balance)
+            finalBalance = parseFloat(transaction.running_balance);
             
             // Balance color
             const currentBalance = parseFloat(transaction.running_balance);
@@ -372,7 +388,7 @@ function populateModal(data) {
             tbody.append(row);
         });
         
-        // Calculate final balance
+        // Calculate the correct balance: Amount - Paid = Balance
         grandTotalBalance = grandTotalAmount - grandTotalPaid;
         
         // Add summary row
