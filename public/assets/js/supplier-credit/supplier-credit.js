@@ -278,16 +278,17 @@ function populateModal(data) {
             
             // Check transaction type
             const isPayment = transaction.type === 'payment';
-            const isCreditMemo = transaction.type === 'credit_memo';
-            const rowClass = isPayment ? 'table-info' : (isCreditMemo ? 'table-warning' : '');
+            const hasCredit = isPayment && transaction.has_credit_memo;
+            const rowClass = isPayment ? (hasCredit ? 'table-warning' : 'table-info') : '';
             
             let amountDisplay, paidDisplay, balanceDisplay, descriptionText, statusBadge;
             
             if (isPayment) {
-                // For payment rows
-                if (transaction.reference_number && transaction.reference_number.startsWith('AUTO-CM-')) {
-                    descriptionText = 'Auto Credit Memo Application';
-                    statusBadge = '<span class="badge bg-warning">Credit Applied</span>';
+                // For payment rows (auto credit memo applications are no longer separate payment records)
+                if (hasCredit) {
+                    // Payment with credit memo
+                    descriptionText = transaction.description; // Already includes credit memo info from backend
+                    statusBadge = '<span class="badge bg-success">Fully Paid with CM</span>';
                 } else {
                     descriptionText = `Payment - ${transaction.payment_type || 'Cash'}`;
                     statusBadge = transaction.running_balance <= 0 ? 
@@ -300,31 +301,44 @@ function populateModal(data) {
                     
                 // Add to grand totals
                 grandTotalPaid += parseFloat(transaction.payment_amount);
-            } else if (isCreditMemo) {
-                // For credit memo rows
-                descriptionText = `Credit Memo - Overpayment`;
-                amountDisplay = '-'; // No original amount for credit memos
-                paidDisplay = '-'; // No payment amount for credit memos
-                balanceDisplay = `-₱${parseFloat(transaction.credit_memo_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                statusBadge = '<span class="badge bg-info">Credit Available</span>';
-                
-                // Credit memos don't affect grand totals as they're already counted in payments
             } else {
-                // For original transaction rows
-                descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
+                // For original transaction rows (may include auto credit memo applications)
                 const originalAmount = parseFloat(transaction.transaction_amount);
-                amountDisplay = `₱${originalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                paidDisplay = '-'; // Will show cumulative in payments
-                balanceDisplay = `₱${parseFloat(transaction.running_balance).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                const hasAutoCreditMemo = transaction.has_auto_credit_memo;
                 
-                // Status badge for original transactions
-                if (transaction.status === 'Paid' || parseFloat(transaction.running_balance) <= 0) {
-                    statusBadge = '<span class="badge bg-success">Paid</span>';
-                } else if (transaction.is_overdue) {
-                    statusBadge = '<span class="badge bg-danger">Overdue</span>';
+                if (hasAutoCreditMemo) {
+                    // Transaction with auto credit memo applied
+                    descriptionText = transaction.description; // Already includes credit memo info from backend
+                    statusBadge = transaction.status === 'Fully Paid by CM' ? 
+                        '<span class="badge bg-success">Fully Paid by CM</span>' : 
+                        '<span class="badge bg-warning">Credit Applied</span>';
+                    
+                    // Show the credit memo amount in the Paid column
+                    const creditMemoAmount = parseFloat(transaction.auto_credit_memo_amount);
+                    paidDisplay = `₱${creditMemoAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                    
+                    // Calculate correct balance: original amount - credit memo amount
+                    const correctBalance = originalAmount - creditMemoAmount;
+                    balanceDisplay = `₱${correctBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                    
+                    // Add credit memo to grand total paid
+                    grandTotalPaid += creditMemoAmount;
                 } else {
-                    statusBadge = '<span class="badge bg-warning">Pending</span>';
+                    descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
+                    // Status badge for original transactions
+                    if (transaction.status === 'Paid' || parseFloat(transaction.running_balance) <= 0) {
+                        statusBadge = '<span class="badge bg-success">Paid</span>';
+                    } else if (transaction.is_overdue) {
+                        statusBadge = '<span class="badge bg-danger">Overdue</span>';
+                    } else {
+                        statusBadge = '<span class="badge bg-warning">Pending</span>';
+                    }
+                    
+                    paidDisplay = '-'; // Will show cumulative in payments
+                    balanceDisplay = `₱${parseFloat(transaction.running_balance).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 }
+                
+                amountDisplay = `₱${originalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 
                 // Add to grand totals
                 grandTotalAmount += originalAmount;
@@ -337,9 +351,11 @@ function populateModal(data) {
             // Determine row styling
             let rowStyle = '';
             if (isPayment) {
-                rowStyle = 'font-style: italic;';
-            } else if (isCreditMemo) {
-                rowStyle = 'font-style: italic; background-color: rgba(255, 193, 7, 0.1);';
+                if (hasCredit) {
+                    rowStyle = 'font-style: italic; background-color: rgba(255, 193, 7, 0.1);';
+                } else {
+                    rowStyle = 'font-style: italic;';
+                }
             }
 
             const row = `
@@ -348,12 +364,11 @@ function populateModal(data) {
                     <td>${descriptionText}</td>
                     <td>${transaction.rr_number || 'N/A'}</td>
                     <td class="text-end">${amountDisplay}</td>
-                    <td class="text-end" style="color: ${isCreditMemo ? '#0dcaf0' : '#28a745'};">${paidDisplay}</td>
+                    <td class="text-end" style="color: ${hasCredit ? '#0dcaf0' : '#28a745'};">${paidDisplay}</td>
                     <td class="text-end" style="color: ${balanceColor};">${balanceDisplay}</td>
                     <td>${statusBadge}</td>
                     <td>${transaction.terms || 'N/A'}</td>
-                </tr>
-            `;
+                </tr>`;
             tbody.append(row);
         });
         

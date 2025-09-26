@@ -16,10 +16,10 @@ class SupplierController
 
             if (count($data) == 0) {
                 return response()->json([
-                    'success' => false,
+                    'success' => true,
                     'message' => 'No Supplier details found',
                     'data' => []
-                ], 404);   
+                ], 200);   
             }
 
             return response()->json([

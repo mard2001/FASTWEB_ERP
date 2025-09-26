@@ -113,8 +113,18 @@ class SupplierCreditController extends Controller
                 $totalPaidForTransaction = $payments->sum('payment_amount');
                 $currentBalance = $apTransaction->total_amount - $totalPaidForTransaction;
 
-                // Add the original AP transaction
-                $transactionHistory->push([
+                // Check for auto credit memo applications
+                $autoCreditMemoPayments = $payments->filter(function($payment) {
+                    return strpos($payment->reference_number, 'AUTO-CM-') === 0;
+                });
+                $autoCreditMemoAmount = $autoCreditMemoPayments->sum('payment_amount');
+                
+                // Calculate the effective transaction amount after auto credit memo application
+                $effectiveTransactionAmount = $apTransaction->total_amount - $autoCreditMemoAmount;
+                $hasAutoCreditMemo = $autoCreditMemoAmount > 0;
+
+                // Add the original AP transaction with auto credit memo applied
+                $transactionRecord = [
                     'id' => $apTransaction->id,
                     'type' => 'transaction', // Original transaction
                     'date' => $apTransaction->date->format('Y-m-d'),
@@ -123,30 +133,60 @@ class SupplierCreditController extends Controller
                     'description' => 'Invoice/Bill - ' . ($apTransaction->reference_number ?? 'N/A'),
                     'transaction_amount' => $apTransaction->total_amount, // Original amount
                     'payment_amount' => 0, // Not a payment
-                    'running_balance' => $apTransaction->total_amount, // Initial balance
+                    'running_balance' => $effectiveTransactionAmount, // Balance after auto credit memo
                     'status' => $currentBalance > 0 ? 'Pending' : 'Paid',
                     'terms' => $apTransaction->terms,
                     'remarks' => $apTransaction->remarks,
                     'is_overdue' => $apTransaction->is_overdue ?? false,
                     'parent_transaction_id' => $apTransaction->id,
                     'sort_date' => $apTransaction->created_at ? $apTransaction->created_at->format('Y-m-d H:i:s') : $apTransaction->date->format('Y-m-d H:i:s')
-                ]);
+                ];
+                
+                // Add auto credit memo information if applicable
+                if ($hasAutoCreditMemo) {
+                    $transactionRecord['auto_credit_memo_amount'] = $autoCreditMemoAmount;
+                    $transactionRecord['has_auto_credit_memo'] = true;
+                    $transactionRecord['description'] = 'Invoice/Bill - ' . ($apTransaction->reference_number ?? 'N/A') . ' (CM Applied: ₱' . number_format($autoCreditMemoAmount, 2) . ')';
+                    $transactionRecord['status'] = $effectiveTransactionAmount > 0 ? 'Credit Applied' : 'Fully Paid by CM';
+                }
+                
+                $transactionHistory->push($transactionRecord);
 
-                // Add individual payment records
-                $runningBalance = $apTransaction->total_amount;
-                foreach ($payments->sortBy('payment_date') as $payment) {
+                // Add individual payment records (excluding auto credit memo applications)
+                $regularPayments = $payments->filter(function($payment) {
+                    return strpos($payment->reference_number, 'AUTO-CM-') !== 0;
+                });
+                
+                $runningBalance = $effectiveTransactionAmount; // Start with balance after auto credit memo
+                $totalRegularPayments = $regularPayments->sum('payment_amount');
+                $hasOverpayment = $totalRegularPayments > $effectiveTransactionAmount;
+                $overpaymentAmount = $hasOverpayment ? $totalRegularPayments - $effectiveTransactionAmount : 0;
+                
+                foreach ($regularPayments->sortBy('payment_date') as $index => $payment) {
+                    $previousBalance = $runningBalance;
                     $runningBalance -= $payment->payment_amount;
                     
-                    $transactionHistory->push([
+                    // Check if this payment creates an overpayment (balance goes negative)
+                    $createsOverpayment = $previousBalance > 0 && $runningBalance < 0;
+                    $shouldShowCreditMemo = $createsOverpayment && $apTransaction->CreditMemo && $apTransaction->CreditMemo > 0;
+                    
+                    // If this payment creates a credit memo, the running balance should reflect the negative amount
+                    $displayBalance = $runningBalance;
+                    if ($shouldShowCreditMemo) {
+                        // The balance should show the negative credit memo amount
+                        $displayBalance = -$apTransaction->CreditMemo;
+                    }
+                    
+                    $paymentRecord = [
                         'id' => $payment->id,
                         'type' => 'payment', // Payment record
                         'date' => $payment->payment_date->format('Y-m-d'),
                         'reference_number' => $payment->reference_number ?? $apTransaction->reference_number,
                         'rr_number' => $apTransaction->rr_number,
-                        'description' => (strpos($payment->reference_number, 'AUTO-CM-') === 0) ? 'Auto Credit Memo Application' : 'Payment - ' . ucfirst($payment->payment_type ?? 'Cash'),
+                        'description' => 'Payment - ' . ucfirst($payment->payment_type ?? 'Cash'),
                         'transaction_amount' => 0, // Not an original transaction
                         'payment_amount' => $payment->payment_amount,
-                        'running_balance' => $runningBalance,
+                        'running_balance' => $displayBalance,
                         'status' => $runningBalance <= 0 ? 'Fully Paid' : 'Partial Payment',
                         'terms' => $apTransaction->terms,
                         'remarks' => $payment->remarks,
@@ -154,38 +194,33 @@ class SupplierCreditController extends Controller
                         'parent_transaction_id' => $apTransaction->id,
                         'sort_date' => $payment->created_at ? $payment->created_at->format('Y-m-d H:i:s') : $payment->payment_date->format('Y-m-d H:i:s'),
                         'payment_type' => $payment->payment_type,
-                        'process_by' => $payment->process_by
-                    ]);
-                }
-
-                // Add credit memo entry if there's an overpayment for this transaction
-                if ($apTransaction->CreditMemo && $apTransaction->CreditMemo > 0) {
-                    $transactionHistory->push([
-                        'id' => 'credit_' . $apTransaction->id,
-                        'type' => 'credit_memo', // Credit memo record
-                        'date' => $apTransaction->updated_at ? $apTransaction->updated_at->format('Y-m-d') : $apTransaction->date->format('Y-m-d'),
-                        'reference_number' => $apTransaction->reference_number,
-                        'rr_number' => $apTransaction->rr_number,
-                        'description' => 'Credit Memo - Overpayment',
-                        'transaction_amount' => 0,
-                        'payment_amount' => 0,
-                        'credit_memo_amount' => $apTransaction->CreditMemo,
-                        'running_balance' => -$apTransaction->CreditMemo, // Negative balance to show credit available
-                        'status' => 'Credit Available',
-                        'terms' => $apTransaction->terms,
-                        'remarks' => 'Available for future orders',
-                        'is_overdue' => false,
-                        'parent_transaction_id' => $apTransaction->id,
-                        'sort_date' => $apTransaction->updated_at ? $apTransaction->updated_at->format('Y-m-d H:i:s') : $apTransaction->date->format('Y-m-d H:i:s')
-                    ]);
+                        'process_by' => $payment->process_by,
+                        // Debug information
+                        'debug_original_payment_amount' => $payment->payment_amount,
+                        'debug_previous_balance' => $previousBalance,
+                        'debug_creates_overpayment' => $createsOverpayment,
+                        'debug_should_show_cm' => $shouldShowCreditMemo
+                    ];
+                    
+                    // Add credit memo information to the payment record if this payment caused an overpayment
+                    if ($shouldShowCreditMemo) {
+                        $paymentRecord['credit_memo_amount'] = $apTransaction->CreditMemo;
+                        $paymentRecord['has_credit_memo'] = true;
+                        // Keep the actual payment amount for display (e.g., ₱60,000)
+                        // Don't modify payment_amount - show what was actually paid
+                        $paymentRecord['status'] = 'Fully Paid with CM'; // Special status for payments with credit memo
+                        $paymentRecord['description'] = 'Payment - ' . ucfirst($payment->payment_type ?? 'Cash') . ' with CM';
+                    }
+                    
+                    $transactionHistory->push($paymentRecord);
                 }
             }
 
             // First, sort chronologically (oldest first) to recalculate running balances correctly
             $chronologicalHistory = $transactionHistory->sortBy(function ($item) {
                 $dateTime = $item['sort_date'];
-                // For same datetime, transactions come before payments and credit memos
-                $typePriority = $item['type'] === 'transaction' ? '1' : ($item['type'] === 'payment' ? '2' : '3');
+                // For same datetime, transactions come before payments
+                $typePriority = $item['type'] === 'transaction' ? '1' : '2';
                 return $dateTime . $typePriority;
             });
 
@@ -193,26 +228,53 @@ class SupplierCreditController extends Controller
             $runningBalance = 0;
             $recalculatedHistory = $chronologicalHistory->map(function ($item) use (&$runningBalance) {
                 if ($item['type'] === 'transaction') {
-                    // Add the transaction amount to the balance
-                    $runningBalance += $item['transaction_amount'];
+                    // For transactions with auto credit memo, handle credit consumption properly
+                    if (isset($item['has_auto_credit_memo']) && $item['has_auto_credit_memo']) {
+                        // First, consume available credit (if running balance is negative)
+                        $availableCredit = $runningBalance < 0 ? abs($runningBalance) : 0;
+                        $creditUsed = min($availableCredit, $item['auto_credit_memo_amount']);
+                        
+                        // Adjust running balance by consuming the credit
+                        $runningBalance += $creditUsed;
+                        
+                        // Add the remaining transaction amount after auto credit memo
+                        $remainingTransactionAmount = $item['transaction_amount'] - $item['auto_credit_memo_amount'];
+                        $runningBalance += $remainingTransactionAmount;
+                        
+                        $item['running_balance'] = $runningBalance;
+                    } else {
+                        // Add the transaction amount to the balance
+                        $runningBalance += $item['transaction_amount'];
+                        $item['running_balance'] = $runningBalance;
+                    }
                 } elseif ($item['type'] === 'payment') {
-                    // Subtract payment amount from the balance
+                    // Always subtract the full payment amount from balance
+                    // This will show the credit available (negative balance) for future orders
                     $runningBalance -= $item['payment_amount'];
-                } elseif ($item['type'] === 'credit_memo') {
-                    // Credit memo doesn't change the running balance as it's already accounted for in payments
-                    // The running balance should remain the same (typically 0 or negative)
+                    
+                    // If this payment has a credit memo, ensure the balance shows the negative credit amount
+                    if (isset($item['has_credit_memo']) && $item['has_credit_memo'] && isset($item['credit_memo_amount'])) {
+                        $item['running_balance'] = -$item['credit_memo_amount'];
+                        // Update the running balance to match the credit memo amount for subsequent calculations
+                        $runningBalance = -$item['credit_memo_amount'];
+                    } else {
+                        $item['running_balance'] = $runningBalance;
+                    }
                 }
-                
-                // Update the running balance for this item
-                $item['running_balance'] = $runningBalance;
                 
                 // Update status based on current balance
                 if ($item['type'] === 'transaction') {
-                    $item['status'] = $runningBalance <= 0 ? 'Paid' : ($runningBalance < $item['transaction_amount'] ? 'Partial' : 'Pending');
+                    if (isset($item['has_auto_credit_memo']) && $item['has_auto_credit_memo']) {
+                        // Status is already set during transaction creation
+                    } else {
+                        $item['status'] = $runningBalance <= 0 ? 'Paid' : ($runningBalance < $item['transaction_amount'] ? 'Partial' : 'Pending');
+                    }
                 } elseif ($item['type'] === 'payment') {
-                    $item['status'] = $runningBalance <= 0 ? 'Fully Paid' : 'Payment Made';
-                } elseif ($item['type'] === 'credit_memo') {
-                    $item['status'] = 'Credit Available';
+                    if (isset($item['has_credit_memo']) && $item['has_credit_memo']) {
+                        $item['status'] = 'Fully Paid with CM';
+                    } else {
+                        $item['status'] = $runningBalance <= 0 ? 'Fully Paid' : 'Payment Made';
+                    }
                 }
                 
                 return $item;
@@ -221,8 +283,8 @@ class SupplierCreditController extends Controller
             // Now sort by date (oldest first) for display
             $sortedTransactionHistory = $recalculatedHistory->sortBy(function ($item) {
                 $dateTime = $item['sort_date'];
-                // Add a secondary sort: for same datetime, transactions come first, then payments, then credit memos
-                $typePriority = $item['type'] === 'transaction' ? '1' : ($item['type'] === 'payment' ? '2' : '3');
+                // Add a secondary sort: for same datetime, transactions come first, then payments
+                $typePriority = $item['type'] === 'transaction' ? '1' : '2';
                 return $dateTime . $typePriority;
             })->values();
 

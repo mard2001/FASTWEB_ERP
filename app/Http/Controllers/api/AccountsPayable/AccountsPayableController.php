@@ -426,7 +426,7 @@ class AccountsPayableController extends Controller
             // Create payment record
             $paymentData = [
                 'accounts_payable_id' => $accountsPayable->id,
-                'payment_amount' => $actualPaymentAmount, // Use actual payment amount (not overpayment)
+                'payment_amount' => $paymentAmount, // Use full payment amount (including overpayment)
                 'payment_type' => $request->payment_type, // cash, bank, gcash
                 'payment_status' => $paymentStatus, // full, partial
                 'payment_date' => now(),
@@ -489,8 +489,19 @@ class AccountsPayableController extends Controller
             $payment = Payment::create($paymentData);
 
             // Calculate new balance after payment
+            // For balance calculation, we need to account for the fact that overpayments 
+            // are stored as credit memos, not applied to the balance
             $totalPaid = $accountsPayable->payments()->sum('payment_amount');
-            $newBalance = $accountsPayable->total_amount - $totalPaid;
+            $totalCreditMemo = $accountsPayable->CreditMemo ?? 0;
+            
+            // If this payment created a credit memo, add it to the total
+            if ($creditMemo > 0) {
+                $totalCreditMemo += $creditMemo;
+            }
+            
+            // Adjust total paid by subtracting credit memos to get actual amount applied to balance
+            $actualTotalPaid = $totalPaid - $totalCreditMemo;
+            $newBalance = $accountsPayable->total_amount - $actualTotalPaid;
 
             // Update status and credit memo
             if ($newBalance <= 0 || $paymentStatus === 'full') {

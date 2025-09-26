@@ -231,7 +231,13 @@
                         <td class="text-center">{{ $row['date'] ? \Carbon\Carbon::parse($row['date'])->format('M d, Y') : 'N/A' }}</td>
                         <td class="text-center">{{ $row['reference_number'] ?? 'N/A' }}</td>
                         <td class="text-center">{{ $row['rr_number'] ?? 'N/A' }}</td>
-                        <td class="text-start">{{ $row['description'] ?? '' }}</td>
+                        <td class="text-start">
+                            @if(isset($row['has_auto_credit_memo']) && $row['has_auto_credit_memo'] && isset($row['auto_credit_memo_amount']) && $row['auto_credit_memo_amount'] > 0)
+                                {{ $row['description'] ?? '' }} (Auto CM Applied: ₱{{ number_format($row['auto_credit_memo_amount'], 2) }})
+                            @else
+                                {{ $row['description'] ?? '' }}
+                            @endif
+                        </td>
                         <td class="text-end">
                             @if($row['type'] === 'credit_memo' && isset($row['credit_memo']) && $row['credit_memo'] > 0)
                                 ₱{{ number_format($row['credit_memo'], 2) }}
@@ -240,7 +246,9 @@
                             @endif
                         </td>
                         <td class="text-end">
-                            @if($row['paid'] > 0) 
+                            @if(isset($row['has_auto_credit_memo']) && $row['has_auto_credit_memo'] && isset($row['auto_credit_memo_amount']) && $row['auto_credit_memo_amount'] > 0)
+                                ₱{{ number_format($row['auto_credit_memo_amount'], 2) }}
+                            @elseif($row['paid'] > 0) 
                                 ₱{{ number_format($row['paid'], 2) }}
                             @endif
                         </td>
@@ -256,6 +264,10 @@
                                 <span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Credit Available</span>
                             @elseif(($row['status'] ?? '') === 'Pending' && ($row['is_overdue'] ?? false))
                                 <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Overdue</span>
+                            @elseif(($row['status'] ?? '') === 'Fully Paid with CM')
+                                <span style="background-color: #6f42c1; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Fully Paid with CM</span>
+                            @elseif(($row['status'] ?? '') === 'Partially Paid with CM')
+                                <span style="background-color: #e83e8c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Partially Paid with CM</span>
                             @elseif(($row['status'] ?? '') === 'Fully Paid')
                                 <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Fully Paid</span>
                             @elseif(($row['status'] ?? '') === 'Paid')

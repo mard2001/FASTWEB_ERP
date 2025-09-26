@@ -62,7 +62,11 @@ class AccountsPayable extends Model
     public function getBalanceAmountAttribute()
     {
         $totalPaid = $this->payments()->sum('payment_amount') ?? 0;
-        return $this->total_amount - $totalPaid;
+        $totalCreditMemo = $this->CreditMemo ?? 0;
+        
+        // Adjust total paid by subtracting credit memos to get actual amount applied to balance
+        $actualTotalPaid = $totalPaid - $totalCreditMemo;
+        return $this->total_amount - $actualTotalPaid;
     }
 
     /**
