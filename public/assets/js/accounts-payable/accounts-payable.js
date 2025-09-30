@@ -637,14 +637,28 @@ function fillAccountsPayableModal(data) {
     $('#total_amount').val(formatNumberWithCommas(data.total_amount || ''));
     $('#terms').val(data.terms || '');
     $('#status').val(data.status || '');
-    $('#balance_amount').val(formatNumberWithCommas(data.balance_amount || ''));
+    
+    // Set Balance Amount - if status is "Paid", balance should be 0
+    let balanceAmount = data.balance_amount || '';
+    if (data.status && data.status.toLowerCase() === 'paid') {
+        balanceAmount = '0.00';
+    }
+    $('#balance_amount').val(formatNumberWithCommas(balanceAmount));
+    
     $('#remarks').val(data.remarks || '');
+    
+    // Calculate and set Total Paid (Total Amount - Balance Amount)
+    const totalAmount = parseFloat(data.total_amount || 0);
+    const balanceAmountForCalculation = parseFloat(balanceAmount || 0);
+    const totalPaid = totalAmount - balanceAmountForCalculation;
+    $('#total_paid').val(formatNumberWithCommas(totalPaid.toFixed(2)));
     
     // Handle Credit Memo display
     if (data.CreditMemo && data.CreditMemo > 0) {
         $('#credit_memo').val(formatCurrency(data.CreditMemo));
         $('#credit_memo_container').show();
     } else {
+        $('#credit_memo').val(''); // Clear the field value
         $('#credit_memo_container').hide();
     }
     
@@ -1634,6 +1648,18 @@ function removeCommas(value) {
     return parseFloat(value.toString().replace(/,/g, '')) || 0;
 }
 
+// Calculate Total Paid (Total Amount - Balance Amount)
+function calculateTotalPaid() {
+    const totalAmountValue = $('#total_amount').val();
+    const balanceAmountValue = $('#balance_amount').val();
+    
+    const totalAmount = parseFloat(removeCommas(totalAmountValue)) || 0;
+    const balanceAmount = parseFloat(removeCommas(balanceAmountValue)) || 0;
+    const totalPaid = totalAmount - balanceAmount;
+    
+    $('#total_paid').val(formatNumberWithCommas(totalPaid.toFixed(2)));
+}
+
 // Initialize amount field formatting
 function initializeAmountFormatting() {
     // Format total_amount field on blur (when user finishes typing)
@@ -1642,6 +1668,8 @@ function initializeAmountFormatting() {
         if (value && !isNaN(removeCommas(value))) {
             $(this).val(formatNumberWithCommas(removeCommas(value)));
         }
+        // Recalculate Total Paid when Total Amount changes
+        calculateTotalPaid();
     });
     
     // Allow only numbers, decimal points, and commas during input

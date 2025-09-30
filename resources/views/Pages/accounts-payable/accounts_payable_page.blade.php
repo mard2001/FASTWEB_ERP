@@ -247,6 +247,213 @@
             font-family: var(--heading-font, "Inter", sans-serif);
         }
 
+        /* Accounts Payable Modal Custom Styling - Matching Process Payment Modal */
+        #accountsPayableModal .modal-dialog {
+            max-width: 550px !important;
+            width: 550px !important;
+        }
+
+        #accountsPayableModal .modal-content {
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+            background: #ffffff;
+            width: 550px !important;
+            height: 606px !important;
+            max-height: 606px !important;
+        }
+
+        #accountsPayableModal .modal-body {
+            padding: 5px 15px !important;
+            background: #f8f9fa;
+            overflow-y: auto !important;
+            max-height: calc(606px - 120px) !important; /* Subtract header and footer height */
+        }
+
+        #accountsPayableModal .form-control:focus,
+        #accountsPayableModal .form-select:focus {
+            border-color: #5188FD;
+            box-shadow: 0 0 0 0.2rem rgba(81, 136, 253, 0.1);
+            outline: none;
+        }
+
+        #accountsPayableModal .form-check-input:checked {
+            background-color: #5188FD;
+            border-color: #5188FD;
+        }
+
+        #accountsPayableModal .form-check-input:focus {
+            border-color: #5188FD;
+            box-shadow: 0 0 0 0.2rem rgba(81, 136, 253, 0.1);
+        }
+
+        #accountsPayableModal .btn:hover {
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+
+        #accountsPayableModal .btn:focus {
+            box-shadow: 0 0 0 0.2rem rgba(81, 136, 253, 0.25);
+        }
+
+        /* Poppins font for entire accounts payable modal */
+        #accountsPayableModal,
+        #accountsPayableModal * {
+            font-family: 'Poppins', sans-serif !important;
+        }
+
+        #accountsPayableModal .modal-title {
+            font-family: 'Poppins', sans-serif !important;
+            font-weight: 600 !important;
+            color: #333 !important;
+        }
+
+        /* Section title styling to match screenshot */
+        #accountsPayableModal .apheaderSectionTitle {
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            color: #5188FD !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 !important;
+            padding: 0 !important;
+            text-align: left !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Section divider line styling */
+        #accountsPayableModal .section-divider {
+            border: none !important;
+            border-top: 1px solid #dee2e6 !important;
+            margin: 0 !important;
+            height: 1px !important;
+        }
+
+        /* Form labels styling */
+        #accountsPayableModal .form-label {
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 10px !important;
+            font-weight: 500 !important;
+            color: #666 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 5px !important;
+        }
+
+        /* Input field styling to match screenshot */
+        #accountsPayableModal .form-control {
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 12px !important;
+            font-weight: 400 !important;
+            height: 30px !important;
+            width: 245px !important;
+            padding: 0px 11px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 5px !important;
+            background: #ffffff !important;
+            color: #333 !important;
+            gap: 10px !important;
+            opacity: 1 !important;
+            transition: all 0.2s ease;
+        }
+
+        /* Select dropdown styling */
+        #accountsPayableModal .form-select {
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 13px !important;
+            font-weight: 400 !important;
+            height: 30px !important;
+            width: 245px !important;
+            padding: 9px 11px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 5px !important;
+            background: #ffffff !important;
+            color: #333 !important;
+            gap: 10px !important;
+            opacity: 1 !important;
+        }
+
+        /* Read-only fields styling to match screenshot */
+        #accountsPayableModal .form-control[readonly] {
+            background-color: #e9ecef !important;
+            color: #495057 !important;
+            border-color: #ced4da !important;
+        }
+
+        /* Textarea styling */
+        #accountsPayableModal textarea.form-control {
+            width: 517px !important;
+            min-height: 76px !important;
+            padding: 9px 11px !important;
+            border-radius: 5px !important;
+            gap: 10px !important;
+            opacity: 1 !important;
+            resize: vertical;
+        }
+
+        /* Amount fields styling */
+        #accountsPayableModal #total_amount {
+            background-color: #e3f2fd !important;
+            font-weight: 600 !important;
+            color: #1976d2 !important;
+        }
+
+        #accountsPayableModal #balance_amount {
+            background-color: #ffebee !important;
+            font-weight: 600 !important;
+            color: #d32f2f !important;
+        }
+
+        #accountsPayableModal #credit_memo {
+            background-color: #e8f5e8 !important;
+            font-weight: 600 !important;
+            color: #2e7d32 !important;
+        }
+
+        /* Section dividers */
+        #accountsPayableModal .d-flex.align-items-center hr {
+            border-color: #dee2e6 !important;
+            margin: 0 !important;
+        }
+
+        /* Row spacing */
+        #accountsPayableModal .row.mb-2 {
+            margin-bottom: 1rem !important;
+        }
+
+        #accountsPayableModal .row.mb-3 {
+            margin-bottom: 1.5rem !important;
+        }
+
+        /* Button styling */
+        #accountsPayableModal .btn {
+            font-family: 'Poppins', sans-serif !important;
+            font-weight: 500 !important;
+            border-radius: 6px !important;
+            transition: all 0.2s ease;
+        }
+
+        /* Modal footer */
+        #accountsPayableModal .modal-footer {
+            background: #ffffff !important;
+            border-top: 1px solid #dee2e6 !important;
+            padding: 8px 13px !important;
+            display: flex !important;
+            justify-content: flex-end !important;
+        }
+
+        /* Modal footer buttons alignment */
+        #accountsPayableModal .modal-footer .d-flex {
+            align-items: center !important;
+        }
+
+        #accountsPayableModal .modal-footer .btn {
+            margin: 0 !important;
+        }
+
         /* Payment Modal Form Styling - Same as Purchase Order */
         .paymentform .row div div label{
             font-size: 0.53em;
@@ -410,10 +617,13 @@
             <div class="apheaderform">
                 <form id="accountsPayableForm">
                     <!-- Transaction Information Section -->
-                    <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                        <div style="width:100%;"><hr></div>
-                        <div class="apheaderSectionTitle">TRANSACTION INFORMATION:</div>
-                        <div style="width:100%;"><hr></div>
+                    <div class="mb-1">
+                        <div class="d-flex align-items-center">
+                            <div class="apheaderSectionTitle">TRANSACTION INFORMATION</div>
+                            <div class="flex-grow-1 ms-3">
+                                <hr class="section-divider">
+                            </div>
+                        </div>
                     </div>
                     <div class="row mb-2">
                         <div class="col-12 col-sm-6 col-md-6">
@@ -432,25 +642,30 @@
                     </div>
 
                     <!-- Reference Information Section -->
-                    <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                        <div style="width:100%;"><hr></div>
-                        <div class="apheaderSectionTitle">REFERENCE INFORMATION:</div>
-                        <div style="width:100%;"><hr></div>
+                    <div class="mb-1">
+                        <div class="d-flex align-items-center">
+                            <div class="apheaderSectionTitle">REFERENCE INFORMATION</div>
+                            <div class="flex-grow-1 ms-3">
+                                <hr class="section-divider">
+                            </div>
+                        </div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-12 col-sm-6 col-md-4">
-                            <div class="">
+                    <div class="row">
+                        <div class="col-12 col-sm-6">
+                            <div class="mb-1">
                                 <label for="rr_number" class="form-label">RR NUMBER</label>
                                 <input type="text" class="form-control" id="rr_number" name="rr_number">
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-md-4">
-                            <div class="">
+                        <div class="col-12 col-sm-6">
+                            <div class="mb-1">
                                 <label for="reference_number" class="form-label">REFERENCE NUMBER</label>
                                 <input type="text" class="form-control" id="reference_number" name="reference_number">
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-md-4">
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-12 col-sm-6">
                             <div class="">
                                 <label for="terms" class="form-label">TERMS</label>
                                 <input type="text" class="form-control" id="terms" name="terms">
@@ -459,10 +674,13 @@
                     </div>
 
                     <!-- Financial Information Section -->
-                    <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                        <div style="width:100%;"><hr></div>
-                        <div class="apheaderSectionTitle">FINANCIAL INFORMATION:</div>
-                        <div style="width:100%;"><hr></div>
+                    <div class="mb-1">
+                        <div class="d-flex align-items-center">
+                            <div class="apheaderSectionTitle">FINANCIAL INFORMATION</div>
+                            <div class="flex-grow-1 ms-3">
+                                <hr class="section-divider">
+                            </div>
+                        </div>
                     </div>
                     <div class="row mb-2">
                         <div class="col-12 col-sm-6 col-md-6">
@@ -478,13 +696,21 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row mb-2" id="credit_memo_container" style="display: none;">
+                    <div class="row mb-2">
+                        <div class="col-12 col-sm-6 col-md-6" id="total_paid_container">
+                            <div class="">
+                                <label for="total_paid" class="form-label">TOTAL PAID</label>
+                                <input type="text" class="form-control text-end fw-bold text-success" id="total_paid" name="total_paid" readonly>
+                            </div>
+                        </div>
                         <div class="col-12 col-sm-6 col-md-6">
                             <div class="">
                                 <label for="credit_memo" class="form-label">CREDIT MEMO</label>
                                 <input type="text" class="form-control text-end fw-bold text-info" id="credit_memo" name="credit_memo" readonly>
                             </div>
                         </div>
+                    </div>
+                    <div class="row mb-2" id="credit_memo_container" style="display: none;">
                         <div class="col-12 col-sm-6 col-md-6">
                             <div class="">
                                 <label for="status" class="form-label">STATUS</label>
@@ -494,12 +720,15 @@
                     </div>
 
                     <!-- Additional Information Section -->
-                    <div class="d-flex align-items-center" style="margin-bottom:-10px;">
-                        <div style="width:100%;"><hr></div>
-                        <div class="apheaderSectionTitle">ADDITIONAL INFORMATION:</div>
-                        <div style="width:100%;"><hr></div>
+                    <div class="mb-1">
+                        <div class="d-flex align-items-center">
+                            <div class="apheaderSectionTitle">ADDITIONAL INFORMATION</div>
+                            <div class="flex-grow-1 ms-3">
+                                <hr class="section-divider">
+                            </div>
+                        </div>
                     </div>
-                    <div class="row mb-3">
+                    <div class="row mb-1">
                         <div class="col-12">
                             <div class="">
                                 <label for="remarks" class="form-label">REMARKS</label>
@@ -512,11 +741,9 @@
         </x-slot:form_fields>
 
         <x-slot:modalFooterBtns>
-            <div>
-                <button type="button" class="btn btn-sm btn-success text-white" id="processPaymentBtn">Process Payment</button>
-            </div>
-            <div>
+            <div class="d-flex justify-content-end" style="gap: 10px;">
                 <button type="button" class="btn btn-sm btn-secondary" id="closeAPBtn" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-sm btn-success text-white" id="processPaymentBtn">Process Payment</button>
             </div>
         </x-slot:modalFooterBtns>
     </x-mainModal>
@@ -530,7 +757,7 @@
                         <i class="mdi mdi-receipt me-2" style="font-size: 20px; color: #495057;"></i>
                         <h5 class="modal-title mb-0" id="paymentModalLabel" style="font-weight: 600; color: #495057; font-size: 16px;">Process Payment</h5>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="width: 30px; height: 30px; padding: 7px; border-radius: 5px; opacity: 1;"></button>
                 </div>
                 <div class="modal-body" style="padding: 20px 20px 0px; overflow-y: auto; max-height: calc(90vh - 120px);">
                     <div class="paymentform">
@@ -539,7 +766,7 @@
                             <input type="hidden" id="payment_type" name="payment_type" value="full">
                             
                             <!-- Account Balance Section -->
-                            <div class="mb-4">
+                            <div class="mb-2">
                                 <div class="d-flex align-items-center">
                                     <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">ACCOUNT BALANCE</h6>
                                     <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
@@ -547,18 +774,18 @@
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-6">
-                                        <label class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">TOTAL AMOUNT</label>
+                                        <label class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">TOTAL AMOUNT</label>
                                         <div id="payment_original_amount" class="form-control" style="background: #fff; border: 1px solid #dee2e6; padding: 12px; font-weight: 600; font-size: 16px; color: #495057;">P130,582.94</div>
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">TOTAL BALANCE</label>
+                                        <label class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">TOTAL BALANCE</label>
                                         <div id="payment_total_amount" class="form-control" style="background: #fff; border: 1px solid #dee2e6; padding: 12px; font-weight: 600; font-size: 16px; color: #495057;">P130,582.94</div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Payment Details Section -->
-                            <div class="mb-4">
+                            <div class="mb-2">
                                 <div class="d-flex align-items-center">
                                     <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">PAYMENT DETAILS</h6>
                                     <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
@@ -566,7 +793,7 @@
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-6">
-                                        <label for="payment_method" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT TYPE</label>
+                                        <label for="payment_method" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT TYPE</label>
                                         <select class="form-select" id="payment_method" name="payment_type" required>
                                             <option value="" disabled selected>Select Payment Type</option>
                                             <option value="bank">BANK</option>
@@ -575,14 +802,14 @@
                                         </select>
                                     </div>
                                     <div class="col-6">
-                                        <label for="payment_reference_number" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">REFERENCE NUMBER</label>
+                                        <label for="payment_reference_number" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">REFERENCE NUMBER</label>
                                         <input type="text" class="form-control" id="payment_reference_number" name="reference_number" placeholder="Enter reference number" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- Bank Details Section -->
-                            <div class="mb-4" id="bankDetailsSection" style="display: none;">
+                            <div class="mb-2" id="bankDetailsSection" style="display: none;">
                                 <div class="d-flex align-items-center">
                                     <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">BANK DETAILS</h6>
                                     <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
@@ -590,7 +817,7 @@
                                 </div>
                                 <div class="row g-3 mb-3">
                                     <div class="col-6">
-                                        <label for="bank_selection" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">SELECT BANK</label>
+                                        <label for="bank_selection" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">SELECT BANK</label>
                                         <select class="form-select" id="bank_selection" name="bank_selection">
                                             <option value="bpi" selected>BPI</option>
                                             <option value="bdo">BDO</option>
@@ -598,17 +825,17 @@
                                         </select>
                                     </div>
                                     <div class="col-6" id="bankPaymentAmountColumn">
-                                        <label for="bank_payment_amount" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
+                                        <label for="bank_payment_amount" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
                                         <input type="text" class="form-control" id="bank_payment_amount" name="bank_payment_amount" placeholder="0.00" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
                                     </div>
                                 </div>
                                 <div class="row g-3 mb-3">
                                     <div class="col-6">
-                                        <label for="bank_account_name" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NAME</label>
+                                        <label for="bank_account_name" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NAME</label>
                                         <input type="text" class="form-control" id="bank_account_name" name="bank_account_name" value="FAST UNMERCHANT INC." readonly style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #f8f9fa;">
                                     </div>
                                     <div class="col-6">
-                                        <label for="bank_account_number" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NUMBER</label>
+                                        <label for="bank_account_number" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NUMBER</label>
                                         <input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="8234-2342-9035" readonly style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #f8f9fa;">
                                     </div>
                                 </div>
@@ -625,7 +852,7 @@
                             </div>
 
                             <!-- GCASH Details Section - Hidden by default -->
-                            <div class="mb-4" id="gcashDetailsSection" style="display: none;">
+                            <div class="mb-2" id="gcashDetailsSection" style="display: none;">
                                 <div class="d-flex align-items-center">
                                     <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">GCASH DETAILS</h6>
                                     <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
@@ -633,48 +860,48 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-6">
-                                        <label for="gcash_selection" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">GCASH ACCOUNT</label>
+                                        <label for="gcash_selection" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">GCASH ACCOUNT</label>
                                         <select class="form-select" id="gcash_selection" name="gcash_selection">
                                             <option value="">Select GCash Account</option>
                                             <!-- Options will be populated from tblGcash -->
                                         </select>
                                     </div>
                                     <div class="col-6">
-                                        <label for="gcash_account_number" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NUMBER</label>
+                                        <label for="gcash_account_number" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NUMBER</label>
                                         <input type="text" class="form-control" id="gcash_account_number" name="gcash_account_number" placeholder="Select account to view number" readonly style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #f8f9fa;">
                                     </div>
                                 </div>
                             </div>
 
                             <!-- GCASH Payment Section - Hidden by default -->
-                            <div class="mb-4" id="gcashPaymentSection" style="display: none;">
+                            <div class="mb-2" id="gcashPaymentSection" style="display: none;">
                                 <div class="d-flex align-items-center">
                                     <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">GCASH PAYMENT</h6>
                                     <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
                                     <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Enter GCash Amount"></i>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="gcash_amount_display" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
+                                    <label for="gcash_amount_display" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
                                     <input type="text" class="form-control fw-bold" id="gcash_amount_display" name="gcash_amount_display" placeholder="0.00" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #fff; color: #495057;">
                                 </div>
                             </div>
 
                             <!-- CASH Payment Section - Hidden by default -->
-                            <div class="mb-4" id="cashPaymentSection" style="display: none;">
+                            <div class="mb-2" id="cashPaymentSection" style="display: none;">
                                 <div class="d-flex align-items-center">
                                     <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">CASH PAYMENT</h6>
                                     <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
                                     <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Record cash payment details and reference information"></i>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="cash_amount_display" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
+                                    <label for="cash_amount_display" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT AMOUNT</label>
                                     <input type="text" class="form-control fw-bold" id="cash_amount_display" name="cash_amount_display" placeholder="0.00" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #fff; color: #495057;">
 
                                 </div>
                             </div>
 
                             <!-- Check Details Section -->
-                            <div class="mb-4" id="checkDetailsSection" style="display: none;">
+                            <div class="mb-2" id="checkDetailsSection" style="display: none;">
                                 <div class="d-flex align-items-center">
                                     <h6 class="mb-0 me-2" style="color: #5188FD; font-weight: 600; font-size: 14px; text-transform: uppercase; white-space: nowrap;">CHECK DETAILS</h6>
                                     <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
@@ -682,42 +909,42 @@
                                 </div>
                                 <div class="row g-3 mb-3">
                                     <div class="col-6">
-                                        <label for="check_payee" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYEE</label>
+                                        <label for="check_payee" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYEE</label>
                                         <input type="text" class="form-control" id="check_payee" name="check_payee" value="DAVEN NEMENZO" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
                                     </div>
                                     <div class="col-6">
-                                        <label for="check_date" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NAME</label>
+                                        <label for="check_date" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">ACCOUNT NAME</label>
                                         <input type="date" class="form-control" id="check_date" name="check_date" value="2025-09-22" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
                                     </div>
                                 </div>
                                 <div class="row g-3 mb-3">
                                     <div class="col-6">
-                                        <label for="check_number" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">CHECK NUMBER</label>
+                                        <label for="check_number" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">CHECK NUMBER</label>
                                         <input type="text" class="form-control" id="check_number" name="check_number" value="8234-2342-9035" style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">
                                     </div>
                                     <div class="col-6">
-                                        <label for="check_amount_display" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">CHECK AMOUNT</label>
+                                        <label for="check_amount_display" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">CHECK AMOUNT</label>
                                         <div style="position: relative;">
                                             <input type="text" class="form-control fw-bold" id="check_amount_display" name="check_amount_display" value="130,582.31" style="padding: 12px; border: 1px solid #ffc107; font-size: 14px; background-color: #fff3cd; color: #856404;">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="check_amount_in_words" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">AMOUNT IN WORDS</label>
+                                    <label for="check_amount_in_words" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">AMOUNT IN WORDS</label>
                                     <textarea class="form-control" id="check_amount_in_words" name="check_amount_in_words" rows="3" readonly style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; background-color: #f8f9fa; resize: none; line-height: 1.4;">One hundred thirty thousand five hundred eighty-two pesos and ninety-four centavos</textarea>
                                 </div>
                             </div>
 
                             
                             <!-- Additional Information Section -->
-                            <div class="mb-4">
+                            <div class="mb-2">
                                 <div class="d-flex align-items-center mb-3">
                                     <h6 class="mb-0 me-2" style="color: #5188FD; font-size: 14px; text-transform: uppercase; white-space: nowrap;">ADDITIONAL INFORMATION</h6>
                                     <hr style="flex: 1; border: 0; border-top: 1px solid #dee2e6; margin: 0;">
                                     <i class="mdi mdi-information-outline ms-2 custom-tooltip-trigger" style="color: #6c757d; font-size: 18px; cursor: pointer;" data-tooltip="Additional payment notes and reference information"></i>
                                 </div>
-                                <div class="mb-4">
-                                    <label for="payment_remarks" class="form-label" style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT REMARKS</label>
+                                <div class="mb-2">
+                                    <label for="payment_remarks" class="form-label" style="color: #6c757d; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">PAYMENT REMARKS</label>
                                     <textarea class="form-control" id="payment_remarks" name="remarks" rows="4" placeholder="Enter remarks here..." style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px; resize: none; line-height: 1.4;"></textarea>
                                 </div>
                             </div>

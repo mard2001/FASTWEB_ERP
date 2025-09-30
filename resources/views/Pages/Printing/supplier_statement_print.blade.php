@@ -131,6 +131,59 @@
                 padding: 10px 0;
                 font-size: 12px;
             }
+            
+            /* Enhanced print styles for transaction rows */
+            .table-info { background-color: rgba(13, 202, 240, 0.1) !important; }
+            .table-warning { background-color: rgba(255, 193, 7, 0.1) !important; }
+            
+            /* Ensure colors are visible in print */
+            .text-success { color: #28a745 !important; }
+            .text-danger { color: #dc3545 !important; }
+            .text-info { color: #0dcaf0 !important; }
+            .text-warning { color: #ffc107 !important; }
+        }
+        
+        /* Additional styles for better visual consistency */
+        .transaction-row {
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .payment-row {
+            font-style: italic;
+            background-color: rgba(13, 202, 240, 0.05);
+        }
+        
+        .credit-memo-row {
+            background-color: rgba(255, 193, 7, 0.1);
+            font-style: italic;
+        }
+        
+        .auto-cm-row {
+            background-color: rgba(255, 193, 7, 0.03);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .amount-positive {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .amount-negative {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        
+        .amount-neutral {
+            color: #6c757d;
         }
     </style>
 
@@ -214,77 +267,168 @@
             <table class="table statement-table table-bordered">
                 <thead>
                     <tr>
-                        <th style="width: 12%;">Date</th>
-                        <th style="width: 15%;">Reference #</th>
-                        <th style="width: 15%;">RR Number</th>
-                        <th style="width: 20%;">Description</th>
-                        <th style="width: 10%;">Amount</th>
-                        <th style="width: 10%;">Paid</th>
-                        <th style="width: 10%;">Balance</th>
-                        <th style="width: 8%;">Status</th>
+                        <th style="width: 15%;">Date</th>
+                        <th style="width: 25%;">Description</th>
+                        <th style="width: 15%;">RR No</th>
+                        <th style="width: 12%;">Amount</th>
+                        <th style="width: 12%;">Paid</th>
+                        <th style="width: 12%;">Balance</th>
+                        <th style="width: 9%;">Status</th>
                         <th style="width: 10%;">Terms</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($pageData as $row)
-                    <tr @if($row['type']==='payment') style="background:#eaf7ff;" @elseif($row['type']==='credit_memo') style="background:#fff3cd; font-style: italic;" @endif>
-                        <td class="text-center">{{ $row['date'] ? \Carbon\Carbon::parse($row['date'])->format('M d, Y') : 'N/A' }}</td>
-                        <td class="text-center">{{ $row['reference_number'] ?? 'N/A' }}</td>
+                    @php
+                        $isPayment = ($row['type'] ?? '') === 'payment';
+                        $isCreditMemo = ($row['type'] ?? '') === 'credit_memo';
+                        $hasAutoCreditMemo = isset($row['has_auto_credit_memo']) && $row['has_auto_credit_memo'];
+                        $hasCreditMemo = isset($row['has_credit_memo']) && $row['has_credit_memo'];
+                        
+                        // Also check for auto credit memo by reference number pattern
+                        $isAutoCreditMemo = $isPayment && isset($row['reference_number']) && strpos($row['reference_number'], 'AUTO-CM-') === 0;
+                        
+                        // Determine row styling to match table view
+                        $rowStyle = '';
+                        $rowClass = '';
+                        
+                        if ($isPayment) {
+                            if ($isAutoCreditMemo) {
+                                $rowStyle = 'background-color: rgba(255, 193, 7, 0.1); font-style: italic;';
+                                $rowClass = 'table-warning';
+                            } elseif ($hasCreditMemo) {
+                                $rowStyle = 'background-color: rgba(255, 193, 7, 0.1); font-style: italic;';
+                                $rowClass = 'table-warning';
+                            } else {
+                                $rowStyle = 'font-style: italic; background-color: rgba(13, 202, 240, 0.1);';
+                                $rowClass = 'table-info';
+                            }
+                        } elseif ($isCreditMemo) {
+                            $rowStyle = 'background-color: #fff3cd; font-style: italic;';
+                        } elseif ($hasAutoCreditMemo) {
+                            $rowStyle = 'background-color: rgba(255, 193, 7, 0.05);';
+                        }
+                        
+                        // Format date with time if available
+                        $formattedDate = 'N/A';
+                        if (isset($row['date']) && $row['date']) {
+                            $date = \Carbon\Carbon::parse($row['date']);
+                            $formattedDate = $date->format('m/d/Y');
+                            
+                            // Add time if available in sort_date
+                            if (isset($row['sort_date']) && $row['sort_date'] !== $row['date']) {
+                                $sortDate = \Carbon\Carbon::parse($row['sort_date']);
+                                $formattedDate .= ' ' . $sortDate->format('h:i A');
+                            }
+                        }
+                        
+                        // Use the description from the controller, which already handles transaction types correctly
+                         $description = $row['description'] ?? 'N/A';
+                        
+                        // Determine amount display
+                         $amountDisplay = '';
+                         if ($isPayment) {
+                             $amountDisplay = '-'; // No original amount for payments
+                         } elseif ($isCreditMemo && isset($row['credit_memo']) && $row['credit_memo'] > 0) {
+                             $amountDisplay = '₱' . number_format($row['credit_memo'], 2);
+                         } elseif (isset($row['amount']) && $row['amount'] > 0) {
+                             $amountDisplay = '₱' . number_format($row['amount'], 2);
+                         } else {
+                             $amountDisplay = '-';
+                         }
+                        
+                        // Determine paid display
+                         $paidDisplay = '';
+                         $paidColor = '#28a745'; // Default green
+                         
+                         if ($isPayment) {
+                             // For payment rows, show the payment amount
+                             if ($isAutoCreditMemo) {
+                                 // For auto credit memo applications, show the payment amount
+                                 if (isset($row['paid']) && $row['paid'] > 0) {
+                                     $paidDisplay = '₱' . number_format($row['paid'], 2);
+                                     $paidColor = '#28a745';
+                                 } else {
+                                     $paidDisplay = '-';
+                                 }
+                             } elseif (isset($row['paid']) && $row['paid'] > 0) {
+                                 $paidDisplay = '₱' . number_format($row['paid'], 2);
+                                 $paidColor = $hasCreditMemo ? '#0dcaf0' : '#28a745';
+                             } else {
+                                 $paidDisplay = '-';
+                             }
+                         } elseif ($isCreditMemo) {
+                             // Credit memos don't show paid amounts
+                             $paidDisplay = '-';
+                         } elseif ($hasAutoCreditMemo) {
+                             // For auto credit memo applications, show the credit amount applied
+                             if (isset($row['paid']) && $row['paid'] > 0) {
+                                 $paidDisplay = '₱' . number_format($row['paid'], 2);
+                                 $paidColor = '#28a745';
+                             } elseif (isset($row['credit_memo']) && $row['credit_memo'] > 0) {
+                                 $paidDisplay = '₱' . number_format($row['credit_memo'], 2);
+                                 $paidColor = '#28a745';
+                             } else {
+                                 $paidDisplay = '-';
+                             }
+                         } elseif (isset($row['paid']) && $row['paid'] > 0) {
+                             // For invoices that have been paid (partially or fully)
+                             $paidDisplay = '₱' . number_format($row['paid'], 2);
+                             $paidColor = '#28a745';
+                         } else {
+                             // No payment made
+                             $paidDisplay = '-';
+                         }
+                        
+                        // Determine balance display and color
+                        $balance = $row['balance'] ?? 0;
+                        $balanceColor = $balance > 0 ? '#dc3545' : '#28a745';
+                        
+                        // Handle negative balances correctly
+                        if ($balance < 0) {
+                            // For negative balances (credit memos, overpayments), show negative sign
+                            $balanceDisplay = '-₱' . number_format(abs($balance), 2);
+                            $balanceColor = '#28a745'; // Green for credit balances
+                        } else {
+                            $balanceDisplay = '₱' . number_format($balance, 2);
+                        }
+                    @endphp
+                    
+                    <tr style="{{ $rowStyle }}">
+                        <td class="text-center">{{ $formattedDate }}</td>
+                        <td class="text-start">{{ $description }}</td>
                         <td class="text-center">{{ $row['rr_number'] ?? 'N/A' }}</td>
-                        <td class="text-start">
-                            @if(isset($row['has_auto_credit_memo']) && $row['has_auto_credit_memo'] && isset($row['auto_credit_memo_amount']) && $row['auto_credit_memo_amount'] > 0)
-                                {{ $row['description'] ?? '' }} (Auto CM Applied: ₱{{ number_format($row['auto_credit_memo_amount'], 2) }})
-                            @else
-                                {{ $row['description'] ?? '' }}
-                            @endif
-                        </td>
-                        <td class="text-end">
-                            @if($row['type'] === 'credit_memo' && isset($row['credit_memo']) && $row['credit_memo'] > 0)
-                                ₱{{ number_format($row['credit_memo'], 2) }}
-                            @elseif($row['amount'] > 0) 
-                                ₱{{ number_format($row['amount'], 2) }}
-                            @endif
-                        </td>
-                        <td class="text-end">
-                            @if(isset($row['has_auto_credit_memo']) && $row['has_auto_credit_memo'] && isset($row['auto_credit_memo_amount']) && $row['auto_credit_memo_amount'] > 0)
-                                ₱{{ number_format($row['auto_credit_memo_amount'], 2) }}
-                            @elseif($row['paid'] > 0) 
-                                ₱{{ number_format($row['paid'], 2) }}
-                            @endif
-                        </td>
-                        <td class="text-end">
-                            @if($row['type'] === 'credit_memo' && $row['balance'] < 0)
-                                -₱{{ number_format(abs($row['balance']), 2) }}
-                            @else
-                                ₱{{ number_format($row['balance'] ?? 0, 2) }}
-                            @endif
-                        </td>
+                        <td class="text-end">{{ $amountDisplay }}</td>
+                        <td class="text-end" style="color: {{ $paidColor }};">{{ $paidDisplay }}</td>
+                        <td class="text-end" style="color: {{ $balanceColor }};">{{ $balanceDisplay }}</td>
                         <td class="text-center">
                             @if(($row['status'] ?? '') === 'Credit Available')
                                 <span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Credit Available</span>
-                            @elseif(($row['status'] ?? '') === 'Pending' && ($row['is_overdue'] ?? false))
-                                <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Overdue</span>
                             @elseif(($row['status'] ?? '') === 'Fully Paid with CM')
-                                <span style="background-color: #6f42c1; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Fully Paid with CM</span>
-                            @elseif(($row['status'] ?? '') === 'Partially Paid with CM')
-                                <span style="background-color: #e83e8c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Partially Paid with CM</span>
+                                <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Fully Paid with CM</span>
+                            @elseif(($row['status'] ?? '') === 'Fully Paid by CM')
+                                <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Fully Paid by CM</span>
+                            @elseif(($row['status'] ?? '') === 'Credit Applied')
+                                <span style="background-color: #ffc107; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Credit Applied</span>
+                            @elseif(($row['status'] ?? '') === 'Payment Made')
+                                <span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Payment Made</span>
                             @elseif(($row['status'] ?? '') === 'Fully Paid')
                                 <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Fully Paid</span>
                             @elseif(($row['status'] ?? '') === 'Paid')
                                 <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Paid</span>
-                            @elseif(($row['status'] ?? '') === 'Payment Made')
-                                <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Payment Made</span>
+                            @elseif(($row['status'] ?? '') === 'Pending' && ($row['is_overdue'] ?? false))
+                                <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Overdue</span>
                             @elseif(str_contains(strtolower($row['status'] ?? ''), 'partial'))
                                 <span style="background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Partial</span>
                             @else
-                                <span style="background-color: #007bff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">{{ $row['status'] ?? 'Pending' }}</span>
+                                <span style="background-color: #ffc107; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">{{ $row['status'] ?? 'Pending' }}</span>
                             @endif
                         </td>
                         <td class="text-center">{{ $row['terms'] ?? 'N/A' }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center">No transaction data found</td>
+                        <td colspan="8" class="text-center">No transaction data found</td>
                     </tr>
                     @endforelse
                 </tbody>

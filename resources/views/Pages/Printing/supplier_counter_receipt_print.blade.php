@@ -260,13 +260,19 @@
                         <td class="text-end">@if($row['amount']>0) ₱{{ number_format($row['amount'],2) }} @endif</td>
                         <td class="text-end">
                             @if($row['paid']>0)
-                                ₱{{ number_format($row['paid'],2) }}
+                                @if($row['type'] === 'transaction' && str_contains($row['description'], 'CM Applied'))
+                                    (₱-{{ number_format($row['paid'],2) }})
+                                @else
+                                    ₱{{ number_format($row['paid'],2) }}
+                                @endif
                             @endif
                         </td>
                         <td class="text-end">₱{{ number_format($row['balance'] ?? 0,2) }}</td>
                         <td class="text-center">
                             @if(($row['status'] ?? '') === 'Credit Available')
                                 <span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Credit Available</span>
+                            @elseif(($row['status'] ?? '') === 'Credit Applied')
+                                <span style="background-color: #6f42c1; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Credit Applied</span>
                             @elseif(($row['status'] ?? '') === 'Pending' && ($row['is_overdue'] ?? false))
                                 <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Overdue</span>
                             @elseif(str_contains(strtolower($row['status'] ?? ''), 'partial'))
