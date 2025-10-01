@@ -262,7 +262,7 @@ function populateGcashDropdown() {
 // Initialize Virtual Select filters
 function initializeFilters() {
     // Initialize Status filter
-    statusFilterVS = VirtualSelect.init({
+    VirtualSelect.init({
         ele: '#statusFilter_VS',
         options: [
             { label: 'All Status', value: '' },
@@ -276,6 +276,9 @@ function initializeFilters() {
         multiple: false
     });
 
+    // Store the element reference (VirtualSelect attaches methods to the DOM node)
+    statusFilterVS = document.querySelector('#statusFilter_VS');
+
     // Set up event listeners for filters
     $('#rrNumberFilter').on('change keyup', function() {
         applyFilters();
@@ -287,16 +290,27 @@ function initializeFilters() {
 }
 
 // Load accounts Payable data
-function loadAccountsPayableData() {
+function loadAccountsPayableData(page = 1) {
     $.ajax({
         url: '/api/accounts-payable',
         type: 'GET',
+        data: {
+            page: page,
+            per_page: 25 // Reduced for faster loading
+        },
         success: function(response) {
             if (response.success) {
                 accountsPayableData = response.data;
                 filteredData = [...accountsPayableData];
                 initAccountsPayableDataTable();
                 loadStatistics();
+                // Re-apply current filters after reload so user selections persist
+                applyFilters();
+                
+                // Log pagination info for debugging
+                if (response.pagination) {
+                    console.log(`Loaded page ${response.pagination.current_page} of ${response.pagination.total_pages} (${response.pagination.total_records} total records)`);
+                }
             }
         },
         error: function(xhr) {
@@ -337,9 +351,8 @@ function ajax(url, method, data, successCallback, errorCallback) {
 // Initialize DataTable
 function initAccountsPayableDataTable() {
     if (accountsPayableTable) {
-        accountsPayableTable.clear();
-        accountsPayableTable.rows.add(filteredData);
-        accountsPayableTable.draw();
+        // Fast refresh: just update data without recreating table
+        accountsPayableTable.clear().rows.add(filteredData).draw(false);
         return;
     }
 
@@ -348,123 +361,120 @@ function initAccountsPayableDataTable() {
         language: {
             searchPlaceholder: "Search here..."
         },
+        deferRender: true, // Only render visible rows for better performance
+        processing: false, // Disable processing indicator for faster feel
         columns: [
             { 
                 data: 'date', 
                 title: 'Date',
                 render: function(data, type, row) {
-                    if (type === 'sort') {
-                        // For sorting, use the sort_timestamp for precise ordering
-                        return row.sort_timestamp || 0;
+                    if (type === 'display') {
+                        return moment(data).format('MMM DD, YYYY');
                     }
-                    return moment(data).format('MMM DD, YYYY');
+                    return data; // Return raw data for sorting/filtering
                 }
             },
             { 
                 data: 'supplier_name', 
                 title: 'Supplier',
                 render: function(data, type, row) {
-                    return `<div class="supplier-info">
-                                <div class="fw-bold">${data}</div>
-                                <small class="text-muted">${row.supplier_code}</small>
-                            </div>`;
+                    if (type === 'display') {
+                        return `<div class="supplier-info"><div class="fw-bold">${data}</div><small class="text-muted">${row.supplier_code}</small></div>`;
+                    }
+                    return data;
                 }
             },
             { 
                 data: 'rr_number', 
                 title: 'RR #',
-                render: function(data, type, row) {
-                    return data || 'N/A';
-                }
+                defaultContent: 'N/A'
             },
             { 
                 data: 'reference_number', 
                 title: 'Reference #',
-                render: function(data, type, row) {
-                    return data || 'N/A';
-                }
+                defaultContent: 'N/A'
             },
             { 
                 data: 'total_amount', 
                 title: 'Total Amount',
                 render: function(data, type, row) {
-                    return formatCurrency(data);
+                    if (type === 'display') {
+                        return formatCurrency(data);
+                    }
+                    return data;
                 }
             },
             { 
                 data: 'terms', 
                 title: 'Terms',
-                render: function(data, type, row) {
-                    return data || 'N/A';
-                }
+                defaultContent: 'N/A'
             },
             { 
                 data: 'status', 
                 title: 'Status',
                 render: function(data, type, row) {
-                    return getStatusBadge(data, row.is_overdue);
+                    if (type === 'display') {
+                        return getStatusBadge(data, row.is_overdue);
+                    }
+                    return data;
                 }
             },
             { 
                 data: 'balance_amount', 
                 title: 'Balance',
                 render: function(data, type, row) {
-                    return formatCurrency(data);
+                    if (type === 'display') {
+                        return formatCurrency(data);
+                    }
+                    return data;
                 }
             },
             { 
                 data: 'CreditMemo', 
                 title: 'Credit Memo',
                 render: function(data, type, row) {
-                    if (data && data > 0) {
-                        return formatCurrency(data);
+                    if (type === 'display') {
+                        if (data && data > 0) {
+                            return formatCurrency(data);
+                        }
+                        return '<span class="text-muted">-</span>';
                     }
-                    return '<span class="text-muted">-</span>';
+                    return data || 0;
                 }
             },
             { 
                 data: 'process_by', 
                 title: 'Process By',
-                render: function(data, type, row) {
-                    return data || 'N/A';
-                }
+                defaultContent: 'N/A'
             }
         ],
         order: [[0, 'desc']], // Order by date descending
         pageLength: 25,
         responsive: true,
-        createdRow: function(row, data, dataIndex) {
-            // Add classes based on status
+        rowCallback: function(row, data, index) {
+            // Lightweight row styling - only essential classes
+            const $row = $(row);
+            $row.addClass('clickable-row').attr('data-id', data.id);
+            
+            // Add status-based classes efficiently
             if (data.status === 'Pending' && data.is_overdue) {
-                $(row).addClass('table-danger');
+                $row.addClass('table-danger');
             } else if (data.status === 'Paid') {
-                $(row).addClass('table-success');
+                $row.addClass('table-success');
             } else if (data.status === 'Partial') {
-                $(row).addClass('table-warning');
+                $row.addClass('table-warning');
             }
-            
-            // Make row clickable and add hover effect
-            $(row).addClass('clickable-row');
-            $(row).attr('data-id', data.id);
-            $(row).css({
-                'cursor': 'pointer',
-                'transition': 'background-color 0.2s ease'
-            });
-            
-            // Add hover effect
-            $(row).hover(
-                function() { $(this).addClass('table-hover-effect'); },
-                function() { $(this).removeClass('table-hover-effect'); }
-            );
         },
         initComplete: function () {
-            $(this.api().table().container()).find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
-            $(this.api().table().container()).find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
-            $(this.api().table().container()).find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { this.style.setProperty('height', '38px', 'important'); });
-            $(this.api().table().container()).find('.dt-layout-table').removeClass('px-4');
-            $(this.api().table().container()).find('.dt-scroll-body').addClass('rmvBorder');
-            $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
-            $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
+            const container = $(this.api().table().container());
+            container.find('#dt-search-0').addClass('p-1 mx-0 dtsearchInput nofocus');
+            container.find('.dt-search label').addClass('py-1 px-3 mx-0 dtsearchLabel').html('<span class="mdi mdi-magnify"></span>');
+            container.find('.dt-layout-row').first().find('.dt-layout-cell').each(function() { 
+                this.style.setProperty('height', '38px', 'important'); 
+            });
+            container.find('.dt-layout-table').removeClass('px-4').addClass('btmdtborder');
+            container.find('.dt-scroll-body').addClass('rmvBorder');
+            container.find('.dt-search').addClass('d-flex justify-content-end');
         }
     });
 
@@ -478,6 +488,17 @@ function initAccountsPayableDataTable() {
 
     // Set up event handlers
     setupEventHandlers();
+    
+    // Add CSS for hover effects (more efficient than jQuery hover)
+    if (!$('#ap-hover-styles').length) {
+        $('<style id="ap-hover-styles">')
+            .text(`
+                .clickable-row { cursor: pointer; transition: background-color 0.2s ease; }
+                .clickable-row:hover { background-color: #f8f9fa !important; }
+                .table-hover-effect { background-color: #e9ecef !important; }
+            `)
+            .appendTo('head');
+    }
 }
 
 // Initialize Date Range Picker
@@ -520,9 +541,18 @@ function initDateRangePicker() {
 
 // Apply filters
 function applyFilters() {
-    let rrNumberFilter = $('#rrNumberFilter').val().toLowerCase();
-    let statusFilter = statusFilterVS ? statusFilterVS.getSelectedOptions()[0]?.value || '' : '';
-    let supplierFilter = supplierFilterVS ? supplierFilterVS.getSelectedOptions()[0]?.value || '' : '';
+    const rrNumberFilterRaw = $('#rrNumberFilter').val();
+    let rrNumberFilter = (rrNumberFilterRaw || '').toLowerCase();
+    let statusFilter = '';
+    if (statusFilterVS && typeof statusFilterVS.getSelectedOptions === 'function') {
+        const statusOpts = statusFilterVS.getSelectedOptions();
+        statusFilter = (Array.isArray(statusOpts) && statusOpts[0] && statusOpts[0].value) ? statusOpts[0].value : '';
+    }
+    let supplierFilter = '';
+    if (supplierFilterVS && typeof supplierFilterVS.getSelectedOptions === 'function') {
+        const supplierOpts = supplierFilterVS.getSelectedOptions();
+        supplierFilter = (Array.isArray(supplierOpts) && supplierOpts[0] && supplierOpts[0].value) ? supplierOpts[0].value : '';
+    }
 
     filteredData = accountsPayableData.filter(function(item) {
         let matchesDate = true;
@@ -538,8 +568,9 @@ function applyFilters() {
             }
         }
 
-        // RR Number filter
-        if (rrNumberFilter && !item.rr_number.toLowerCase().includes(rrNumberFilter)) {
+        // RR Number filter (guard against undefined rr_number)
+        const rrText = (item.rr_number || '').toString().toLowerCase();
+        if (rrNumberFilter && !rrText.includes(rrNumberFilter)) {
             matchesRRNumber = false;
         }
 
@@ -1080,6 +1111,11 @@ function setupEventHandlers() {
         });
     });
 
+    // Refresh data tables without full page reload
+    $('#apRefreshBtn').on('click', function() {
+        loadAccountsPayableData();
+    });
+
     // Payment form submission
     $('#paymentForm').on('submit', function(e) {
         e.preventDefault();
@@ -1608,21 +1644,7 @@ function setupEventHandlers() {
         $(this).find('form')[0].reset();
     });
 
-    // Add CSS for hover effect if not already added
-    if (!$('#hover-style').length) {
-        $('<style id="hover-style">')
-            .prop('type', 'text/css')
-            .html(`
-                .table-hover-effect {
-                    background-color: #f8f9fa !important;
-                    transition: background-color 0.2s ease;
-                }
-                .clickable-row:hover {
-                    background-color: #e9ecef !important;
-                }
-            `)
-            .appendTo('head');
-    }
+    // Hover styles are now handled in initAccountsPayableDataTable()
 }
 
 // Helper functions

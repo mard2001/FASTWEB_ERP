@@ -6,7 +6,10 @@
         <title>Statement of Account - {{ $supplier->SupplierName ?? 'Supplier' }}</title>
 
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- SheetJS for Excel export -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     </head>
 
     <style>
@@ -185,6 +188,126 @@
         .amount-neutral {
             color: #6c757d;
         }
+        
+        /* Header controls styling */
+        .header-controls {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            z-index: 1000;
+        }
+        
+        .btn-print {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+            margin-bottom: 8px;
+            display: block;
+            width: 100%;
+        }
+        
+        .btn-print:hover {
+            background-color: #218838;
+        }
+        
+        .btn-excel {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+            margin-bottom: 8px;
+            display: block;
+            width: 100%;
+        }
+        
+        .btn-excel:hover {
+            background-color: #0056b3;
+        }
+        
+        .date-filter-dropdown {
+            margin-top: 5px;
+        }
+        
+        .date-select {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: 1px solid #ced4da;
+            background-color: #fff;
+            color: #495057;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 120px;
+            max-width: 150px;
+        }
+        
+        .date-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            outline: 0;
+        }
+        
+        .custom-date-range {
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        
+        .date-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .date-input {
+            padding: 3px 6px;
+            font-size: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            width: 100%;
+        }
+        
+        .btn-apply {
+            padding: 4px 8px;
+            font-size: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-apply:hover {
+            background-color: #218838;
+        }
+        
+        .filter-label {
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+        
+        /* Make header relative for absolute positioning */
+        header {
+            position: relative;
+        }
+        
+        @media print {
+            .header-controls {
+                display: none !important;
+            }
+        }
     </style>
 
     <body>
@@ -220,6 +343,36 @@
             
             <!-- Header for each page -->
             <header class="px-2 py-1">
+                <!-- Print Controls in Header (Hidden during print) -->
+                <div class="header-controls">
+                    <button type="button" class="btn-print" onclick="printStatement()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button type="button" class="btn-excel" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <div class="date-filter-dropdown">
+                        <div class="filter-label">Date Filter:</div>
+                        <select id="dateFilterSelect" class="form-select date-select" onchange="handleFilterChange()">
+                            <option value="all" selected>All</option>
+                            <option value="today">Today</option>
+                            <option value="last3days">Last 3 Days</option>
+                            <option value="last7days">Last 7 Days</option>
+                            <option value="lastweek">Last Week</option>
+                            <option value="thismonth">This Month</option>
+                            <option value="lastmonth">Last Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <div id="customDateRange" class="custom-date-range" style="display: none;">
+                            <div class="date-inputs">
+                                <input type="date" id="fromDate" class="form-control date-input" placeholder="From">
+                                <input type="date" id="toDate" class="form-control date-input" placeholder="To">
+                                <button type="button" class="btn-apply" onclick="applyCustomRange()">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="d-flex flex-row mb-3">
                     <div class="p-2 pt-3">
                         <img src="https://jobslin.com/storage/logow/ph/FAST/fast-unimerchants-inc-1722319497.webp" alt="Description" width="250" height="80">
@@ -499,13 +652,263 @@
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
     <script>
-        window.onload = function() {
-            window.print();
+        // Store original transactions data for filtering
+        let allTableRows = [];
+        let currentFilter = 'all';
 
-            // Close the tab after printing or if the user cancels
-            window.onafterprint = function() {
-                window.close();
+        window.onload = function() {
+            // Store all table rows for filtering
+            allTableRows = Array.from(document.querySelectorAll('table tbody tr'));
+        };
+
+        function handleFilterChange() {
+            const select = document.getElementById('dateFilterSelect');
+            const selectedValue = select.value;
+            const customRangeDiv = document.getElementById('customDateRange');
+            
+            if (selectedValue === 'custom') {
+                customRangeDiv.style.display = 'block';
+                return; // Don't filter yet, wait for custom range input
+            } else {
+                customRangeDiv.style.display = 'none';
+                filterByPreset(selectedValue);
+            }
+        }
+
+        function applyCustomRange() {
+            const fromDateInput = document.getElementById('fromDate');
+            const toDateInput = document.getElementById('toDate');
+            
+            if (!fromDateInput.value || !toDateInput.value) {
+                alert('Please select both from and to dates.');
+                return;
+            }
+            
+            const fromDate = new Date(fromDateInput.value);
+            const toDate = new Date(toDateInput.value);
+            
+            if (fromDate > toDate) {
+                alert('From date cannot be later than to date.');
+                return;
+            }
+            
+            filterByDateRange(fromDate, toDate);
+        }
+
+        function filterByPreset(preset) {
+            currentFilter = preset;
+            
+            const today = new Date();
+            let fromDate, toDate;
+            
+            switch(preset) {
+                case 'today':
+                    fromDate = new Date(today);
+                    toDate = new Date(today);
+                    break;
+                case 'last3days':
+                    fromDate = new Date(today);
+                    fromDate.setDate(today.getDate() - 2);
+                    toDate = new Date(today);
+                    break;
+                case 'last7days':
+                    fromDate = new Date(today);
+                    fromDate.setDate(today.getDate() - 6);
+                    toDate = new Date(today);
+                    break;
+                case 'lastweek':
+                    // Last week (Monday to Sunday)
+                    const lastWeekEnd = new Date(today);
+                    lastWeekEnd.setDate(today.getDate() - today.getDay());
+                    const lastWeekStart = new Date(lastWeekEnd);
+                    lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
+                    fromDate = lastWeekStart;
+                    toDate = lastWeekEnd;
+                    break;
+                case 'thismonth':
+                    // This month (1st to today)
+                    fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    toDate = new Date(today);
+                    break;
+                case 'lastmonth':
+                    // Last month (1st to last day of previous month)
+                    fromDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    toDate = new Date(today.getFullYear(), today.getMonth(), 0); // Last day of previous month
+                    break;
+                case 'all':
+                default:
+                    // Show all rows
+                    allTableRows.forEach(row => {
+                        row.style.display = '';
+                    });
+                    recalculateTotals();
+                    return;
+            }
+            
+            filterByDateRange(fromDate, toDate);
+        }
+
+        function filterByDateRange(fromDate, toDate) {
+            // Filter table rows based on date range
+            allTableRows.forEach(row => {
+                const dateCell = row.querySelector('td:first-child');
+                if (dateCell) {
+                    const dateText = dateCell.textContent.trim();
+                    const rowDate = new Date(dateText);
+                    
+                    if (!isNaN(rowDate.getTime())) {
+                        // Set time to start of day for comparison
+                        const rowDateOnly = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate());
+                        const fromDateOnly = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+                        const toDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+                        
+                        if (rowDateOnly >= fromDateOnly && rowDateOnly <= toDateOnly) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+                }
+            });
+            
+            // Recalculate totals after filtering
+            recalculateTotals();
+        }
+
+        function recalculateTotals() {
+            // Find all visible rows and recalculate running balance
+            const visibleRows = allTableRows.filter(row => row.style.display !== 'none');
+            let runningBalance = 0;
+            
+            visibleRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 5) {
+                    const debitText = cells[2].textContent.replace(/[₱,]/g, '').trim();
+                    const creditText = cells[3].textContent.replace(/[₱,]/g, '').trim();
+                    
+                    const debit = parseFloat(debitText) || 0;
+                    const credit = parseFloat(creditText) || 0;
+                    
+                    runningBalance += debit - credit;
+                    
+                    // Update balance cell
+                    cells[4].textContent = '₱' + runningBalance.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                }
+            });
+        }
+
+        function printStatement() {
+            window.print();
+        }
+
+        function exportToExcel() {
+            // Get supplier information
+            const supplierName = '{{ $supplier->SupplierName ?? "Supplier" }}';
+            const supplierAddress = '{{ $supplier->Address ?? "N/A" }}';
+            const supplierContact = '{{ $supplier->ContactNo ?? "N/A" }}';
+            const generatedDate = '{{ now()->format("Y-m-d H:i:s") }}';
+            const generatedBy = '{{ $user->name ?? "System User" }}';
+            const totalRecords = '{{ $totalRecords }}';
+
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws_data = [];
+
+            // Add header information
+            ws_data.push(['STATEMENT OF ACCOUNT']);
+            ws_data.push([]);
+            ws_data.push(['Supplier:', supplierName]);
+            ws_data.push(['Address:', supplierAddress]);
+            ws_data.push(['Contact:', supplierContact]);
+            ws_data.push([]);
+            ws_data.push(['Generated:', generatedDate]);
+            ws_data.push(['Generated By:', generatedBy]);
+            ws_data.push(['Total Records:', totalRecords]);
+            ws_data.push([]);
+
+            // Add table headers
+            ws_data.push(['Date', 'Description', 'RR No', 'Amount', 'Paid', 'Balance', 'Status', 'Terms']);
+
+            // Get visible table rows and add data
+            const visibleRows = allTableRows.filter(row => row.style.display !== 'none');
+            visibleRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 8) {
+                    const rowData = [
+                        cells[0].textContent.trim(), // Date
+                        cells[1].textContent.trim(), // Description
+                        cells[2].textContent.trim(), // RR No
+                        cells[3].textContent.trim(), // Amount
+                        cells[4].textContent.trim(), // Paid
+                        cells[5].textContent.trim(), // Balance
+                        cells[6].textContent.trim(), // Status
+                        cells[7].textContent.trim()  // Terms
+                    ];
+                    ws_data.push(rowData);
+                }
+            });
+
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 12 }, // Date
+                { wch: 30 }, // Description
+                { wch: 15 }, // RR No
+                { wch: 15 }, // Amount
+                { wch: 15 }, // Paid
+                { wch: 15 }, // Balance
+                { wch: 12 }, // Status
+                { wch: 12 }  // Terms
+            ];
+
+            // Style the header row
+            const headerRowIndex = 10; // Row with table headers (0-indexed)
+            for (let col = 0; col < 8; col++) {
+                const cellRef = XLSX.utils.encode_cell({ r: headerRowIndex, c: col });
+                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+                ws[cellRef].s = {
+                    font: { bold: true },
+                    fill: { fgColor: { rgb: 'F8F9FA' } },
+                    border: {
+                        top: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        left: { style: 'thin' },
+                        right: { style: 'thin' }
+                    }
+                };
+            }
+
+            // Style the title
+            const titleCellRef = XLSX.utils.encode_cell({ r: 0, c: 0 });
+            if (!ws[titleCellRef]) ws[titleCellRef] = { t: 's', v: 'STATEMENT OF ACCOUNT' };
+            ws[titleCellRef].s = {
+                font: { bold: true, sz: 16 },
+                alignment: { horizontal: 'center' }
             };
+
+            // Merge title cell across columns
+            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
+
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Statement of Account');
+
+            // Generate filename with current date and supplier name
+            const currentDate = new Date().toISOString().split('T')[0];
+            const filename = `Statement_${supplierName.replace(/[^a-zA-Z0-9]/g, '_')}_${currentDate}.xlsx`;
+
+            // Save the file
+            XLSX.writeFile(wb, filename);
+        }
+
+        // Close the tab after printing or if the user cancels
+        window.onafterprint = function() {
+            // Don't auto-close, let user decide
+            // window.close();
         };
     </script>
 </html>

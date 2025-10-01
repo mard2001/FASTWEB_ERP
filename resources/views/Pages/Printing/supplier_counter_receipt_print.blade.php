@@ -7,6 +7,9 @@
 
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <!-- SheetJS for Excel export -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     </head>
 
     <style>
@@ -67,6 +70,17 @@
         .footer-section {
             page-break-inside: avoid;
             break-inside: avoid;
+        }
+
+        /* Prevent totals/footer block from breaking across pages */
+        .tablefooterDiv,
+        .tablefooterDiv * {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        @media print {
+            .receipt-table { page-break-after: auto; }
+            .tablefooterDiv { page-break-before: avoid; }
         }
 
         .footerText {
@@ -143,13 +157,133 @@
                 font-size: 12px;
             }
         }
+
+        /* Header Controls Styling */
+        .header-controls {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            z-index: 1000;
+        }
+
+        .btn-print {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+            margin-bottom: 8px;
+            display: block;
+            width: 100%;
+        }
+
+        .btn-print:hover {
+            background-color: #218838;
+        }
+
+        .btn-excel {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+            margin-bottom: 8px;
+            display: block;
+            width: 100%;
+        }
+
+        .btn-excel:hover {
+            background-color: #0056b3;
+        }
+
+        .date-filter-dropdown {
+            margin-top: 5px;
+        }
+
+        .date-select {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: 1px solid #ced4da;
+            background-color: #fff;
+            color: #495057;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 120px;
+            max-width: 150px;
+        }
+
+        .date-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            outline: 0;
+        }
+
+        .custom-date-range {
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .date-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .date-input {
+            padding: 3px 6px;
+            font-size: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            width: 100%;
+        }
+
+        .btn-apply {
+            padding: 4px 8px;
+            font-size: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-apply:hover {
+            background-color: #218838;
+        }
+
+        .filter-label {
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+
+        /* Make header relative for absolute positioning */
+        header {
+            position: relative;
+        }
+
+        @media print {
+            .header-controls {
+                display: none !important;
+            }
+        }
     </style>
 
     <body>
         @php
             $totalRecords = $pendingTransactions->count();
             $regularPageSize = 25;
-            $lastPageMaxSize = 15;
+            $lastPageMaxSize = 12; // Leave more space for totals/footer on last page
             
             // Calculate custom pagination
             $chunks = collect();
@@ -183,6 +317,36 @@
             
             <!-- Header for each page -->
             <header class="px-2 py-1">
+                <!-- Print Controls in Header (Hidden during print) -->
+                <div class="header-controls">
+                    <button type="button" class="btn-print" onclick="printStatement()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button type="button" class="btn-excel" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <div class="date-filter-dropdown">
+                        <div class="filter-label">Date Filter:</div>
+                        <select id="dateFilterSelect" class="form-select date-select" onchange="handleFilterChange()">
+                            <option value="all" selected>All</option>
+                            <option value="today">Today</option>
+                            <option value="last3days">Last 3 Days</option>
+                            <option value="last7days">Last 7 Days</option>
+                            <option value="lastweek">Last Week</option>
+                            <option value="thismonth">This Month</option>
+                            <option value="lastmonth">Last Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <div id="customDateRange" class="custom-date-range" style="display: none;">
+                            <div class="date-inputs">
+                                <input type="date" id="fromDate" class="form-control date-input" placeholder="From">
+                                <input type="date" id="toDate" class="form-control date-input" placeholder="To">
+                                <button type="button" class="btn-apply" onclick="applyCustomRange()">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="d-flex flex-row mb-3">
                     <div class="p-2 pt-3">
                         <img src="https://jobslin.com/storage/logow/ph/FAST/fast-unimerchants-inc-1722319497.webp" alt="Description" width="250" height="80">
@@ -320,7 +484,7 @@
                                     <td style="padding-left:20px; font-size: 12px; font-weight: bold;">₱{{ number_format($pendingTransactions->sum('paid') + $pendingTransactions->sum('credit_memo'), 2) }}</td>
                                 </tr>
                                 <tr>
-                                    <th style="font-size: 14px;">TOTAL AMOUNT DUE:</th>
+                                    <th style="font-size: 12px;">Total Amount Due:</th>
                                     <td style="padding-left:20px; border-bottom: 3px double #000; font-size: 14px; font-weight: bold;">₱{{ number_format($pendingTransactions->sum('amount') - $pendingTransactions->sum('paid') - $pendingTransactions->sum('credit_memo'), 2) }}</td>
                                 </tr>
                                 @else
@@ -365,13 +529,288 @@
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
     <script>
-        window.onload = function() {
-            window.print();
+        let allTableRows = [];
+        let currentFilter = 'all';
 
-            // Close the tab after printing or if the user cancels
-            window.onafterprint = function() {
-                window.close();
-            };
+        window.onload = function() {
+            // Store all table rows for filtering
+            const tables = document.querySelectorAll('.receipt-table tbody');
+            tables.forEach(table => {
+                const rows = Array.from(table.querySelectorAll('tr'));
+                allTableRows = allTableRows.concat(rows);
+            });
+
+            // Auto-print functionality (commented out for testing)
+            // window.print();
+            // window.onafterprint = function() {
+            //     window.close();
+            // };
         };
+
+        function printStatement() {
+            window.print();
+        }
+
+        function handleFilterChange() {
+            const select = document.getElementById('dateFilterSelect');
+            const customRange = document.getElementById('customDateRange');
+            const selectedValue = select.value;
+
+            if (selectedValue === 'custom') {
+                customRange.style.display = 'block';
+            } else {
+                customRange.style.display = 'none';
+                filterByDateRange(selectedValue);
+            }
+        }
+
+        function applyCustomRange() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            if (!fromDate || !toDate) {
+                alert('Please select both start and end dates.');
+                return;
+            }
+
+            if (new Date(fromDate) > new Date(toDate)) {
+                alert('Start date cannot be later than end date.');
+                return;
+            }
+
+            filterByDateRange('custom', fromDate, toDate);
+        }
+
+        function filterByDateRange(filterType, customFrom = null, customTo = null) {
+            const today = new Date();
+            let startDate, endDate;
+
+            switch (filterType) {
+                case 'today':
+                    startDate = new Date(today);
+                    endDate = new Date(today);
+                    break;
+                case 'last3days':
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() - 2);
+                    endDate = new Date(today);
+                    break;
+                case 'last7days':
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() - 6);
+                    endDate = new Date(today);
+                    break;
+                case 'lastweek':
+                    const lastWeekStart = new Date(today);
+                    lastWeekStart.setDate(today.getDate() - today.getDay() - 6);
+                    const lastWeekEnd = new Date(lastWeekStart);
+                    lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
+                    startDate = lastWeekStart;
+                    endDate = lastWeekEnd;
+                    break;
+                case 'thismonth':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    break;
+                case 'lastmonth':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                    break;
+                case 'custom':
+                    startDate = new Date(customFrom);
+                    endDate = new Date(customTo);
+                    break;
+                case 'all':
+                default:
+                    // Show all rows
+                    allTableRows.forEach(row => {
+                        row.style.display = '';
+                    });
+                    recalculateBalances();
+                    return;
+            }
+
+            // Filter rows based on date range
+            allTableRows.forEach(row => {
+                const dateCell = row.cells[0]; // First column contains the date
+                if (dateCell) {
+                    const dateText = dateCell.textContent.trim();
+                    if (dateText === 'N/A' || dateText === '') {
+                        row.style.display = 'none';
+                        return;
+                    }
+
+                    try {
+                        // Parse the date (format: "MMM dd, yyyy")
+                        const rowDate = new Date(dateText);
+                        
+                        if (isNaN(rowDate.getTime())) {
+                            row.style.display = 'none';
+                            return;
+                        }
+
+                        // Normalize dates for comparison (remove time component)
+                        const normalizedRowDate = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate());
+                        const normalizedStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+                        const normalizedEndDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+                        if (normalizedRowDate >= normalizedStartDate && normalizedRowDate <= normalizedEndDate) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    } catch (e) {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+
+            recalculateBalances();
+            currentFilter = filterType;
+        }
+
+        function recalculateBalances() {
+            // Find all visible rows and recalculate totals
+            const visibleRows = allTableRows.filter(row => row.style.display !== 'none');
+            
+            let totalAmount = 0;
+            let totalPaid = 0;
+            let totalBalance = 0;
+
+            visibleRows.forEach(row => {
+                const amountCell = row.cells[4]; // Amount column
+                const paidCell = row.cells[5];   // Paid column
+                const balanceCell = row.cells[6]; // Balance column
+
+                if (amountCell && paidCell && balanceCell) {
+                    // Extract numeric values from formatted currency
+                    const amount = parseFloat(amountCell.textContent.replace(/[₱,\s]/g, '')) || 0;
+                    const paid = parseFloat(paidCell.textContent.replace(/[₱,\s()]/g, '')) || 0;
+                    const balance = parseFloat(balanceCell.textContent.replace(/[₱,\s]/g, '')) || 0;
+
+                    totalAmount += amount;
+                    totalPaid += paid;
+                    totalBalance += balance;
+                }
+            });
+
+            // Update footer totals if they exist
+            const footerRows = document.querySelectorAll('.table-footer tr');
+            footerRows.forEach(row => {
+                const cells = row.querySelectorAll('th, td');
+                if (cells.length >= 2) {
+                    const label = cells[0].textContent.trim();
+                    if (label.includes('TOTAL AMOUNT')) {
+                        cells[1].textContent = '₱' + totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    } else if (label.includes('TOTAL PAID')) {
+                        cells[1].textContent = '₱' + totalPaid.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    } else if (label.includes('TOTAL AMOUNT DUE')) {
+                        cells[1].textContent = '₱' + totalBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                }
+            });
+        }
+
+        function exportToExcel() {
+            // Create a new workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Get supplier information
+            const supplierName = document.querySelector('.supplier-name')?.textContent || 'Supplier';
+            const supplierAddress = document.querySelector('.supplier-address')?.textContent || '';
+            
+            // Create worksheet data array
+            const wsData = [];
+            
+            // Add title
+            wsData.push(['SUPPLIER COUNTER RECEIPT']);
+            wsData.push(['']); // Empty row
+            
+            // Add supplier info
+            wsData.push(['Supplier:', supplierName]);
+            if (supplierAddress) {
+                wsData.push(['Address:', supplierAddress]);
+            }
+            wsData.push(['']); // Empty row
+            
+            // Get table headers
+            const headerRow = document.querySelector('table thead tr');
+            if (headerRow) {
+                const headers = Array.from(headerRow.querySelectorAll('th')).map(th => th.textContent.trim());
+                wsData.push(headers);
+            }
+            
+            // Get visible table data
+            const visibleRows = allTableRows.filter(row => row.style.display !== 'none');
+            visibleRows.forEach(row => {
+                const rowData = Array.from(row.cells).map(cell => cell.textContent.trim());
+                wsData.push(rowData);
+            });
+            
+            // Add totals from footer
+            wsData.push(['']); // Empty row
+            const footerRows = document.querySelectorAll('.table-footer tr');
+            footerRows.forEach(row => {
+                const cells = row.querySelectorAll('th, td');
+                if (cells.length >= 2) {
+                    const label = cells[0].textContent.trim();
+                    const value = cells[1].textContent.trim();
+                    wsData.push([label, value]);
+                }
+            });
+            
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 15 }, // Date
+                { wch: 20 }, // Reference
+                { wch: 30 }, // Description
+                { wch: 15 }, // Type
+                { wch: 15 }, // Amount
+                { wch: 15 }, // Paid
+                { wch: 15 }  // Balance
+            ];
+            
+            // Style the title row
+            if (ws['A1']) {
+                ws['A1'].s = {
+                    font: { bold: true, sz: 16 },
+                    alignment: { horizontal: 'center' }
+                };
+            }
+            
+            // Style the header row (find it dynamically)
+            const headerRowIndex = wsData.findIndex(row => 
+                Array.isArray(row) && row.some(cell => 
+                    typeof cell === 'string' && 
+                    (cell.includes('Date') || cell.includes('Reference') || cell.includes('Description'))
+                )
+            );
+            
+            if (headerRowIndex >= 0) {
+                const headerRowNum = headerRowIndex + 1;
+                for (let col = 0; col < 7; col++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: headerRowNum - 1, c: col });
+                    if (ws[cellRef]) {
+                        ws[cellRef].s = {
+                            font: { bold: true },
+                            fill: { fgColor: { rgb: "EEEEEE" } }
+                        };
+                    }
+                }
+            }
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Counter Receipt');
+            
+            // Generate filename with current date
+            const currentDate = new Date().toISOString().split('T')[0];
+            const filename = `Supplier_Counter_Receipt_${supplierName.replace(/[^a-zA-Z0-9]/g, '_')}_${currentDate}.xlsx`;
+            
+            // Save the file
+            XLSX.writeFile(wb, filename);
+        }
     </script>
 </html>

@@ -596,6 +596,12 @@
 
     <x-contentButtonDiv downloadFunc="true" :addFunc="false">
         <x-slot:additionalButtons>
+            <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="apRefreshBtn">
+                <div class="btnImg me-2" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;">
+                    <span class="mdi mdi-refresh" style="font-size: 16px;"></span>
+                </div>
+                <span>Refresh Data</span>
+            </div>
             <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="apPrintAllBtn">
                 <div class="btnImg me-2" style="background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0xOCAzSDZ2NGgxMlYzem0tMiA2SDh2Mmg4VjltMiAydjZIOHYtNmgxMHptLTIgNEg4djJoOHYtMnoiLz48L3N2Zz4='); background-size: 16px; background-repeat: no-repeat; background-position: center; width: 16px; height: 16px;">
                 </div>
@@ -628,15 +634,15 @@
                     <div class="row mb-2">
                         <div class="col-12 col-sm-6 col-md-6">
                             <div class="">
-                                <label for="date" class="form-label">DATE <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="date" name="date" required>
+                                <label for="supplier_display" class="form-label">SUPPLIER <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="supplier_display" name="supplier_display" readonly>
+                                <div id="supplier_code_VS" name="supplier_code" class="form-control bg-white p-0 border-0" style="display: none;"></div>
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-md-6">
                             <div class="">
-                                <label for="supplier_display" class="form-label">SUPPLIER <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="supplier_display" name="supplier_display" readonly>
-                                <div id="supplier_code_VS" name="supplier_code" class="form-control bg-white p-0 border-0" style="display: none;"></div>
+                                <label for="date" class="form-label">DATE <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="date" name="date" required>
                             </div>
                         </div>
                     </div>

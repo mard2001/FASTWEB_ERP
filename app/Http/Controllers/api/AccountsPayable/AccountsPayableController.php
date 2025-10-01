@@ -9,6 +9,7 @@ use App\Models\Check;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class AccountsPayableController extends Controller
@@ -19,73 +20,128 @@ class AccountsPayableController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = AccountsPayable::with('supplier');
+            // Aggressive pagination for performance
+            $perPage = $request->get('per_page', 25); // Reduce to 25 records
+            $page = $request->get('page', 1);
+            
+            // Use raw SQL for better performance - avoid Eloquent overhead
+            $query = DB::table('tblAccountsPayable as ap')
+                ->leftJoin('tblSupplier as s', 'ap.supplier_code', '=', 's.SupplierCode')
+                ->leftJoin(DB::raw('(
+                    SELECT accounts_payable_id, SUM(payment_amount) as total_paid 
+                    FROM tblPayments 
+                    GROUP BY accounts_payable_id
+                ) as payments'), 'ap.id', '=', 'payments.accounts_payable_id')
+                ->select([
+                    'ap.id',
+                    'ap.date',
+                    'ap.supplier_code',
+                    'ap.supplier_name',
+                    'ap.rr_number',
+                    'ap.reference_number',
+                    'ap.total_amount',
+                    'ap.terms',
+                    'ap.status',
+                    'ap.CreditMemo',
+                    'ap.process_by',
+                    'ap.created_at',
+                    's.SupplierName',
+                    DB::raw('ISNULL(payments.total_paid, 0) as total_paid')
+                ]);
 
-            // Filter by date range if provided
+            // Apply filters efficiently
             if ($request->has('start_date') && $request->has('end_date')) {
-                $query->byDateRange($request->start_date, $request->end_date);
+                $query->whereBetween('ap.date', [$request->start_date, $request->end_date]);
             }
 
-            // Filter by supplier if provided
             if ($request->has('supplier') && $request->supplier != '') {
                 $query->where(function($q) use ($request) {
-                    $q->where('supplier_code', 'like', '%' . $request->supplier . '%')
-                      ->orWhere('supplier_name', 'like', '%' . $request->supplier . '%');
+                    $q->where('ap.supplier_code', 'like', '%' . $request->supplier . '%')
+                      ->orWhere('ap.supplier_name', 'like', '%' . $request->supplier . '%');
                 });
             }
 
-            // Filter by status
             if ($request->has('status') && $request->status != '') {
-                switch (strtolower($request->status)) {
-                    case 'pending':
-                        $query->pending();
-                        break;
-                    case 'paid':
-                        $query->paid();
-                        break;
-                    case 'overdue':
-                        $query->overdue();
-                        break;
-                    default:
-                        $query->byStatus($request->status);
-                        break;
-                }
+                $query->where('ap.status', $request->status);
             }
 
-            // Filter by RR number if provided
             if ($request->has('rr_number') && $request->rr_number != '') {
-                $query->where('rr_number', 'like', '%' . $request->rr_number . '%');
+                $query->where('ap.rr_number', 'like', '%' . $request->rr_number . '%');
             }
 
-            $data = $query->orderBy('created_at', 'desc')
-                          ->orderBy('date', 'desc')
-                          ->orderBy('id', 'desc')
-                          ->get();
+            // Get paginated results
+            $offset = ($page - 1) * $perPage;
+            $totalCount = $query->count();
+            
+            $results = $query->orderBy('ap.created_at', 'desc')
+                           ->orderBy('ap.id', 'desc')
+                           ->offset($offset)
+                           ->limit($perPage)
+                           ->get();
 
-            // Add computed fields
-            $data->each(function ($item) {
-                $item->formatted_total_amount = $item->formatted_total_amount;
-                $item->formatted_payment_amount = $item->formatted_payment_amount;
-                $item->formatted_balance_amount = $item->formatted_balance_amount;
-                $item->balance_amount = $item->balance_amount;
-                $item->is_overdue = $item->is_overdue;
-                $item->due_date = $item->due_date;
-                // Add sort timestamp for precise frontend sorting
-                $item->sort_timestamp = $item->created_at ? $item->created_at->timestamp : 0;
+            // Process results efficiently
+            $data = $results->map(function ($item) {
+                $totalPaid = floatval($item->total_paid ?? 0);
+                $totalCreditMemo = floatval($item->CreditMemo ?? 0);
+                $actualTotalPaid = $totalPaid - $totalCreditMemo;
+                $balanceAmount = floatval($item->total_amount) - $actualTotalPaid;
+                
+                // Calculate overdue status
+                $isOverdue = false;
+                if ($item->status !== 'Paid') {
+                    preg_match('/(\d+)/', $item->terms ?? '30', $matches);
+                    $termDays = isset($matches[1]) ? (int)$matches[1] : 30;
+                    $dueDate = \Carbon\Carbon::parse($item->date)->addDays($termDays);
+                    $isOverdue = now()->gt($dueDate);
+                }
+                
+                return [
+                    'id' => $item->id,
+                    'date' => $item->date,
+                    'supplier_code' => $item->supplier_code,
+                    'supplier_name' => $item->supplier_name ?: $item->SupplierName,
+                    'rr_number' => $item->rr_number,
+                    'reference_number' => $item->reference_number,
+                    'total_amount' => floatval($item->total_amount),
+                    'terms' => $item->terms,
+                    'status' => $item->status,
+                    'balance_amount' => $balanceAmount,
+                    'CreditMemo' => floatval($item->CreditMemo ?? 0),
+                    'process_by' => $item->process_by,
+                    'is_overdue' => $isOverdue,
+                    'sort_timestamp' => strtotime($item->created_at)
+                ];
             });
+
+            // Calculate pagination info
+            $totalPages = ceil($totalCount / $perPage);
+            $currentPage = $page;
 
             if ($data->isEmpty()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'No Accounts Payable data found',
-                    'data' => []
+                    'data' => [],
+                    'pagination' => [
+                        'current_page' => $currentPage,
+                        'total_pages' => $totalPages,
+                        'per_page' => $perPage,
+                        'total_records' => $totalCount
+                    ]
                 ], 200);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Accounts Payable data retrieved successfully',
-                'data' => $data
+                'data' => $data,
+                'pagination' => [
+                    'current_page' => $currentPage,
+                    'total_pages' => $totalPages,
+                    'per_page' => $perPage,
+                    'total_records' => $totalCount,
+                    'has_more_pages' => $currentPage < $totalPages
+                ]
             ], 200);
 
         } catch (Exception $e) {
