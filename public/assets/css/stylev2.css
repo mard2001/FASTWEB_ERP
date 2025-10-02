@@ -422,6 +422,24 @@ a.sidebar-link * svg {
     margin: .3rem;
 }
 
+/* Custom styling for FIFO validation alert */
+.swal-wide {
+    width: 500px !important;
+    max-width: 90vw !important;
+}
+
+.swal-wide .swal2-html-container {
+    text-align: left !important;
+}
+
+.swal-wide .swal2-html-container ul {
+    margin: 0.5rem 0;
+}
+
+.swal-wide .swal2-html-container li {
+    margin: 0.25rem 0;
+}
+
 
 #sidebar .dropdown-btn{
     white-space: nowrap;

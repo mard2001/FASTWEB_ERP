@@ -227,41 +227,43 @@ class SupplierCreditController extends Controller
             });
 
             // Recalculate running balances in chronological order
-            $runningBalance = 0;
-            $recalculatedHistory = $chronologicalHistory->map(function ($item) use (&$runningBalance) {
+            $cumulativeBalance = 0;
+            $recalculatedHistory = $chronologicalHistory->map(function ($item) use (&$cumulativeBalance) {
                 if ($item['type'] === 'transaction') {
                     // For transactions with auto credit memo, handle credit consumption properly
                     if (isset($item['has_auto_credit_memo']) && $item['has_auto_credit_memo']) {
-                        // First, consume available credit (if running balance is negative)
-                        $availableCredit = $runningBalance < 0 ? abs($runningBalance) : 0;
+                        // First, consume available credit (if cumulative balance is negative)
+                        $availableCredit = $cumulativeBalance < 0 ? abs($cumulativeBalance) : 0;
                         $creditUsed = min($availableCredit, $item['auto_credit_memo_amount']);
                         
-                        // Adjust running balance by consuming the credit
-                        $runningBalance += $creditUsed;
+                        // Adjust cumulative balance by consuming the credit
+                        $cumulativeBalance += $creditUsed;
                         
                         // Add the remaining transaction amount after auto credit memo
                         $remainingTransactionAmount = $item['transaction_amount'] - $item['auto_credit_memo_amount'];
-                        $runningBalance += $remainingTransactionAmount;
+                        $cumulativeBalance += $remainingTransactionAmount;
                         
-                        $item['running_balance'] = $runningBalance;
+                        $item['running_balance'] = $cumulativeBalance;
                     } else {
-                        // Add the transaction amount to the balance
-                        $runningBalance += $item['transaction_amount'];
-                        $item['running_balance'] = $runningBalance;
+                        // Add the transaction amount to the cumulative balance
+                        $cumulativeBalance += $item['transaction_amount'];
+                        $item['running_balance'] = $cumulativeBalance;
                     }
                 } elseif ($item['type'] === 'payment') {
-                    // Always subtract the full payment amount from balance
-                    // This will show the credit available (negative balance) for future orders
-                    $runningBalance -= $item['payment_amount'];
+                    // For payment records, keep the original running_balance that was calculated 
+                    // during the initial transaction processing (lines 163-185)
+                    // This preserves the correct individual transaction balance calculation
                     
-                    // If this payment has a credit memo, ensure the balance shows the negative credit amount
+                    // Update cumulative balance for subsequent calculations
+                    $cumulativeBalance -= $item['payment_amount'];
+                    
+                    // If this payment has a credit memo, adjust cumulative balance accordingly
                     if (isset($item['has_credit_memo']) && $item['has_credit_memo'] && isset($item['credit_memo_amount'])) {
-                        $item['running_balance'] = -$item['credit_memo_amount'];
-                        // Update the running balance to match the credit memo amount for subsequent calculations
-                        $runningBalance = -$item['credit_memo_amount'];
-                    } else {
-                        $item['running_balance'] = $runningBalance;
+                        $cumulativeBalance = $cumulativeBalance + $item['payment_amount'] - $item['credit_memo_amount'];
                     }
+                    
+                    // Don't override the running_balance for payments - it was correctly calculated initially
+                    // The running_balance for payments should show the remaining balance of the specific transaction
                 }
                 
                 // Update status based on current balance
@@ -269,13 +271,13 @@ class SupplierCreditController extends Controller
                     if (isset($item['has_auto_credit_memo']) && $item['has_auto_credit_memo']) {
                         // Status is already set during transaction creation
                     } else {
-                        $item['status'] = $runningBalance <= 0 ? 'Paid' : ($runningBalance < $item['transaction_amount'] ? 'Partial' : 'Pending');
+                        $item['status'] = $cumulativeBalance <= 0 ? 'Paid' : ($cumulativeBalance < $item['transaction_amount'] ? 'Partial' : 'Pending');
                     }
                 } elseif ($item['type'] === 'payment') {
                     if (isset($item['has_credit_memo']) && $item['has_credit_memo']) {
                         $item['status'] = 'Fully Paid with CM';
                     } else {
-                        $item['status'] = $runningBalance <= 0 ? 'Fully Paid' : 'Payment Made';
+                        $item['status'] = $cumulativeBalance <= 0 ? 'Fully Paid' : 'Payment Made';
                     }
                 }
                 

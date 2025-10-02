@@ -248,6 +248,33 @@ function populateModal(data) {
             const dateB = new Date(b.sort_date || b.date);
             return dateA - dateB; // Ascending order (oldest first)
         });
+
+        // Group payments so they always appear immediately after their corresponding invoice
+        const paymentsByParent = {};
+        sortedTransactions.forEach((item) => {
+            if (item.type === 'payment' && item.parent_transaction_id) {
+                const key = item.parent_transaction_id;
+                if (!paymentsByParent[key]) paymentsByParent[key] = [];
+                paymentsByParent[key].push(item);
+            }
+        });
+
+        const groupedTransactions = [];
+        sortedTransactions.forEach((item) => {
+            if (item.type === 'transaction') {
+                groupedTransactions.push(item);
+                const key = item.parent_transaction_id;
+                if (paymentsByParent[key] && paymentsByParent[key].length) {
+                    paymentsByParent[key].forEach((p) => groupedTransactions.push(p));
+                    delete paymentsByParent[key];
+                }
+            }
+        });
+
+        // Append any remaining payments without a matching transaction at the end
+        Object.keys(paymentsByParent).forEach((key) => {
+            paymentsByParent[key].forEach((p) => groupedTransactions.push(p));
+        });
         
         let grandTotalAmount = 0;
         let grandTotalPaid = 0;
@@ -257,7 +284,7 @@ function populateModal(data) {
         // Track unique transactions to avoid double counting
         let processedTransactionIds = new Set();
         
-        sortedTransactions.forEach(function(transaction) {
+        groupedTransactions.forEach(function(transaction) {
             // Format the date with time if available
             let formattedDate = 'N/A';
             if (transaction.date) {
