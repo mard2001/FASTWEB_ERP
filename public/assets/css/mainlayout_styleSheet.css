@@ -98,6 +98,36 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     background-color: #f2dbb3;
 }
 
+.statusBadge5{
+    display: inline-block;
+    padding: 0.35em 0.85em;
+    font-size: 0.65em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+    color: #8e44ad;
+    border: 1px solid #8e44ad;
+    background-color: #e8d5f0;
+}
+
+.statusBadge6{
+    display: inline-block;
+    padding: 0.35em 0.85em;
+    font-size: 0.65em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+    color: #17a2b8;
+    border: 1px solid #17a2b8;
+    background-color: #c7e9f0;
+}
+
 .userIcon{
     background-color: #eff1f8;
     padding: 8px;

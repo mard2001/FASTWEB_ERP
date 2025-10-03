@@ -83,8 +83,8 @@ class AccountsPayableController extends Controller
             $data = $results->map(function ($item) {
                 $totalPaid = floatval($item->total_paid ?? 0);
                 $totalCreditMemo = floatval($item->CreditMemo ?? 0);
-                $actualTotalPaid = $totalPaid - $totalCreditMemo;
-                $balanceAmount = floatval($item->total_amount) - $actualTotalPaid;
+                // Calculate balance without subtracting CreditMemo to properly detect overpayments
+                $balanceAmount = floatval($item->total_amount) - $totalPaid;
                 
                 // Calculate overdue status
                 $isOverdue = false;
@@ -112,6 +112,8 @@ class AccountsPayableController extends Controller
                     'sort_timestamp' => strtotime($item->created_at)
                 ];
             });
+
+            // Note: Auto credit memo logic removed from here to prevent running on every page load
 
             // Calculate pagination info
             $totalPages = ceil($totalCount / $perPage);
@@ -635,6 +637,16 @@ class AccountsPayableController extends Controller
                 $responseData['message'] = 'Payment and check processed successfully';
             }
 
+            // Apply auto credit memos after successful payment processing
+            // This will check if there are any available credits for this supplier
+            // and apply them to outstanding invoices
+            try {
+                $this->applyAutoCreditMemosForSupplier($accountsPayable->supplier_code);
+            } catch (Exception $e) {
+                // Log the error but don't fail the payment
+                Log::error('Error applying auto credit memos after payment: ' . $e->getMessage());
+            }
+
             return response()->json($responseData, 200);
 
         } catch (Exception $e) {
@@ -791,5 +803,348 @@ class AccountsPayableController extends Controller
                 'message' => 'Error: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Apply auto credit memos to subsequent records for the same supplier
+     */
+    private function applyAutoCreditMemosToAP($data)
+    {
+        
+        // Convert to array for easier manipulation
+        $dataArray = $data->toArray();
+        
+        // Debug logging
+        Log::info('Auto Credit Memo Debug - Starting process', [
+            'total_records' => count($dataArray)
+        ]);
+        
+        // Group data by supplier
+        $supplierGroups = collect($dataArray)->groupBy('supplier_code');
+        
+        foreach ($supplierGroups as $supplierCode => $records) {
+            Log::info('Processing supplier', [
+                'supplier_code' => $supplierCode,
+                'record_count' => count($records)
+            ]);
+            
+            // Process records in their original order (already sorted by date DESC in main query)
+            // We need to reverse to process oldest first for credit application
+            $sortedRecords = $records->reverse()->values();
+            
+            $availableCredits = [];
+            
+            foreach ($sortedRecords as $index => $record) {
+                // Check if this record has a credit memo (overpayment)
+                // If balance_amount is negative, it means there's an overpayment
+                $currentBalance = round(floatval($record['balance_amount']), 2);
+                $totalAmount = round(floatval($record['total_amount']), 2);
+                $creditMemoAmount = round(floatval($record['CreditMemo'] ?? 0), 2);
+                
+                Log::info('Processing record', [
+                    'id' => $record['id'],
+                    'reference' => $record['reference_number'],
+                    'current_balance' => $currentBalance,
+                    'total_amount' => $totalAmount,
+                    'credit_memo_amount' => $creditMemoAmount
+                ]);
+                
+                // Find the original index in the main data array
+                $originalIndex = collect($dataArray)->search(function($item) use ($record) {
+                    return $item['id'] == $record['id'];
+                });
+                
+                // If there's an overpayment (negative balance), it becomes available credit
+                // Use a minimum threshold to avoid floating point precision issues
+                if ($currentBalance < -0.01) {
+                    // Check if this credit has already been used by looking for outgoing automatic payments
+                    $creditAlreadyUsed = Payment::where('reference_number', 'LIKE', 'AUTO-CM-' . $record['reference_number'])
+                        ->sum('payment_amount');
+                    
+                    $creditAmount = abs($currentBalance);
+                    $availableCreditAmount = $creditAmount - $creditAlreadyUsed;
+                    
+                    // Only add to available credits if there's still unused credit
+                    if ($availableCreditAmount > 0.01) {
+                        $availableCredits[] = [
+                            'amount' => $availableCreditAmount,
+                            'source_id' => $record['id'],
+                            'source_reference' => $record['reference_number']
+                        ];
+                        
+                        Log::info('Credit available for use', [
+                            'source_reference' => $record['reference_number'],
+                            'total_credit' => $creditAmount,
+                            'already_used' => $creditAlreadyUsed,
+                            'available_amount' => $availableCreditAmount
+                        ]);
+                    } else {
+                        Log::info('Credit fully used, not adding to available credits', [
+                            'source_reference' => $record['reference_number'],
+                            'total_credit' => $creditAmount,
+                            'already_used' => $creditAlreadyUsed
+                        ]);
+                    }
+                    
+                    // Update the record to show it generated a credit memo
+                    if ($originalIndex !== false) {
+                        $dataArray[$originalIndex]['status'] = 'Credit Generated';
+                        $dataArray[$originalIndex]['balance_amount'] = 0;
+                        
+                        // Update the database record
+                        AccountsPayable::where('id', $record['id'])->update([
+                            'status' => 'Credit Generated'
+                        ]);
+                    }
+                }
+                // Apply available credits to this record if it has a positive balance
+                else if ($currentBalance > 0.01 && !empty($availableCredits)) {
+                    // Check if automatic credit memo payments already exist for this record
+                    $existingAutoCreditPayments = Payment::where('accounts_payable_id', $record['id'])
+                        ->where('reference_number', 'LIKE', 'AUTO-CM-%')
+                        ->sum('payment_amount');
+                    
+                    if ($existingAutoCreditPayments > 0) {
+                        Log::info('Skipping credit application - automatic credits already applied', [
+                            'record_id' => $record['id'],
+                            'reference' => $record['reference_number'],
+                            'existing_auto_credits' => $existingAutoCreditPayments
+                        ]);
+                        continue;
+                    }
+                    
+                    Log::info('Applying credits to record', [
+                        'record_id' => $record['id'],
+                        'reference' => $record['reference_number'],
+                        'current_balance' => $currentBalance,
+                        'available_credits' => $availableCredits
+                    ]);
+                    
+                    $remainingBalance = $currentBalance;
+                    $totalCreditApplied = 0;
+                    $appliedCreditsInfo = [];
+                    
+                    foreach ($availableCredits as $creditIndex => $credit) {
+                        if ($remainingBalance <= 0.01) break;
+                        
+                        $creditToApply = round(min($credit['amount'], $remainingBalance), 2);
+                        
+                        // Only apply credits that are meaningful (> 0.01)
+                        if ($creditToApply > 0.01) {
+                            $totalCreditApplied = round($totalCreditApplied + $creditToApply, 2);
+                            $remainingBalance = round($remainingBalance - $creditToApply, 2);
+                            
+                            // Track applied credit info
+                            $appliedCreditsInfo[] = [
+                                'source_reference' => $credit['source_reference'],
+                                'amount' => $creditToApply
+                            ];
+                            
+                            // Reduce available credit
+                            $availableCredits[$creditIndex]['amount'] = round($availableCredits[$creditIndex]['amount'] - $creditToApply, 2);
+                            
+                            // Remove credit if fully used
+                            if ($availableCredits[$creditIndex]['amount'] <= 0.01) {
+                                unset($availableCredits[$creditIndex]);
+                            }
+                        }
+                    }
+                    
+                    // Reindex the credits array
+                    $availableCredits = array_values($availableCredits);
+                    
+                    // Update the record if credits were applied
+                    if ($totalCreditApplied > 0.01 && $originalIndex !== false) {
+                        // Update the display data
+                        $dataArray[$originalIndex]['balance_amount'] = $remainingBalance;
+                        
+                        // Determine new status (using shorter names to fit database column)
+                        $newStatus = ($remainingBalance <= 0.01) ? 'Paid' : 'Partial';
+                        $dataArray[$originalIndex]['status'] = $newStatus;
+                        
+                        // **CRITICAL: Update the actual database record**
+                        try {
+                            // Create automatic payment records for each applied credit
+                            foreach ($appliedCreditsInfo as $creditInfo) {
+                                Payment::create([
+                                    'accounts_payable_id' => $record['id'],
+                                    'payment_amount' => $creditInfo['amount'],
+                                    'payment_type' => 'cash',
+                                    'payment_status' => 'full',
+                                    'payment_date' => now(),
+                                    'reference_number' => 'AUTO-CM-' . $creditInfo['source_reference'],
+                                    'remarks' => 'Automatic credit memo application from ' . $creditInfo['source_reference'],
+                                    'process_by' => 'System'
+                                ]);
+                            }
+                            
+                            // Update the accounts payable record status
+                            AccountsPayable::where('id', $record['id'])->update([
+                                'status' => $newStatus
+                            ]);
+                            
+                        } catch (Exception $e) {
+                            Log::error('Failed to update database for auto credit memo application', [
+                                'record_id' => $record['id'],
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                }
+                // Log when record has positive balance but no credits available
+                else if ($currentBalance > 0.01 && empty($availableCredits)) {
+                    Log::info('Record has positive balance but no credits available', [
+                        'record_id' => $record['id'],
+                        'reference' => $record['reference_number'],
+                        'current_balance' => $currentBalance
+                    ]);
+                }
+            }
+        }
+        
+        return collect($dataArray);
+    }
+
+    /**
+     * Manually apply auto credit memos to accounts payable records.
+     * This endpoint can be called when needed instead of running on every page load.
+     */
+    public function applyAutoCreditMemos(Request $request)
+    {
+        try {
+            // Get all accounts payable records for processing
+            $query = DB::table('tblAccountsPayable as ap')
+                ->leftJoin('tblSupplier as s', 'ap.supplier_code', '=', 's.SupplierCode')
+                ->leftJoin(DB::raw('(
+                    SELECT accounts_payable_id, SUM(payment_amount) as total_paid 
+                    FROM tblPayments 
+                    GROUP BY accounts_payable_id
+                ) as payments'), 'ap.id', '=', 'payments.accounts_payable_id')
+                ->select([
+                    'ap.id',
+                    'ap.date',
+                    'ap.supplier_code',
+                    'ap.supplier_name',
+                    'ap.rr_number',
+                    'ap.reference_number',
+                    'ap.total_amount',
+                    'ap.terms',
+                    'ap.status',
+                    'ap.CreditMemo',
+                    'ap.process_by',
+                    'ap.created_at',
+                    's.SupplierName',
+                    DB::raw('ISNULL(payments.total_paid, 0) as total_paid')
+                ]);
+
+            $results = $query->orderBy('ap.date', 'desc')
+                           ->orderBy('ap.id', 'desc')
+                           ->get();
+
+            // Process results
+            $data = $results->map(function ($item) {
+                $totalPaid = floatval($item->total_paid ?? 0);
+                $balanceAmount = floatval($item->total_amount) - $totalPaid;
+                
+                return [
+                    'id' => $item->id,
+                    'date' => $item->date,
+                    'supplier_code' => $item->supplier_code,
+                    'supplier_name' => $item->supplier_name ?: $item->SupplierName,
+                    'rr_number' => $item->rr_number,
+                    'reference_number' => $item->reference_number,
+                    'total_amount' => floatval($item->total_amount),
+                    'terms' => $item->terms,
+                    'status' => $item->status,
+                    'balance_amount' => $balanceAmount,
+                    'CreditMemo' => floatval($item->CreditMemo ?? 0),
+                    'process_by' => $item->process_by,
+                    'sort_timestamp' => strtotime($item->created_at)
+                ];
+            });
+
+            // Apply auto credit memos
+            $processedData = $this->applyAutoCreditMemosToAP($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Auto credit memos applied successfully',
+                'processed_records' => $processedData->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error applying auto credit memos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error applying auto credit memos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Apply auto credit memos for a specific supplier.
+     * This method is called after payment processing to apply available credits
+     * to outstanding invoices for the same supplier.
+     */
+    private function applyAutoCreditMemosForSupplier($supplierCode)
+    {
+        Log::info('Auto Credit Memo - Processing supplier', ['supplier_code' => $supplierCode]);
+
+        // Get all accounts payable records for this supplier
+        $query = DB::table('tblAccountsPayable as ap')
+            ->leftJoin('tblSupplier as s', 'ap.supplier_code', '=', 's.SupplierCode')
+            ->leftJoin(DB::raw('(
+                SELECT accounts_payable_id, SUM(payment_amount) as total_paid 
+                FROM tblPayments 
+                GROUP BY accounts_payable_id
+            ) as payments'), 'ap.id', '=', 'payments.accounts_payable_id')
+            ->where('ap.supplier_code', $supplierCode)
+            ->select([
+                'ap.id',
+                'ap.date',
+                'ap.supplier_code',
+                'ap.supplier_name',
+                'ap.rr_number',
+                'ap.reference_number',
+                'ap.total_amount',
+                'ap.terms',
+                'ap.status',
+                'ap.CreditMemo',
+                'ap.process_by',
+                'ap.created_at',
+                's.SupplierName',
+                DB::raw('ISNULL(payments.total_paid, 0) as total_paid')
+            ]);
+
+        $results = $query->orderBy('ap.date', 'desc')
+                       ->orderBy('ap.id', 'desc')
+                       ->get();
+
+        // Process results
+        $data = $results->map(function ($item) {
+            $totalPaid = floatval($item->total_paid ?? 0);
+            $balanceAmount = floatval($item->total_amount) - $totalPaid;
+            
+            return [
+                'id' => $item->id,
+                'date' => $item->date,
+                'supplier_code' => $item->supplier_code,
+                'supplier_name' => $item->supplier_name ?: $item->SupplierName,
+                'rr_number' => $item->rr_number,
+                'reference_number' => $item->reference_number,
+                'total_amount' => floatval($item->total_amount),
+                'terms' => $item->terms,
+                'status' => $item->status,
+                'balance_amount' => $balanceAmount,
+                'CreditMemo' => floatval($item->CreditMemo ?? 0),
+                'process_by' => $item->process_by,
+                'sort_timestamp' => strtotime($item->created_at)
+            ];
+        });
+
+        // Apply auto credit memos using the existing logic
+        $this->applyAutoCreditMemosToAP($data);
+
+        Log::info('Auto Credit Memo - Completed processing supplier', ['supplier_code' => $supplierCode]);
     }
 }

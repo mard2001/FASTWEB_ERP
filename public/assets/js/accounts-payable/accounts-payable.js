@@ -1802,6 +1802,18 @@ function getStatusBadge(status, isOverdue = false) {
             case 'Partial':
                 badgeClass = 'statusBadge3';  // Orange - Partial
                 break;
+            case 'Credit Generated':
+                badgeClass = 'statusBadge5';  // Purple - Credit Generated
+                displayText = 'Credit Generated';
+                break;
+            case 'Credit Applied - Paid':
+                badgeClass = 'statusBadge1';  // Green - Credit Applied and Paid
+                displayText = 'Credit Applied - Paid';
+                break;
+            case 'Credit Applied - Partial':
+                badgeClass = 'statusBadge6';  // Teal - Credit Applied but Partial
+                displayText = 'Credit Applied - Partial';
+                break;
             default:
                 badgeClass = 'statusBadge3';  // Orange - Default
         }

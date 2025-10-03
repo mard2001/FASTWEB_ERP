@@ -261,7 +261,7 @@ function populateModal(data) {
 
         const groupedTransactions = [];
         sortedTransactions.forEach((item) => {
-            if (item.type === 'transaction') {
+            if (item.type === 'invoice' || item.type === 'transaction') {
                 groupedTransactions.push(item);
                 const key = item.parent_transaction_id;
                 if (paymentsByParent[key] && paymentsByParent[key].length) {
@@ -333,48 +333,30 @@ function populateModal(data) {
                 // Add to grand totals - only count actual payments
                 grandTotalPaid += parseFloat(transaction.payment_amount);
             } else {
-                // For original transaction rows (may include auto credit memo applications)
+                // For original transaction rows (invoices)
                 const originalAmount = parseFloat(transaction.transaction_amount);
-                const hasAutoCreditMemo = transaction.has_auto_credit_memo;
+                const hasAutoCreditMemo = transaction.auto_credit_memo && parseFloat(transaction.auto_credit_memo) > 0;
                 
-                if (hasAutoCreditMemo) {
-                    // Transaction with auto credit memo applied
-                    descriptionText = transaction.description; // Already includes credit memo info from backend
-                    statusBadge = transaction.status === 'Fully Paid by CM' ? 
-                        '<span class="badge bg-success">Fully Paid by CM</span>' : 
-                        '<span class="badge bg-warning">Credit Applied</span>';
-                    
-                    // Show the credit memo amount in the Paid column with parentheses for negative amounts
-                    const paymentAmount = parseFloat(transaction.payment_amount);
-                    if (paymentAmount < 0) {
-                        // Display negative amounts with parentheses for auto credit memos
-                        paidDisplay = `(₱-${Math.abs(paymentAmount).toLocaleString('en-US', {minimumFractionDigits: 2})})`;
-                    } else {
-                        paidDisplay = `₱${paymentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                    }
-                    
-                    // Calculate correct balance: original amount - credit memo amount
-                    const creditMemoAmount = parseFloat(transaction.auto_credit_memo_amount);
-                    const correctBalance = originalAmount - creditMemoAmount;
-                    balanceDisplay = `₱${correctBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                    
-                    // Auto credit memos reduce the amount owed, they don't count as "paid" amounts
-                    // The actual payments will be counted separately when processing payment transactions
+                descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
+                
+                // Status badge for original transactions
+                if (transaction.status === 'Paid' || parseFloat(transaction.running_balance) <= 0) {
+                    statusBadge = '<span class="badge bg-success">Paid</span>';
+                } else if (transaction.is_overdue) {
+                    statusBadge = '<span class="badge bg-danger">Overdue</span>';
                 } else {
-                    descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
-                    // Status badge for original transactions
-                    if (transaction.status === 'Paid' || parseFloat(transaction.running_balance) <= 0) {
-                        statusBadge = '<span class="badge bg-success">Paid</span>';
-                    } else if (transaction.is_overdue) {
-                        statusBadge = '<span class="badge bg-danger">Overdue</span>';
-                    } else {
-                        statusBadge = '<span class="badge bg-warning">Pending</span>';
-                    }
-                    
-                    paidDisplay = '-'; // Will show cumulative in payments
-                    balanceDisplay = `₱${parseFloat(transaction.running_balance).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                    statusBadge = '<span class="badge bg-warning">Pending</span>';
                 }
                 
+                // Handle auto credit memo display in Paid column
+                if (hasAutoCreditMemo) {
+                    const creditAmount = parseFloat(transaction.auto_credit_memo);
+                    paidDisplay = `(-${creditAmount.toLocaleString('en-US', {minimumFractionDigits: 2})})`;
+                } else {
+                    paidDisplay = '-';
+                }
+                
+                balanceDisplay = `₱${parseFloat(transaction.running_balance).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 amountDisplay = `₱${originalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 
                 // Add to grand totals - only for transaction types, and only once per unique transaction
@@ -395,7 +377,8 @@ function populateModal(data) {
             let rowStyle = '';
             if (isPayment) {
                 if (hasCredit) {
-                    rowStyle = 'font-style: italic; background-color: rgba(255, 193, 7, 0.1);';
+                    // Special styling for overpayment rows (payments with credit memo)
+                    rowStyle = 'font-style: italic; background-color: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107;';
                 } else {
                     rowStyle = 'font-style: italic;';
                 }
