@@ -75,59 +75,27 @@ class SupplierCreditController extends Controller
                 ], 404);
             }
 
-            // Get accounts payable transactions for this supplier with payments and running balance entries
+            // Get accounts payable transactions for this supplier with payments
             $accountsPayableTransactions = AccountsPayable::where('supplier_code', $supplierCode)
                 ->with([
                     'payments' => function($query) {
                         $query->orderBy('payment_date', 'desc');
-                    },
-                    'runningBalanceEntries' => function($query) {
-                        $query->orderBy('transaction_date', 'desc');
-                    },
-                    'creditMemosGenerated',
-                    'creditMemosReceived'
+                    }
                 ])
                 ->orderBy('date', 'desc')
                 ->get();
 
-            // Get the latest running balance from the new table
-            $latestBalance = \App\Models\SupplierRunningBalance::getLatestBalance($supplierCode);
-            
-            // Calculate totals using the new balance tracking
+            // Calculate totals
             $totalDebt = $accountsPayableTransactions->sum('total_amount');
             $totalPaid = $accountsPayableTransactions->sum(function($transaction) {
                 return $transaction->payments()->sum('payment_amount');
             });
             
-            // Get credit memo totals from the new tracking system
-            $totalCreditGenerated = $accountsPayableTransactions->sum('credit_generated') ?? 0;
-            $totalCreditReceived = $accountsPayableTransactions->sum('credit_received') ?? 0;
-            
-            // Get total applied credit memos from the new CreditMemoApplications table
-            $appliedCreditMemos = \App\Models\CreditMemoApplication::whereHas('sourceAccountsPayable', function($query) use ($supplierCode) {
-                $query->where('supplier_code', trim($supplierCode));
-            })
-            ->sum('credit_amount') ?? 0;
-            
-            // Calculate available credit memo
-            $totalCreditMemo = $totalCreditGenerated - $totalCreditReceived;
-            $totalCreditMemo = max(0, $totalCreditMemo); // Ensure non-negative
-            
-            // Use the latest running balance from the new table
-            $balance = $latestBalance ?? ($totalDebt - $totalPaid);
+            // Calculate balance
+            $balance = $totalDebt - $totalPaid;
 
-            // Create a complete transaction history using the new running balance entries
+            // Create a complete transaction history using AccountsPayable and Payment data
             $transactionHistory = collect();
-
-            // Get all running balance entries for this supplier, ordered by date
-            $runningBalanceEntries = \App\Models\SupplierRunningBalance::where('supplier_code', $supplierCode)
-                ->with(['accountsPayable'])
-                ->orderBy('transaction_date', 'desc')
-                ->orderBy('id', 'desc')
-                ->get();
-
-            // If no running balance entries exist, fall back to AccountsPayable data
-            if ($runningBalanceEntries->isEmpty()) {
                 // Build all transactions first, then calculate running balances
                 $allTransactions = collect();
                 
@@ -244,35 +212,6 @@ class SupplierCreditController extends Controller
                     
                     $transactionHistory->push($transaction);
                 }
-            } else {
-                // Use running balance entries (original logic)
-                foreach ($runningBalanceEntries as $entry) {
-                    $apTransaction = $entry->accountsPayable;
-                    if (!$apTransaction) continue;
-
-                    // Determine transaction type and build record
-                    $transactionRecord = [
-                        'id' => $entry->id,
-                        'ap_transaction_id' => $entry->ap_transaction_id,
-                        'type' => $entry->transaction_type,
-                        'date' => $entry->transaction_date->format('Y-m-d'),
-                        'reference_number' => $apTransaction->reference_number,
-                        'rr_number' => $apTransaction->rr_number,
-                        'description' => $this->getTransactionDescription($entry, $apTransaction),
-                        'transaction_amount' => $entry->transaction_type === 'invoice' ? $entry->amount : 0,
-                        'payment_amount' => in_array($entry->transaction_type, ['payment', 'credit_memo_applied']) ? $entry->amount : 0,
-                        'running_balance' => $entry->running_balance,
-                        'status' => $this->getTransactionStatus($entry),
-                        'terms' => $apTransaction->terms,
-                        'remarks' => $apTransaction->remarks,
-                        'is_overdue' => $apTransaction->is_overdue ?? false,
-                        'parent_transaction_id' => $apTransaction->id,
-                        'sort_date' => $entry->created_at ? $entry->created_at->format('Y-m-d H:i:s') : $entry->transaction_date->format('Y-m-d H:i:s')
-                    ];
-
-                    $transactionHistory->push($transactionRecord);
-                }
-            }
 
             // Sort by date (oldest first) for display
             $sortedTransactionHistory = $transactionHistory->sortBy(function ($item) {
@@ -294,7 +233,7 @@ class SupplierCreditController extends Controller
                     'total_debt' => $totalDebt,
                     'total_paid' => $totalPaid,
                     'balance' => $balance,
-                    'credit_memo' => $totalCreditMemo
+                    'credit_memo' => 0
                 ]
             ];
 

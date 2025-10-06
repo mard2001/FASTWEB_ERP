@@ -572,7 +572,7 @@ class RRController extends Controller
         // Apply credit memo if available
         if ($creditMemoApplied > 0) {
             // Create automatic payment record for credit memo application
-            \App\Models\Payment::create([
+            $autoCreditPayment = \App\Models\Payment::create([
                 'accounts_payable_id' => $accountsPayable->id,
                 'payment_amount' => $creditMemoApplied,
                 'payment_type' => 'cash',
@@ -587,6 +587,56 @@ class RRController extends Controller
             // Credit memo applications are now tracked through Payment records with AUTO-CM- reference.
             // The available credit memo calculation will be updated to consider these payment applications.
 
+            // Find source AP records that have available credit memos to track the application
+            $availableCreditSources = AccountsPayable::where('supplier_code', trim($supplierCode))
+                ->where('CreditMemo', '>', 0)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $remainingCreditToApply = $creditMemoApplied;
+
+            foreach ($availableCreditSources as $sourceAP) {
+                if ($remainingCreditToApply <= 0) break;
+
+                // Calculate how much credit has already been used from this source
+                $usedCredit = \App\Models\CreditMemoApplication::where('source_ap_id', $sourceAP->id)->sum('credit_amount');
+                $availableFromSource = $sourceAP->CreditMemo - $usedCredit;
+
+                if ($availableFromSource > 0) {
+                    $creditFromThisSource = min($availableFromSource, $remainingCreditToApply);
+
+                    // Create CreditMemoApplication entry
+                    try {
+                        \App\Models\CreditMemoApplication::create([
+                            'source_ap_id' => $sourceAP->id,
+                            'target_ap_id' => $accountsPayable->id,
+                            'credit_amount' => $creditFromThisSource,
+                            'application_date' => now(),
+                            'created_by' => $user,
+                            'notes' => 'Automatic credit memo application from ' . $sourceAP->reference_number . ' to new invoice ' . $rrHeader->RRNo
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Error creating CreditMemoApplication entry: ' . $e->getMessage());
+                    }
+
+                    $remainingCreditToApply -= $creditFromThisSource;
+                }
+            }
+
+            // Create SupplierRunningBalance entry for auto credit memo application
+            try {
+                \App\Models\SupplierRunningBalance::addEntry(
+                    trim($supplierCode),
+                    now(),
+                    $accountsPayable->id,
+                    'credit_memo_applied',
+                    -$creditMemoApplied, // Negative because it reduces the debt
+                    'Automatic credit memo application of ₱' . number_format($creditMemoApplied, 2)
+                );
+            } catch (\Exception $e) {
+                Log::error('Error creating SupplierRunningBalance entry for auto CM: ' . $e->getMessage());
+            }
+
             Log::info("Applied credit memo to new AP record", [
                 'ap_id' => $accountsPayable->id,
                 'rr_no' => $rrHeader->RRNo,
@@ -595,6 +645,20 @@ class RRController extends Controller
                 'final_amount' => $finalAmount,
                 'status' => $initialStatus
             ]);
+        }
+
+        // Create initial SupplierRunningBalance entry for the invoice
+        try {
+            \App\Models\SupplierRunningBalance::addEntry(
+                trim($supplierCode),
+                $rrHeader->RRDATE,
+                $accountsPayable->id,
+                'invoice',
+                $totalAmount, // Positive because it increases the debt
+                'Invoice created from RR#' . $rrHeader->RRNo . ' - ' . ($supplier ? $supplier->SupplierName : 'Unknown')
+            );
+        } catch (\Exception $e) {
+            Log::error('Error creating SupplierRunningBalance entry for invoice: ' . $e->getMessage());
         }
 
         Log::info("Successfully created Accounts Payable record", [
