@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Orders\PO;
 use App\Models\AccountsPayable;
+use App\Models\SupplierCredit;
 use Illuminate\Http\Request;
 use App\Services\InventoryManager;
 use Illuminate\Support\Facades\DB;
@@ -582,6 +583,14 @@ class RRController extends Controller
                 'remarks' => 'Automatic credit memo application',
                 'process_by' => $user
             ]);
+
+            // Update supplier credit data after auto credit payment
+            try {
+                SupplierCredit::updateSupplierCredit($supplierCode);
+                Log::info('Supplier credit updated after auto credit payment for supplier: ' . $supplierCode);
+            } catch (\Exception $e) {
+                Log::error('Error updating supplier credit after auto credit payment: ' . $e->getMessage());
+            }
 
             // NOTE: We no longer deduct from original credit memo records to preserve them.
             // Credit memo applications are now tracked through Payment records with AUTO-CM- reference.

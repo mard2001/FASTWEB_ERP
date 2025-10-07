@@ -291,7 +291,7 @@
                     </div>
                     <div class="col">
                         <div class="">
-                            <label for="vendorCreditLimit" class="form-label">CREDIT LIMIT</label>
+                            <label for="vendorCreditLimit" class="form-label">CREDIT LIMIT BALANCE</label>
                             <input type="text" disabled id="vendorCreditLimit" name="vendorCreditLimit" class="form-control" required >
                         </div>
                     </div>

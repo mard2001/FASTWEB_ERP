@@ -4,14 +4,25 @@ namespace App\Http\Controllers\api\MasterData;
 
 use Illuminate\Http\Request;
 use App\Models\Supplier;
+use App\Models\SupplierCredit;
+use Illuminate\Support\Facades\DB;
 
 class SupplierController
 {
     public function index()
     {
         try {
-            $data = Supplier::orderBy('lastUpdated', 'desc')
-                           ->orderBy('SupplierCode', 'desc')
+            $data = Supplier::leftJoin('tblSupplierCredits', 'tblSupplier.SupplierCode', '=', 'tblSupplierCredits.supplier_code')
+                           ->select(
+                               'tblSupplier.*',
+                               'tblSupplierCredits.credit_limit',
+                               'tblSupplierCredits.credit_balance',
+                               'tblSupplierCredits.total_credit',
+                               'tblSupplierCredits.total_paid',
+                               'tblSupplierCredits.balance'
+                           )
+                           ->orderBy('tblSupplier.lastUpdated', 'desc')
+                           ->orderBy('tblSupplier.SupplierCode', 'desc')
                            ->get();
 
             if (count($data) == 0) {

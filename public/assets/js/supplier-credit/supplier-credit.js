@@ -76,14 +76,14 @@ const datatables = {
             if (MainTH) {
                 MainTH.clear().draw();
                 MainTH.rows.add(response.data).draw();
-                MainTH.order([1, 'asc']).draw(); // Order by Supplier Name column in ascending order
+                MainTH.order([2, 'asc']).draw(); // Order by Total Credit column in ascending order (latest/largest at bottom)
             } else {
                 MainTH = $('#supplierCreditTable').DataTable({
                     data: response.data,
                     language: {
                         searchPlaceholder: "Search suppliers..."
                     },
-                    order: [[1, 'asc']], // Order by Supplier Name column in ascending order
+                    order: [[2, 'asc']], // Order by Total Credit column in ascending order (latest/largest at bottom)
                     columns: [
                         {
                             data: null,
@@ -125,11 +125,37 @@ const datatables = {
                                 const colorClass = amount > 0 ? 'text-danger' : 'text-success';
                                 return `<span class="${colorClass}">₱${amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>`;
                             }
+                        },
+                        { 
+                            data: null,
+                            title: 'Credit Limit',
+                            render: function(data, type, row) {
+                                const amount = parseFloat(row.credit_limit) || 0;
+                                if (amount === 0) {
+                                    return '<span class="text-muted">No Limit</span>';
+                                }
+                                return '₱' + amount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                            }
+                        },
+                        { 
+                            data: null,
+                            title: 'Credit Balance',
+                            render: function(data, type, row) {
+                                const creditLimit = parseFloat(row.credit_limit) || 0;
+                                const creditBalance = parseFloat(row.credit_balance) || 0;
+                                
+                                if (creditLimit === 0) {
+                                    return '<span class="text-muted">No Limit</span>';
+                                }
+                                
+                                const colorClass = creditBalance < 0 ? 'text-danger' : 'text-success';
+                                return `<span class="${colorClass}">₱${creditBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>`;
+                            }
                         }
                     ],
                     columnDefs: [
                         { className: "text-start", targets: [ 0, 1 ] },
-                        { className: "text-end", targets: [ 2, 3, 4 ] },
+                        { className: "text-end", targets: [ 2, 3, 4, 5, 6 ] },
                         { className: "text-nowrap", targets: '_all' },
                     ],
                     scrollCollapse: true,

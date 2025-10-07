@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Supplier;
+use App\Models\SupplierCredit;
 use App\Models\AccountsPayable;
 use App\Models\CreditMemoApplication;
 use App\Models\SupplierRunningBalance;
@@ -19,43 +20,78 @@ class SupplierCreditController extends Controller
     public function getSuppliersWithCredits()
     {
         try {
-            // Get suppliers with their total credit, paid amounts, and balance
-            $suppliers = DB::select("
-                SELECT 
-                    s.SupplierCode,
-                    s.SupplierName,
-                    ISNULL(credit_summary.total_credit, 0) as total_credit,
-                    ISNULL(payment_summary.total_paid, 0) as total_paid,
-                    (ISNULL(credit_summary.total_credit, 0) - ISNULL(payment_summary.total_paid, 0)) as balance
-                FROM tblSupplier s
-                LEFT JOIN (
-                    SELECT 
-                        supplier_code,
-                        SUM(total_amount) as total_credit
-                    FROM tblAccountsPayable 
-                    GROUP BY supplier_code
-                ) credit_summary ON s.SupplierCode = credit_summary.supplier_code
-                LEFT JOIN (
-                    SELECT 
-                        ap.supplier_code,
-                        SUM(p.payment_amount) as total_paid
-                    FROM tblAccountsPayable ap
-                    INNER JOIN tblPayments p ON ap.id = p.accounts_payable_id
-                    GROUP BY ap.supplier_code
-                ) payment_summary ON s.SupplierCode = payment_summary.supplier_code
-                ORDER BY s.SupplierName
-            ");
+            // First, try to get data from the new SupplierCredit table with supplier relationship
+            $suppliers = SupplierCredit::with('supplier')->orderBy('supplier_name')->get();
+            
+            // If no data exists in the table, refresh it from the source data
+            if ($suppliers->isEmpty()) {
+                Log::info('SupplierCredit table is empty, refreshing data...');
+                SupplierCredit::refreshAllSupplierCredits();
+                $suppliers = SupplierCredit::with('supplier')->orderBy('supplier_name')->get();
+            }
+            
+            // Convert to array format expected by the frontend
+            $suppliersArray = $suppliers->map(function ($supplier) {
+                return [
+                    'SupplierCode' => $supplier->supplier_code,
+                    'SupplierName' => $supplier->supplier_name,
+                    'total_credit' => $supplier->total_credit,
+                    'total_paid' => $supplier->total_paid,
+                    'balance' => $supplier->balance,
+                    'credit_limit' => $supplier->credit_limit,
+                    'credit_balance' => $supplier->credit_balance
+                ];
+            })->toArray();
 
             return response()->json([
                 'success' => true,
-                'data' => $suppliers
+                'data' => $suppliersArray
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load supplier credit data',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::error('Error in getSuppliersWithCredits: ' . $e->getMessage());
+            
+            // Fallback to original query if there's an issue with the new table
+            try {
+                $suppliers = DB::select("
+                    SELECT 
+                        s.SupplierCode,
+                        s.SupplierName,
+                        s.CreditLimit as credit_limit,
+                        ISNULL(credit_summary.total_credit, 0) as total_credit,
+                        ISNULL(payment_summary.total_paid, 0) as total_paid,
+                        (ISNULL(credit_summary.total_credit, 0) - ISNULL(payment_summary.total_paid, 0)) as balance,
+                        (s.CreditLimit - (ISNULL(credit_summary.total_credit, 0) - ISNULL(payment_summary.total_paid, 0))) as credit_balance
+                    FROM tblSupplier s
+                    LEFT JOIN (
+                        SELECT 
+                            supplier_code,
+                            SUM(total_amount) as total_credit
+                        FROM tblAccountsPayable 
+                        GROUP BY supplier_code
+                    ) credit_summary ON s.SupplierCode = credit_summary.supplier_code
+                    LEFT JOIN (
+                        SELECT 
+                            ap.supplier_code,
+                            SUM(p.payment_amount) as total_paid
+                        FROM tblAccountsPayable ap
+                        INNER JOIN tblPayments p ON ap.id = p.accounts_payable_id
+                        WHERE p.reference_number NOT LIKE 'AUTO-CM-%' OR p.reference_number IS NULL
+                        GROUP BY ap.supplier_code
+                    ) payment_summary ON s.SupplierCode = payment_summary.supplier_code
+                    ORDER BY s.SupplierName
+                ");
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $suppliers
+                ]);
+            } catch (\Exception $fallbackError) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to load supplier credit data',
+                    'error' => $fallbackError->getMessage()
+                ], 500);
+            }
         }
     }
 
@@ -79,20 +115,17 @@ class SupplierCreditController extends Controller
             $accountsPayableTransactions = AccountsPayable::where('supplier_code', $supplierCode)
                 ->with([
                     'payments' => function($query) {
-                        $query->orderBy('payment_date', 'desc');
+                        $query->with('check')->orderBy('payment_date', 'desc');
                     }
                 ])
                 ->orderBy('date', 'desc')
                 ->get();
 
-            // Calculate totals
-            $totalDebt = $accountsPayableTransactions->sum('total_amount');
-            $totalPaid = $accountsPayableTransactions->sum(function($transaction) {
-                return $transaction->payments()->sum('payment_amount');
-            });
-            
-            // Calculate balance
-            $balance = $totalDebt - $totalPaid;
+            // Calculate totals properly - we'll calculate these after processing all transactions
+            // to avoid double-counting credit memo applications
+            $totalDebt = 0;
+            $totalPaid = 0;
+            $totalCreditMemo = 0;
 
             // Create a complete transaction history using AccountsPayable and Payment data
             $transactionHistory = collect();
@@ -153,7 +186,13 @@ class SupplierCreditController extends Controller
                         $balanceBeforePayment = $invoiceBalance - $paymentsBeforeThis->sum('payment_amount');
                         $createsOverpayment = $balanceBeforePayment > 0 && ($balanceBeforePayment - $payment->payment_amount) < 0;
                         
-                        $paymentDescription = 'Payment - ' . ucfirst($payment->payment_type ?? 'Cash');
+                        // Determine payment type display text
+                        $paymentTypeDisplay = ucfirst($payment->payment_type ?? 'Cash');
+                        if ($payment->payment_type === 'bank' && $payment->check_id) {
+                            $paymentTypeDisplay = 'Bank Check';
+                        }
+                        
+                        $paymentDescription = 'Payment - ' . $paymentTypeDisplay;
                         if ($createsOverpayment && $apTransaction->CreditMemo && $apTransaction->CreditMemo > 0) {
                             $paymentDescription .= ' with CM';
                         }
@@ -168,9 +207,10 @@ class SupplierCreditController extends Controller
                             'description' => $paymentDescription,
                             'transaction_amount' => 0,
                             'payment_amount' => $payment->payment_amount,
+                            'payment_type' => $paymentTypeDisplay,
                             'has_credit_memo' => $createsOverpayment && $apTransaction->CreditMemo && $apTransaction->CreditMemo > 0,
                             'credit_memo_amount' => $createsOverpayment ? $apTransaction->CreditMemo : 0,
-                            'status' => 'Payment Made',
+                            'status' => ($createsOverpayment && $apTransaction->CreditMemo && $apTransaction->CreditMemo > 0) ? 'Fully Paid with CM' : 'Payment Made',
                             'terms' => $apTransaction->terms,
                             'remarks' => $payment->remarks ?? $apTransaction->remarks,
                             'is_overdue' => false,
@@ -221,6 +261,21 @@ class SupplierCreditController extends Controller
                 return $dateTime . $typePriority;
             })->values();
 
+            // Calculate totals correctly from the processed transaction history
+            foreach ($sortedTransactionHistory as $transaction) {
+                if ($transaction['type'] === 'invoice') {
+                    $totalDebt += $transaction['transaction_amount'];
+                } elseif ($transaction['type'] === 'payment') {
+                    $totalPaid += $transaction['payment_amount'];
+                }
+            }
+            
+            // Calculate available credit memo
+            $totalCreditMemo = $accountsPayableTransactions->sum('CreditMemo') ?? 0;
+            
+            // Calculate balance
+            $balance = $totalDebt - $totalPaid;
+
             $result = [
                 'supplier' => [
                     'code' => $supplier->SupplierCode,
@@ -233,7 +288,7 @@ class SupplierCreditController extends Controller
                     'total_debt' => $totalDebt,
                     'total_paid' => $totalPaid,
                     'balance' => $balance,
-                    'credit_memo' => 0
+                    'credit_memo' => $totalCreditMemo
                 ]
             ];
 
@@ -269,7 +324,7 @@ class SupplierCreditController extends Controller
             // Use the exact same logic as getSupplierTransactions
             $accountsPayableTransactions = AccountsPayable::where('supplier_code', $supplierCode)
                 ->with(['payments' => function($query) {
-                    $query->orderBy('payment_date', 'desc');
+                    $query->with('check')->orderBy('payment_date', 'desc');
                 }])
                 ->orderBy('date', 'desc')
                 ->get();
@@ -282,7 +337,20 @@ class SupplierCreditController extends Controller
                 $totalPaidForTransaction = $payments->sum('payment_amount');
                 $currentBalance = $apTransaction->total_amount - $totalPaidForTransaction;
 
+                // Separate regular payments from auto credit memo applications
+                $autoCreditMemoPayments = $payments->filter(function($payment) {
+                    return strpos($payment->reference_number, 'AUTO-CM-') === 0;
+                });
+                
+                $totalAutoCreditMemo = $autoCreditMemoPayments->sum('payment_amount');
+
                 // Add the original AP transaction
+                // For auto credit memo, show it as negative paid amount (like supplier credit table)
+                $invoicePaymentAmount = 0;
+                if ($totalAutoCreditMemo > 0) {
+                    $invoicePaymentAmount = -$totalAutoCreditMemo; // Show as negative
+                }
+                
                 $transactionHistory->push([
                     'id' => $apTransaction->id,
                     'type' => 'transaction', // Original transaction
@@ -291,14 +359,15 @@ class SupplierCreditController extends Controller
                     'rr_number' => $apTransaction->rr_number,
                     'description' => 'Invoice/Bill - ' . ($apTransaction->reference_number ?? 'N/A'),
                     'amount' => $apTransaction->total_amount, // For print template compatibility
-                    'paid' => 0, // For print template compatibility
+                    'paid' => $invoicePaymentAmount, // Show auto credit memo as negative amount
                     'balance' => $apTransaction->total_amount, // Initial balance
                     'status' => $currentBalance > 0 ? 'Pending' : 'Paid',
                     'terms' => $apTransaction->terms,
                     'remarks' => $apTransaction->remarks,
                     'is_overdue' => $apTransaction->is_overdue ?? false,
                     'parent_transaction_id' => $apTransaction->id,
-                    'sort_date' => $apTransaction->created_at ? $apTransaction->created_at->format('Y-m-d H:i:s') : $apTransaction->date->format('Y-m-d H:i:s')
+                    'sort_date' => $apTransaction->created_at ? $apTransaction->created_at->format('Y-m-d H:i:s') : $apTransaction->date->format('Y-m-d H:i:s'),
+                    'auto_credit_memo' => $totalAutoCreditMemo
                 ]);
 
                 // Add individual payment records (excluding auto credit memo applications)
@@ -315,8 +384,12 @@ class SupplierCreditController extends Controller
                     $previousBalance = $runningBalance;
                     $runningBalance -= $payment->payment_amount;
                     
-                    // Check if this payment creates an overpayment (balance goes negative)
-                    $createsOverpayment = $previousBalance > 0 && $runningBalance < 0;
+                    // Check if this payment creates an overpayment using the same logic as supplier credit table
+                    $paymentsBeforeThis = $regularPayments->filter(function($p) use ($payment) {
+                        return $p->payment_date <= $payment->payment_date && $p->id < $payment->id;
+                    });
+                    $balanceBeforePayment = $apTransaction->total_amount - $paymentsBeforeThis->sum('payment_amount');
+                    $createsOverpayment = $balanceBeforePayment > 0 && ($balanceBeforePayment - $payment->payment_amount) < 0;
                     $shouldShowCreditMemo = $createsOverpayment && $apTransaction->CreditMemo && $apTransaction->CreditMemo > 0;
                     
                     // If this payment creates a credit memo, the running balance should reflect the negative amount
@@ -332,7 +405,7 @@ class SupplierCreditController extends Controller
                         'date' => $payment->payment_date->format('Y-m-d'),
                         'reference_number' => $payment->reference_number ?? $apTransaction->reference_number,
                         'rr_number' => $apTransaction->rr_number,
-                        'description' => 'Payment - ' . ucfirst($payment->payment_type ?? 'Cash'),
+                        'description' => 'Payment - ' . ($payment->payment_type === 'bank' && $payment->check_id ? 'Bank Check' : ucfirst($payment->payment_type ?? 'Cash')),
                         'amount' => 0, // For print template compatibility
                         'paid' => $payment->payment_amount, // For print template compatibility
                         'balance' => $displayBalance,
@@ -353,64 +426,88 @@ class SupplierCreditController extends Controller
                         // Keep the actual payment amount for display (e.g., ₱60,000)
                         // Don't modify payment_amount - show what was actually paid
                         $paymentRecord['status'] = 'Fully Paid with CM'; // Special status for payments with credit memo
-                        $paymentRecord['description'] = 'Payment - ' . ucfirst($payment->payment_type ?? 'Cash') . ' with CM';
+                        
+                        // Update description to include "with CM" and handle Bank Check case
+                        $paymentTypeDisplay = $payment->payment_type === 'bank' && $payment->check_id ? 'Bank Check' : ucfirst($payment->payment_type ?? 'Cash');
+                        $paymentRecord['description'] = 'Payment - ' . $paymentTypeDisplay . ' with CM';
                     }
                     
                     $transactionHistory->push($paymentRecord);
                 }
             }
 
-            // First, sort chronologically (oldest first) to recalculate running balances correctly
-            $chronologicalHistory = $transactionHistory->sortBy(function ($item) {
-                $dateTime = $item['sort_date'];
-                // For same datetime, transactions come before payments
-                $typePriority = $item['type'] === 'transaction' ? '1' : '2';
-                return $dateTime . $typePriority;
-            });
+            // Sort all transactions by date for processing
+            $sortedTransactions = $transactionHistory->sortBy('sort_date');
 
-            // Recalculate running balances in chronological order
-            $runningBalance = 0;
-            $recalculatedHistory = $chronologicalHistory->map(function ($item) use (&$runningBalance) {
-                if ($item['type'] === 'transaction') {
-                    // Add the transaction amount to the balance
-                    $runningBalance += $item['amount'];
-                    // Update the running balance for this item
-                    $item['balance'] = $runningBalance;
-                } elseif ($item['type'] === 'payment') {
-                    // Always subtract the full payment amount from balance
-                    // This will show the credit available (negative balance) for future orders
-                    $runningBalance -= $item['paid'];
-                    
-                    // If this payment has a credit memo, ensure the balance shows the negative credit amount
-                    if (isset($item['has_credit_memo']) && $item['has_credit_memo'] && isset($item['credit_memo_amount'])) {
-                        $item['balance'] = -$item['credit_memo_amount'];
-                        // Update the running balance to match the credit memo amount for subsequent calculations
-                        $runningBalance = -$item['credit_memo_amount'];
-                    } else {
-                        $item['balance'] = $runningBalance;
+            // Calculate individual invoice balances (same logic as getSupplierTransactions)
+            $invoiceBalances = [];
+            
+            // First, initialize invoice balances and subtract auto credit memos
+            foreach ($sortedTransactions as $transaction) {
+                if ($transaction['type'] === 'transaction') {
+                    $initialBalance = $transaction['amount'];
+                    // Subtract auto credit memo if present
+                    if (isset($transaction['auto_credit_memo']) && $transaction['auto_credit_memo'] > 0) {
+                        $initialBalance -= $transaction['auto_credit_memo'];
                     }
+                    $invoiceBalances[$transaction['parent_transaction_id']] = $initialBalance;
                 }
+            }
+            
+            // Process transactions and calculate balances per invoice
+            $recalculatedHistory = collect();
+            foreach ($sortedTransactions as $transaction) {
+                if ($transaction['type'] === 'transaction') {
+                     // For invoices, show the current balance of that specific invoice
+                     $transaction['balance'] = $invoiceBalances[$transaction['parent_transaction_id']];
+                     
+                     // Update status based on invoice balance (match supplier credit table logic)
+                     $balance = $transaction['balance'];
+                     $hasAutoCreditMemo = isset($transaction['auto_credit_memo']) && $transaction['auto_credit_memo'] > 0;
+                     
+                     if ($balance <= 0) {
+                         // Check if there's a credit memo involved
+                         if ($balance < 0) {
+                             $transaction['status'] = 'Fully Paid with CM';
+                         } else {
+                             $transaction['status'] = 'Fully Paid';
+                         }
+                     } elseif ($balance < $transaction['amount']) {
+                         // If there's an auto credit memo but still has balance, show as Partial
+                         if ($hasAutoCreditMemo) {
+                             $transaction['status'] = 'Partial';
+                         } else {
+                             $transaction['status'] = 'Partial Payment';
+                         }
+                     } else {
+                         $transaction['status'] = 'Pending';
+                     }
+                 } elseif ($transaction['type'] === 'payment') {
+                     // For payments, subtract from the specific invoice and show the remaining balance
+                     $invoiceId = $transaction['parent_transaction_id'];
+                     $invoiceBalances[$invoiceId] -= $transaction['paid'];
+                     $transaction['balance'] = $invoiceBalances[$invoiceId];
+                     
+                     // Update payment status based on remaining invoice balance
+                     if (isset($transaction['has_credit_memo']) && $transaction['has_credit_memo']) {
+                         $transaction['status'] = 'Fully Paid with CM';
+                     } else {
+                         $transaction['status'] = 'Payment Made';
+                     }
+                 }
                 
-                // Update status based on current balance
-                if ($item['type'] === 'transaction') {
-                    $item['status'] = $runningBalance <= 0 ? 'Paid' : ($runningBalance < $item['amount'] ? 'Partial' : 'Pending');
-                } elseif ($item['type'] === 'payment') {
-                    if (isset($item['has_credit_memo']) && $item['has_credit_memo']) {
-                        $item['status'] = 'Fully Paid with CM';
-                    } else {
-                        $item['status'] = $runningBalance <= 0 ? 'Fully Paid' : 'Payment Made';
-                    }
-                }
-                
-                return $item;
-            });
+                $recalculatedHistory->push($transaction);
+            }
 
-            // Now sort by date (oldest first) for display - same as getSupplierTransactions
+            // Group by RR number and sort within each group to maintain invoice-payment grouping
             $transactions = $recalculatedHistory->sortBy(function ($item) {
+                // Primary sort: by RR number to group related transactions
+                // Secondary sort: by date within each RR group
+                // Tertiary sort: invoices before payments within same RR and date
+                $rrNumber = $item['rr_number'] ?? '';
                 $dateTime = $item['sort_date'];
-                // Add a secondary sort: for same datetime, transactions come first, then payments
                 $typePriority = $item['type'] === 'transaction' ? '1' : '2';
-                return $dateTime . $typePriority;
+                return $rrNumber . '|' . $dateTime . '|' . $typePriority;
             })->values();
 
             $user = auth()->user();
@@ -442,9 +539,9 @@ class SupplierCreditController extends Controller
             // Build full timeline with same logic as statement but filter for non-fully-paid invoices
             $accountsPayableTransactions = AccountsPayable::where('supplier_code', $supplierCode)
                 ->with(['payments' => function($query) {
-                    $query->orderBy('payment_date', 'desc');
+                    $query->with('check')->orderBy('payment_date', 'asc');
                 }])
-                ->orderBy('date', 'desc')
+                ->orderBy('date', 'asc')
                 ->get();
 
             $timeline = collect();
@@ -502,7 +599,7 @@ class SupplierCreditController extends Controller
                             'date' => $payment->payment_date,
                             'reference_number' => $payment->reference_number ?? $apTransaction->reference_number,
                             'rr_number' => $apTransaction->rr_number,
-                            'description' => 'Payment - ' . ucfirst($payment->payment_type ?? 'Cash'),
+                            'description' => 'Payment - ' . ($payment->payment_type === 'bank' && $payment->check_id ? 'Bank Check' : ucfirst($payment->payment_type ?? 'Cash')),
                             'amount' => 0,
                             'paid' => $payment->payment_amount,
                             'balance' => $runningBalance,
@@ -531,46 +628,57 @@ class SupplierCreditController extends Controller
                     }
                 }
             }
-            // Sort chronologically first to recalculate running balances correctly
+            // Apply three-level sorting: 1) RR Number, 2) Date/Time, 3) Type Priority (invoices before payments)
             $sortedTransactionHistory = $timeline->sortBy(function($item) {
                 $dateTime = $item['date'] instanceof \Carbon\Carbon ? $item['date']->format('Y-m-d H:i:s') : $item['date'];
-                // Add a secondary sort: for same datetime, transactions come first, then payments, then credit memos
+                $rrNumber = $item['rr_number'] ?? 'ZZZZ'; // Put items without RR at the end
+                // Type priority: transactions (invoices) first, then payments, then credit memos
                 $typePriority = $item['type'] === 'transaction' ? '1' : ($item['type'] === 'payment' ? '2' : '3');
-                return $dateTime . $typePriority;
+                
+                // Three-level sort: RR Number + DateTime + Type Priority
+                return $rrNumber . '|' . $dateTime . '|' . $typePriority;
             })->values();
 
-            // Recalculate running balances and update statuses
+            // Calculate individual invoice balances (same logic as supplier credit table)
             // Convert collection to array for modification, then back to collection
             $transactionArray = $sortedTransactionHistory->toArray();
-            $runningBalance = 0;
+            $invoiceBalances = [];
             
+            // First, initialize invoice balances and subtract auto credit memos
             foreach ($transactionArray as $index => $item) {
                 if ($item['type'] === 'transaction') {
-                    $runningBalance += $item['amount'];
-                    // Subtract any auto credit memo applications that were already included
+                    $initialBalance = $item['amount'];
+                    // Subtract auto credit memo if present
                     if ($item['paid'] > 0) {
-                        $runningBalance -= $item['paid'];
+                        $initialBalance -= $item['paid'];
                     }
-                } elseif ($item['type'] === 'payment') {
-                    $runningBalance -= $item['paid'];
+                    $invoiceBalances[$item['rr_number']] = $initialBalance;
                 }
-                // Credit memos don't change the running balance as they represent available credit
-
-                // Update the balance for transactions and payments
-                if ($item['type'] !== 'credit_memo') {
-                    $transactionArray[$index]['balance'] = $runningBalance;
-                }
-                
-                // Update status based on current running balance
+            }
+            
+            // Process transactions and calculate individual balances
+            foreach ($transactionArray as $index => $item) {
                 if ($item['type'] === 'transaction') {
+                    // For invoices, show the current balance of that specific invoice
+                    $transactionArray[$index]['balance'] = $invoiceBalances[$item['rr_number']];
+                    
+                    // Update status based on individual invoice balance
                     if ($item['paid'] > 0) {
                         // Has auto credit memo applied
-                        $transactionArray[$index]['status'] = $runningBalance > 0 ? 'Credit Applied' : 'Fully Paid';
+                        $transactionArray[$index]['status'] = $invoiceBalances[$item['rr_number']] > 0 ? 'Credit Applied' : 'Fully Paid';
                     } else {
-                        $transactionArray[$index]['status'] = $runningBalance > 0 ? 'Pending' : 'Paid';
+                        $transactionArray[$index]['status'] = $invoiceBalances[$item['rr_number']] > 0 ? 'Pending' : 'Paid';
                     }
                 } elseif ($item['type'] === 'payment') {
-                    $transactionArray[$index]['status'] = $runningBalance <= 0 ? 'Fully Paid' : 'Partial Payment';
+                    // For payments, subtract from the specific invoice and show the remaining balance
+                    $invoiceBalances[$item['rr_number']] -= $item['paid'];
+                    $transactionArray[$index]['balance'] = $invoiceBalances[$item['rr_number']];
+                    
+                    // Update status based on individual invoice balance
+                    $transactionArray[$index]['status'] = $invoiceBalances[$item['rr_number']] <= 0 ? 'Fully Paid' : 'Partial Payment';
+                } elseif ($item['type'] === 'credit_memo') {
+                    // Credit memos show negative balance (credit available)
+                    $transactionArray[$index]['balance'] = -$item['credit_memo'];
                 }
             }
             
@@ -736,6 +844,71 @@ class SupplierCreditController extends Controller
             return 'Partial Payment';
         } else {
             return 'Pending';
+        }
+    }
+
+    /**
+     * Refresh all supplier credit data in the table
+     */
+    public function refreshSupplierCredits()
+    {
+        try {
+            $count = SupplierCredit::refreshAllSupplierCredits();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully refreshed {$count} supplier credit records",
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error refreshing supplier credits: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to refresh supplier credit data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update credit data for a specific supplier
+     */
+    public function updateSupplierCredit($supplierCode)
+    {
+        try {
+            $success = SupplierCredit::updateSupplierCredit($supplierCode);
+            
+            if ($success) {
+                $supplierCredit = SupplierCredit::where('supplier_code', $supplierCode)->first();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Supplier credit data updated successfully',
+                    'data' => [
+                        'SupplierCode' => $supplierCredit->supplier_code,
+                        'SupplierName' => $supplierCredit->supplier_name,
+                        'total_credit' => $supplierCredit->total_credit,
+                        'total_paid' => $supplierCredit->total_paid,
+                        'balance' => $supplierCredit->balance,
+                        'credit_limit' => $supplierCredit->credit_limit,
+                        'credit_balance' => $supplierCredit->credit_balance
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Supplier not found or no data to update'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error updating supplier credit: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update supplier credit data',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

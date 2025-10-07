@@ -255,6 +255,8 @@ Route::get('supplier-credit', [\App\Http\Controllers\api\SupplierCreditControlle
 Route::get('supplier-credit/{supplierCode}/transactions', [\App\Http\Controllers\api\SupplierCreditController::class, 'getSupplierTransactions'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::get('supplier-credit/{supplierCode}/print-statement', [\App\Http\Controllers\api\SupplierCreditController::class, 'printStatement'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::get('supplier-credit/{supplierCode}/print-counter-receipt', [\App\Http\Controllers\api\SupplierCreditController::class, 'printCounterReceipt'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('supplier-credit/refresh', [\App\Http\Controllers\api\SupplierCreditController::class, 'refreshSupplierCredits'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('supplier-credit/{supplierCode}/update', [\App\Http\Controllers\api\SupplierCreditController::class, 'updateSupplierCredit'])->middleware(['auth:sanctum', 'check.user.status']);
 
 // Route::post('/auth/register', [AuthController::class, 'register']); // Disabled - Registration handled by admin through user management
 Route::post('/auth/login', [AuthController::class, 'login']);

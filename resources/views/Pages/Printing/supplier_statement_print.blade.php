@@ -514,20 +514,32 @@
                              // Credit memos don't show paid amounts
                              $paidDisplay = '-';
                          } elseif ($hasAutoCreditMemo) {
-                             // For auto credit memo applications, show the credit amount applied
-                             if (isset($row['paid']) && $row['paid'] > 0) {
-                                 $paidDisplay = '₱' . number_format($row['paid'], 2);
-                                 $paidColor = '#28a745';
+                             // For auto credit memo applications, show the credit amount applied as negative
+                             if (isset($row['paid']) && $row['paid'] != 0) {
+                                 if ($row['paid'] < 0) {
+                                     // Show negative amount in parentheses like supplier credit table
+                                     $paidDisplay = '(' . number_format(abs($row['paid']), 2) . ')';
+                                     $paidColor = '#28a745';
+                                 } else {
+                                     $paidDisplay = '₱' . number_format($row['paid'], 2);
+                                     $paidColor = '#28a745';
+                                 }
                              } elseif (isset($row['credit_memo']) && $row['credit_memo'] > 0) {
                                  $paidDisplay = '₱' . number_format($row['credit_memo'], 2);
                                  $paidColor = '#28a745';
                              } else {
                                  $paidDisplay = '-';
                              }
-                         } elseif (isset($row['paid']) && $row['paid'] > 0) {
-                             // For invoices that have been paid (partially or fully)
-                             $paidDisplay = '₱' . number_format($row['paid'], 2);
-                             $paidColor = '#28a745';
+                         } elseif (isset($row['paid']) && $row['paid'] != 0) {
+                             // For invoices that have been paid (partially or fully) or have auto credit memo
+                             if ($row['paid'] < 0) {
+                                  // Show auto credit memo deduction in parentheses with negative sign inside
+                                  $paidDisplay = '(-' . number_format(abs($row['paid']), 2) . ')';
+                                  $paidColor = '#28a745';
+                             } else {
+                                 $paidDisplay = '₱' . number_format($row['paid'], 2);
+                                 $paidColor = '#28a745';
+                             }
                          } else {
                              // No payment made
                              $paidDisplay = '-';
@@ -610,11 +622,11 @@
                                 </tr>
                                 <tr>
                                     <th style="font-size: 12px;">Total Paid:</th>
-                                    <td style="padding-left:20px; font-size: 12px; font-weight: bold;">₱{{ number_format($transactions->sum('paid') + $transactions->sum('credit_memo'), 2) }}</td>
+                                    <td style="padding-left:20px; font-size: 12px; font-weight: bold;">₱{{ number_format($transactions->where('type', 'payment')->sum('paid'), 2) }}</td>
                                 </tr>
                                 <tr>
                                     <th style="font-size: 12px;">Total Balance Due:</th>
-                                    <td style="padding-left:20px; border-bottom: 3px double #000; font-size: 12px; font-weight: bold;">₱{{ number_format($transactions->sum('amount') - $transactions->sum('paid') - $transactions->sum('credit_memo'), 2) }}</td>
+                                    <td style="padding-left:20px; border-bottom: 3px double #000; font-size: 12px; font-weight: bold;">₱{{ number_format($transactions->sum('amount') - $transactions->where('type', 'payment')->sum('paid'), 2) }}</td>
                                 </tr>
                             </tbody>
                         </table>

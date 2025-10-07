@@ -25,6 +25,8 @@
             <td class="col">Total Credit</td>
             <td class="col">Paid</td>
             <td class="col">Balance</td>
+            <td class="col">Credit Limit</td>
+            <td class="col">Credit Balance</td>
         </x-slot:td>
     </x-table>
 @endsection

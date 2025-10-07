@@ -363,6 +363,12 @@ function initAccountsPayableDataTable() {
         },
         deferRender: true, // Only render visible rows for better performance
         processing: false, // Disable processing indicator for faster feel
+        columnDefs: [
+            {
+                targets: 8, // Credit Memo column index
+                visible: false // Hide the column
+            }
+        ],
         columns: [
             { 
                 data: 'date', 

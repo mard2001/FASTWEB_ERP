@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountsPayable;
 use App\Models\Payment;
 use App\Models\Check;
+use App\Models\SupplierCredit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -677,6 +678,15 @@ class AccountsPayableController extends Controller
                 Log::error('Error applying auto credit memos after payment: ' . $e->getMessage());
             }
 
+            // Update supplier credit data after successful payment
+            try {
+                SupplierCredit::updateSupplierCredit($accountsPayable->supplier_code);
+                Log::info('Supplier credit updated for supplier: ' . $accountsPayable->supplier_code);
+            } catch (Exception $e) {
+                // Log the error but don't fail the payment
+                Log::error('Error updating supplier credit after payment: ' . $e->getMessage());
+            }
+
             return response()->json($responseData, 200);
 
         } catch (Exception $e) {
@@ -1045,6 +1055,14 @@ class AccountsPayableController extends Controller
                             AccountsPayable::where('id', $record['id'])->update([
                                 'status' => $newStatus
                             ]);
+
+                            // Update supplier credit data after auto credit memo application
+                            try {
+                                SupplierCredit::updateSupplierCredit($record['supplier_code']);
+                                Log::info('Supplier credit updated after auto credit memo application for supplier: ' . $record['supplier_code']);
+                            } catch (Exception $e) {
+                                Log::error('Error updating supplier credit after auto credit memo application: ' . $e->getMessage());
+                            }
                             
                         } catch (Exception $e) {
                             Log::error('Failed to update database for auto credit memo application', [

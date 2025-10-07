@@ -131,24 +131,37 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 const datatables = {
     loadRRData: async () => {
         const prodData = await ajax('api/report/v2/rr', 'GET', null, (response) => { // Success callback
-            jsonArr = response.data;
-            datatables.initRRDatatable(response);
+            if (response.success) {
+                jsonArr = response.data;
+                datatables.initRRDatatable(response);
+            } else {
+                // Handle case when API returns success: false (no data found)
+                jsonArr = [];
+                datatables.initRRDatatable({ success: true, data: [] });
+            }
         }, (xhr, status, error) => { // Error callback
             console.error('Error:', error);
+            // Initialize DataTable with empty data if API call fails
+            jsonArr = [];
+            datatables.initRRDatatable({ success: true, data: [] });
         });
     },
 
     initRRDatatable: (response) => {
         if (response.success) {
+            // Ensure data is always an array
+            const data = Array.isArray(response.data) ? response.data : [];
+            
             if (MainTH) {
                 MainTH.clear().draw();
-                MainTH.rows.add(response.data).draw();
+                MainTH.rows.add(data).draw();
                 MainTH.order([0, 'desc']).draw(); // Order by date column (index 0) in descending order
             } else {
                 MainTH = $('#rrTable').DataTable({
-                    data: response.data,
+                    data: data,
                     language: {
-                        searchPlaceholder: "Search here..."
+                        searchPlaceholder: "Search here...",
+                        emptyTable: "No Receiving Report records available yet. Click 'Add' to create your first RR."
                     },
                     order: [[0, 'desc']], // Order by date column (index 0) in descending order
                     columns: [

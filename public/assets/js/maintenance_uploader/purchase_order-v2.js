@@ -815,7 +815,7 @@ const initVS = {
         if (validPriceCode) {
           $("#VendorContactName").val(findVendor.ContactPerson);
           $("#vendorAddress").val(findVendor.CompleteAddress);
-          $("#vendorCreditLimit").val(findVendor.CreditLimit || 0);
+          $("#vendorCreditLimit").val(findVendor.credit_balance || 0);
 
           var mobileContact = (findVendor.ContactNo = /^9\d{9}$/.test(
             findVendor.ContactNo
@@ -1143,7 +1143,7 @@ const POModal = {
     document.querySelector("#vendorName").setValue(findVendor.cID);
     $("#VendorContactName").val(findVendor.ContactPerson);
     $("#vendorAddress").val(findVendor.CompleteAddress);
-    $("#vendorCreditLimit").val(findVendor.CreditLimit || 0);
+    $("#vendorCreditLimit").val(findVendor.credit_balance || 0);
     $("#vendorPhone").val(findVendor.ContactNo);
 
     $("#shippedToContactName").val(POData.contactPerson);
@@ -1289,6 +1289,22 @@ const POModal = {
       ...item, // ✅ Spread all properties from item
       PRD_INDEX: index + 1, // ✅ Add the new index property
     }));
+
+    // Check credit balance before submitting PO
+    if (selectedVendor && selectedVendor.credit_balance !== null && selectedVendor.credit_balance !== undefined) {
+      const totalAmount = itemTmpSave.reduce((sum, item) => sum + parseFloat(item.TotalPrice), 0);
+      const creditBalance = parseFloat(selectedVendor.credit_balance);
+      
+      if (totalAmount > creditBalance) {
+        Swal.fire({
+          title: "Credit Balance Exceeded!",
+          text: `Cannot submit PO. Total amount of ${formatMoney(totalAmount)} exceeds the supplier's available credit balance of ${formatMoney(creditBalance)}.`,
+          icon: "error",
+          confirmButtonText: "OK"
+        });
+        return; // Don't submit the PO
+      }
+    }
 
     POData.orderPlacerEmail = "isItUserEmail@email.com";
 
@@ -1514,8 +1530,8 @@ const POItemsModal = {
     return UomAndQuantity;
   },
   itemTmpSave: (getItem) => {
-    // Check credit limit before adding item
-    if (selectedVendor && selectedVendor.CreditLimit) {
+    // Check credit balance before adding item
+    if (selectedVendor && selectedVendor.credit_balance !== null && selectedVendor.credit_balance !== undefined) {
       const currentTotal = ItemsTH.rows()
         .data()
         .toArray()
@@ -1523,13 +1539,13 @@ const POItemsModal = {
       
       const newItemTotal = parseFloat(getItem.TotalPrice);
       const newGrandTotal = currentTotal + newItemTotal;
-      const creditLimit = parseFloat(selectedVendor.CreditLimit);
+      const creditBalance = parseFloat(selectedVendor.credit_balance);
       
-      if (newGrandTotal > creditLimit) {
-        const remainingCreditLimit = creditLimit - currentTotal;
+      if (newGrandTotal > creditBalance) {
+        const remainingCreditBalance = creditBalance - currentTotal;
         Swal.fire({
-          title: "Credit Limit Exceeded!",
-          text: `Adding this item would exceed the supplier's credit limit of ${formatMoney(creditLimit)}. Current total: ${formatMoney(currentTotal)}, Remaining Credit: ${formatMoney(remainingCreditLimit)}.`,
+          title: "Credit Balance Exceeded!",
+          text: `Adding this item would exceed the supplier's available credit balance of ${formatMoney(creditBalance)}. Current total: ${formatMoney(currentTotal)}, Remaining Credit Balance: ${formatMoney(remainingCreditBalance)}.`,
           icon: "error",
           confirmButtonText: "OK"
         });
@@ -1545,8 +1561,8 @@ const POItemsModal = {
     checkForChanges(); // Check for changes after adding item
   },
   itemTmpUpdate: (editedItem) => {
-    // Check credit limit before updating item
-    if (selectedVendor && selectedVendor.CreditLimit) {
+    // Check credit balance before updating item
+    if (selectedVendor && selectedVendor.credit_balance !== null && selectedVendor.credit_balance !== undefined) {
       const currentTotal = ItemsTH.rows()
         .data()
         .toArray()
@@ -1555,13 +1571,13 @@ const POItemsModal = {
       
       const newItemTotal = parseFloat(editedItem.TotalPrice);
       const newGrandTotal = currentTotal + newItemTotal;
-      const creditLimit = parseFloat(selectedVendor.CreditLimit);
+      const creditBalance = parseFloat(selectedVendor.credit_balance);
       
-      if (newGrandTotal > creditLimit) {
-        const remainingCreditLimit = creditLimit - currentTotal;
+      if (newGrandTotal > creditBalance) {
+        const remainingCreditBalance = creditBalance - currentTotal;
         Swal.fire({
-          title: "Credit Limit Exceeded!",
-          text: `Updating this item would exceed the supplier's credit limit of ${formatMoney(creditLimit)}. Current total (excluding this item): ${formatMoney(currentTotal)}, Remaining Credit Limit: ${formatMoney(remainingCreditLimit)}.`,
+          title: "Credit Balance Exceeded!",
+          text: `Updating this item would exceed the supplier's available credit balance of ${formatMoney(creditBalance)}. Current total (excluding this item): ${formatMoney(currentTotal)}, Remaining Credit Balance: ${formatMoney(remainingCreditBalance)}.`,
           icon: "error",
           confirmButtonText: "OK"
         });
@@ -1728,14 +1744,22 @@ const datatables = {
         const poData = await ajax( "api/orders/po", "GET", null,(response) => {
             // Success callback
             if (response.success) {
-                ajaxMainData = response.data;
-                initData = response.data;
+                ajaxMainData = response.data || [];
+                initData = response.data || [];
+                datatables.initPODatatable(ajaxMainData);
+            } else {
+                // Initialize with empty data if response is not successful
+                ajaxMainData = [];
+                initData = [];
                 datatables.initPODatatable(ajaxMainData);
             }
         },
         (xhr, status, error) => {
-            // Error callback
+            // Error callback - Initialize with empty data
             console.error("Error:", error);
+            ajaxMainData = [];
+            initData = [];
+            datatables.initPODatatable(ajaxMainData);
         });
     },
     loadItems: async (PONumber) => {
@@ -1750,14 +1774,18 @@ const datatables = {
         });
     },
     initPODatatable: (response) => {
+        // Ensure response is always an array
+        const data = Array.isArray(response) ? response : [];
+        
         if (MainTH) {
             MainTH.clear().draw();
-            MainTH.rows.add(response).draw();
+            MainTH.rows.add(data).draw();
         } else {
             MainTH = $("#POHeaderTable").DataTable({
-                data: response,
+                data: data,
                 language: {
-                    searchPlaceholder: "Search here..."
+                    searchPlaceholder: "Search here...",
+                    emptyTable: "No Purchase Order records available yet. Click 'Add New' to create your first PO."
                 },
                 order: [[ 4, "desc" ]], // Sort by PODate column (index 4) in descending order
                 columns: [
