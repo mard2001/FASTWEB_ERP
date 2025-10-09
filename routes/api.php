@@ -193,6 +193,11 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
     Route::apiResource('/supplier-shipped-to', SupplierShipToController::class);
     Route::apiResource('/bank', BankController::class);
     Route::apiResource('/gcash', GcashController::class);
+    
+    // Bank Reconciliation routes
+    Route::post('/bank-reconciliation/set-beginning-balance', [\App\Http\Controllers\api\BankReconciliationController::class, 'setBeginningBalance']);
+    Route::get('/bank-reconciliation/{bankId}', [\App\Http\Controllers\api\BankReconciliationController::class, 'show']);
+    Route::get('/bank-reconciliation', [\App\Http\Controllers\api\BankReconciliationController::class, 'index']);
 
     // Activity Log routes
     Route::prefix('activity-log')->group(function () {

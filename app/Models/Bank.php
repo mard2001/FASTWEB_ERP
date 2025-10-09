@@ -34,4 +34,10 @@ class Bank extends Model
         'DateCreated',
         'DateUpdated',
     ];
+
+    // Relationship with BankReconciliation
+    public function reconciliations()
+    {
+        return $this->hasMany(BankReconciliation::class, 'BankID', 'BankID');
+    }
 }

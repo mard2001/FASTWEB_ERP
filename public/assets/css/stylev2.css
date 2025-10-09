@@ -138,8 +138,7 @@ a.sidebar-link {
 }
 
 .btn {
-    width: auto !important;
-    height: auto !important;
+    font-size: 13px;
 }
 
 .sidebar-link i {
