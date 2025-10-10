@@ -196,6 +196,7 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
     
     // Bank Reconciliation routes
     Route::post('/bank-reconciliation/set-beginning-balance', [\App\Http\Controllers\api\BankReconciliationController::class, 'setBeginningBalance']);
+    Route::post('/bank-reconciliation/manual-transaction', [\App\Http\Controllers\api\BankReconciliationController::class, 'storeManualTransaction']);
     Route::get('/bank-reconciliation/{bankId}', [\App\Http\Controllers\api\BankReconciliationController::class, 'show']);
     Route::get('/bank-reconciliation', [\App\Http\Controllers\api\BankReconciliationController::class, 'index']);
 

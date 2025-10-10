@@ -90,6 +90,7 @@
 
         .transaction-table {
             font-size: 12px;
+            white-space: nowrap;
         }
         
         .transaction-table th {
@@ -97,11 +98,18 @@
             color: white;
             font-size: 11px;
             padding: 8px 6px;
+            white-space: nowrap;
         }
         
         .transaction-table td {
             padding: 6px;
             font-size: 11px;
+            white-space: nowrap;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
     </style>
 
@@ -126,7 +134,7 @@
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="BalanceBeginningBalance">Beginning Balance <span class="text-danger">*</span></label>
-                            <input type="text" id="BalanceBeginningBalance" name="BalanceBeginningBalance" class="form-control bg-white" required step="0.01" placeholder="0.00">
+                            <input type="text" id="BalanceBeginningBalance" name="BalanceBeginningBalance" class="form-control bg-white" required placeholder="0.00">
                         </div>
                     </div>
                     <div class="col-12">
@@ -238,10 +246,12 @@
                                 <th>Date</th>
                                 <th>Type</th>
                                 <th>Supplier</th>
-                                <th>AP Reference</th>
-                                <th>Payment Type</th>
-                                <th>Amount</th>
+                                <th>AP/AR Reference</th>
                                 <th>Reference</th>
+                                <th>Payment Type</th>
+                                <th>Withdrawal</th>
+                                <th>Deposit</th>
+                                <th>Balance</th>
                                 <th>Remarks</th>
                             </tr>
                         </thead>
@@ -257,10 +267,65 @@
         </x-slot:form_fields>
         <x-slot:modalFooterBtns>
             <div>
+                <button type="button" class="btn btn-sm btn-success" id="manualDepositBtn">
+                    <i class="mdi mdi-plus-circle"></i> Manual Deposit
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" id="manualWithdrawBtn">
+                    <i class="mdi mdi-minus-circle"></i> Manual Withdraw
+                </button>
                 <button type="button" class="btn btn-sm btn-primary" id="updateBeginningBalanceBtn">Update Beginning Balance</button>
             </div>
             <div>
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </x-slot:modalFooterBtns>
+    </x-mainModal>
+
+    <!-- Manual Transaction Modal (Deposit/Withdraw) -->
+    <x-mainModal mainModalTitle="manualTransactionModal" modalDialogClass="" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);' id='manualTransactionTitle'>MANUAL TRANSACTION</span>" modalSubHeaderTitle="">
+        <x-slot:form_fields>
+            <div id="manualTransactionFields">
+                <input type="hidden" id="ManualBankID">
+                <input type="hidden" id="ManualTransactionType">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="fw-bold">Bank: <span id="manualBankName" class="text-primary"></span></label>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="fw-bold">Account: <span id="manualAccountName"></span></label>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="ManualTransactionDate">Transaction Date <span class="text-danger">*</span></label>
+                            <input type="date" id="ManualTransactionDate" name="ManualTransactionDate" class="form-control bg-white" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="ManualAmount" id="ManualAmountLabel">Amount <span class="text-danger">*</span></label>
+                            <input type="text" id="ManualAmount" name="ManualAmount" class="form-control bg-white" required placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="ManualReference">Reference Number</label>
+                            <input type="text" id="ManualReference" name="ManualReference" class="form-control bg-white" maxlength="100" placeholder="Optional reference">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="ManualRemarks">Remarks <span class="text-danger">*</span></label>
+                            <textarea id="ManualRemarks" name="ManualRemarks" class="form-control bg-white" rows="3" maxlength="500" placeholder="Reason for manual transaction" required></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </x-slot:form_fields>
+        <x-slot:modalFooterBtns>
+            <div></div>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary text-white" id="saveManualTransactionBtn">Save Transaction</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </x-slot:modalFooterBtns>
     </x-mainModal>

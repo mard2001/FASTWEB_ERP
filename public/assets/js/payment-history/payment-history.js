@@ -150,7 +150,20 @@ function initPaymentHistoryDataTable() {
                         // For sorting, use the sort_timestamp for precise ordering
                         return row.sort_timestamp || 0;
                     }
-                    return data ? moment(data).format('MMM DD, YYYY') : 'N/A';
+                    if (!data) return 'N/A';
+                    
+                    // Use created_at for the actual time, payment_date for the date
+                    const dateObj = moment(data);
+                    const dateStr = dateObj.format('MMM DD, YYYY');
+                    
+                    // Get time from created_at if available, otherwise show date only
+                    let timeStr = '';
+                    if (row.created_at) {
+                        const createdAtObj = moment(row.created_at);
+                        timeStr = `<br><small class="text-muted">${createdAtObj.format('hh:mm A')}</small>`;
+                    }
+                    
+                    return dateStr + timeStr;
                 }
             },
             { 

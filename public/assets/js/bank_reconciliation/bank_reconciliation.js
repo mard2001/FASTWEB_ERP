@@ -7,6 +7,11 @@ $(document).ready(async function () {
     // Load bank reconciliation data (all banks auto-populated)
     await datatables.loadBankReconData();
 
+    // Auto-format number inputs with commas
+    $('#BalanceBeginningBalance, #ManualAmount').on('input', function() {
+        formatNumberInput(this);
+    });
+
     // Handle "Add Beginning Balance" button click in table
     $("#bankReconTable").on("click", ".addBalanceBtn", async function (e) {
         e.stopPropagation(); // Prevent row click event
@@ -46,7 +51,7 @@ $(document).ready(async function () {
         if (validateBeginningBalance()) {
             const data = {
                 BankID: parseInt($('#BalanceBankID').val()),
-                BeginningBalance: parseFloat($('#BalanceBeginningBalance').val()),
+                BeginningBalance: getNumericValue('BalanceBeginningBalance'),
                 ReconciliationDate: $('#BalanceReconciliationDate').val(),
                 Notes: $('#BalanceNotes').val() || null
             };
@@ -77,7 +82,57 @@ $(document).ready(async function () {
                 ReconciliationDate: bank.LastReconciliationDate,
                 Notes: bank.Notes
             });
-            $('#bankDetailsModal').modal('hide');
+            // Don't hide the bank details modal
+        }
+    });
+
+    // Manual Deposit button
+    $("#manualDepositBtn").on("click", function () {
+        const bankId = parseInt($('#DetailsBankID').val());
+        const bankName = $('#detailsBankName').val();
+        const accountName = $('#detailsAccountName').val();
+        
+        openManualTransactionModal(bankId, bankName, accountName, 'IN');
+        // Don't hide the bank details modal
+    });
+
+    // Manual Withdraw button
+    $("#manualWithdrawBtn").on("click", function () {
+        const bankId = parseInt($('#DetailsBankID').val());
+        const bankName = $('#detailsBankName').val();
+        const accountName = $('#detailsAccountName').val();
+        
+        openManualTransactionModal(bankId, bankName, accountName, 'OUT');
+        // Don't hide the bank details modal
+    });
+
+    // Save manual transaction
+    $("#saveManualTransactionBtn").on("click", async function () {
+        if (validateManualTransaction()) {
+            const transactionType = $('#ManualTransactionType').val();
+            const typeLabel = transactionType === 'IN' ? 'Deposit' : 'Withdrawal';
+            
+            const data = {
+                BankID: parseInt($('#ManualBankID').val()),
+                TransactionType: transactionType,
+                Amount: getNumericValue('ManualAmount'),
+                TransactionDate: $('#ManualTransactionDate').val(),
+                ReferenceNumber: $('#ManualReference').val() || null,
+                Remarks: $('#ManualRemarks').val()
+            };
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You want to record this manual ${typeLabel.toLowerCase()}?`,
+                icon: 'question',
+                showDenyButton: true,
+                confirmButtonText: "Yes, Save",
+                denyButtonText: `Cancel`
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await saveManualTransaction(data);
+                }
+            });
         }
     });
 
@@ -93,7 +148,11 @@ function openBeginningBalanceModal(bankId, bankName, accountName, existingData =
     $('#balanceAccountName').text(accountName);
     
     if (existingData) {
-        $('#BalanceBeginningBalance').val(existingData.BeginningBalance || '');
+        // Format the balance with commas
+        const formattedBalance = existingData.BeginningBalance ? 
+            parseFloat(existingData.BeginningBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+        $('#BalanceBeginningBalance').val(formattedBalance);
+        
         if (existingData.ReconciliationDate) {
             const date = new Date(existingData.ReconciliationDate);
             $('#BalanceReconciliationDate').val(date.toISOString().split('T')[0]);
@@ -111,10 +170,10 @@ function openBeginningBalanceModal(bankId, bankName, accountName, existingData =
 }
 
 function validateBeginningBalance() {
-    const balance = $('#BalanceBeginningBalance').val();
+    const balance = getNumericValue('BalanceBeginningBalance');
     const date = $('#BalanceReconciliationDate').val();
 
-    if (!balance || parseFloat(balance) < 0) {
+    if (!balance || balance < 0) {
         Swal.fire({
             title: "Validation Error",
             text: "Please enter a valid beginning balance",
@@ -133,6 +192,111 @@ function validateBeginningBalance() {
     }
 
     return true;
+}
+
+function openManualTransactionModal(bankId, bankName, accountName, transactionType) {
+    $('#ManualBankID').val(bankId);
+    $('#ManualTransactionType').val(transactionType);
+    $('#manualBankName').text(bankName);
+    $('#manualAccountName').text(accountName);
+    
+    // Update modal title and labels based on transaction type
+    if (transactionType === 'IN') {
+        $('#manualTransactionTitle').text('MANUAL DEPOSIT');
+        $('#ManualAmountLabel').html('Deposit Amount <span class="text-danger">*</span>');
+    } else {
+        $('#manualTransactionTitle').text('MANUAL WITHDRAWAL');
+        $('#ManualAmountLabel').html('Withdrawal Amount <span class="text-danger">*</span>');
+    }
+    
+    // Reset form
+    $('#ManualTransactionDate').val(new Date().toISOString().split('T')[0]);
+    $('#ManualAmount').val('');
+    $('#ManualReference').val('');
+    $('#ManualRemarks').val('');
+    
+    // Don't hide bank details modal - keep it in background
+    $('#manualTransactionModal').modal('show');
+}
+
+function validateManualTransaction() {
+    const amount = getNumericValue('ManualAmount');
+    const date = $('#ManualTransactionDate').val();
+    const remarks = $('#ManualRemarks').val();
+
+    if (!amount || amount <= 0) {
+        Swal.fire({
+            title: "Validation Error",
+            text: "Please enter a valid amount",
+            icon: "warning"
+        });
+        return false;
+    }
+
+    if (!date) {
+        Swal.fire({
+            title: "Validation Error",
+            text: "Please select a transaction date",
+            icon: "warning"
+        });
+        return false;
+    }
+
+    if (!remarks || remarks.trim() === '') {
+        Swal.fire({
+            title: "Validation Error",
+            text: "Please provide remarks for this manual transaction",
+            icon: "warning"
+        });
+        return false;
+    }
+
+    return true;
+}
+
+async function saveManualTransaction(data) {
+    await ajax('api/bank-reconciliation/manual-transaction', 'POST', JSON.stringify({ data: data }), (response) => {
+        if (response.success) {
+            $('#manualTransactionModal').modal('hide');
+            
+            Swal.fire({
+                title: "Success!",
+                text: response.message,
+                icon: "success"
+            }).then(() => {
+                // Reload bank details to show new transaction
+                showBankDetails(data.BankID);
+                
+                // Reload main table
+                isloading = true;
+                Swal.fire({
+                    text: "Please wait... reloading data...",
+                    timerProgressBar: true,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    allowEnterKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                });
+                datatables.loadBankReconData();
+            });
+        } else {
+            Swal.fire({
+                title: "Error",
+                text: response.message,
+                icon: "error"
+            });
+        }
+    }, (xhr, status, error) => {
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            Swal.fire({
+                title: "Error",
+                text: xhr.responseJSON.message,
+                icon: "error"
+            });
+        }
+    });
 }
 
 async function saveBeginningBalance(data) {
@@ -226,32 +390,69 @@ function loadTransactionHistory(transactions) {
         TransactionTH.clear().destroy();
     }
 
+    // Calculate running balance for each transaction
+    // Sort by date ascending first to calculate balance correctly
+    const sortedTransactions = [...transactions].sort((a, b) => {
+        return new Date(a.payment_date) - new Date(b.payment_date);
+    });
+
+    let runningBalance = 0;
+    sortedTransactions.forEach(transaction => {
+        if (transaction.transaction_type === 'IN') {
+            // Deposit: add to balance
+            runningBalance += parseFloat(transaction.payment_amount || 0);
+        } else if (transaction.transaction_type === 'OUT') {
+            // Withdrawal: subtract from balance
+            runningBalance -= parseFloat(transaction.payment_amount || 0);
+        }
+        transaction.running_balance = runningBalance;
+    });
+
+    // Keep in ascending order for display (oldest first, newest at bottom)
+    const displayTransactions = sortedTransactions;
+
     TransactionTH = $('#transactionHistoryTable').DataTable({
-        data: transactions,
+        data: displayTransactions,
         columns: [
             { 
                 data: 'payment_date',
                 render: function (data, type, row) {
                     if (!data) return '';
-                    const dateObj = new Date(data);
+                    
                     if (type === 'display' || type === 'filter') {
-                        return dateObj.toLocaleDateString('en-GB', {
+                        // Use payment_date for the date
+                        const dateObj = new Date(data);
+                        const dateStr = dateObj.toLocaleDateString('en-GB', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric'
                         });
+                        
+                        // Use created_at for the actual time if available
+                        let timeStr = '';
+                        if (row.created_at) {
+                            const createdAtObj = new Date(row.created_at);
+                            timeStr = createdAtObj.toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                            });
+                            return dateStr + '<br><small class="text-muted">' + timeStr + '</small>';
+                        }
+                        
+                        return dateStr;
                     }
-                    return dateObj.toISOString();
+                    return new Date(data).toISOString();
                 }
             },
             { 
                 data: 'transaction_type',
                 render: function(data, type, row) {
-                    // Payable = OUT (red badge), Receivable = IN (green badge)
+                    // OUT = Withdrawal (red badge), IN = Deposit (green badge)
                     if (data === 'OUT') {
-                        return '<span class="statusBadge2">OUT</span>';
+                        return '<span class="statusBadge2">Withdrawal</span>';
                     } else if (data === 'IN') {
-                        return '<span class="statusBadge1">IN</span>';
+                        return '<span class="statusBadge1">Deposit</span>';
                     }
                     return '<span class="badge bg-secondary">N/A</span>';
                 },
@@ -260,12 +461,15 @@ function loadTransactionHistory(transactions) {
             { data: 'supplier_name' },
             { data: 'ap_reference' },
             { 
+                data: 'reference_number',
+                render: function(data) {
+                    return data || 'N/A';
+                }
+            },
+            { 
                 data: 'payment_type',
                 render: function(data, type, row) {
                     if (!data) return 'N/A';
-                    
-                    // Log the actual data to console for debugging
-                    console.log('Payment Type Data:', data, 'Check Number:', row.check_number);
                     
                     // Check if there's a check number associated with this payment
                     if (row.check_number && row.check_number.trim() !== '') {
@@ -286,23 +490,41 @@ function loadTransactionHistory(transactions) {
             },
             { 
                 data: 'payment_amount',
-                render: function(data) {
+                render: function(data, type, row) {
+                    // Show amount in Withdrawal column if OUT
+                    if (row.transaction_type === 'OUT') {
+                        return '₱' + formatNumber(data || 0);
+                    }
+                    return '-';
+                },
+                className: 'text-end'
+            },
+            { 
+                data: 'payment_amount',
+                render: function(data, type, row) {
+                    // Show amount in Deposit column if IN
+                    if (row.transaction_type === 'IN') {
+                        return '₱' + formatNumber(data || 0);
+                    }
+                    return '-';
+                },
+                className: 'text-end'
+            },
+            { 
+                data: 'running_balance',
+                render: function(data, type, row) {
                     return '₱' + formatNumber(data || 0);
                 },
                 className: 'text-end'
             },
-            { data: 'reference_number',
-                render: function(data) {
-                    return data || 'N/A';
-                }
-            },
-            { data: 'remarks',
+            { 
+                data: 'remarks',
                 render: function(data) {
                     return data || '-';
                 }
             }
         ],
-        order: [[0, 'desc']], // Sort by date descending
+        order: [[0, 'asc']], // Sort by date ascending (oldest first, newest at bottom)
         pageLength: 10,
         lengthChange: false,
         searching: true,
@@ -314,6 +536,37 @@ function loadTransactionHistory(transactions) {
 
 function formatNumber(num) {
     return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function formatNumberInput(input) {
+    // Get the current value
+    let value = input.value;
+    
+    // Remove all non-numeric characters except decimal point
+    value = value.replace(/[^\d.]/g, '');
+    
+    // Split by decimal point
+    let parts = value.split('.');
+    
+    // Format the integer part with commas
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // Limit to 2 decimal places
+    if (parts[1]) {
+        parts[1] = parts[1].substring(0, 2);
+    }
+    
+    // Join back and set the value
+    input.value = parts.join('.');
+    
+    // Store the numeric value in a data attribute for easy retrieval
+    $(input).data('numeric-value', value.replace(/,/g, ''));
+}
+
+function getNumericValue(inputId) {
+    const input = $('#' + inputId);
+    const value = input.val().replace(/,/g, ''); // Remove commas
+    return parseFloat(value) || 0;
 }
 
 async function ajax(endpoint, method, data, successCallback = () => { }, errorCallback = () => { }) {

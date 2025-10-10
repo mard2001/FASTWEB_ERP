@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\BankReconciliation;
 use App\Models\Bank;
 use App\Models\Payment;
+use App\Models\ManualTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class BankReconciliationController extends Controller
 {
@@ -107,8 +109,8 @@ class BankReconciliationController extends Controller
             // Get transaction history (payments made through this bank)
             $transactions = Payment::where('bank_id', $bankId)
                 ->with(['accountsPayable.supplier', 'check'])
-                ->orderBy('payment_date', 'desc')
-                ->orderBy('created_at', 'desc')
+                ->orderBy('payment_date', 'asc')
+                ->orderBy('created_at', 'asc')
                 ->get()
                 ->map(function($payment) {
                     return [
@@ -127,10 +129,83 @@ class BankReconciliationController extends Controller
                         'transaction_type' => 'OUT', // Payments are always outflows (Accounts Payable)
                         'created_at' => $payment->created_at
                     ];
-                });
+                })
+                ->toArray();
 
-            // Calculate total outflows from transactions
-            $totalTransactionOutflows = $transactions->sum('payment_amount');
+            // Get manual transactions for this bank
+            $manualTransactions = ManualTransaction::where('BankID', $bankId)
+                ->orderBy('TransactionDate', 'asc')
+                ->orderBy('DateCreated', 'asc')
+                ->get()
+                ->map(function($manual) {
+                    return [
+                        'id' => 'MT-' . $manual->ManualTransactionID,
+                        'payment_date' => $manual->TransactionDate,
+                        'payment_amount' => $manual->Amount,
+                        'payment_type' => 'Manual ' . ($manual->TransactionType === 'IN' ? 'Deposit' : 'Withdrawal'),
+                        'payment_status' => 'Completed',
+                        'reference_number' => $manual->ReferenceNumber ?? 'MT-' . str_pad($manual->ManualTransactionID, 6, '0', STR_PAD_LEFT),
+                        'check_number' => null,
+                        'check_id' => null,
+                        'remarks' => $manual->Remarks,
+                        'supplier_name' => 'N/A',
+                        'supplier_code' => 'N/A',
+                        'ap_reference' => 'N/A',
+                        'transaction_type' => $manual->TransactionType,
+                        'created_at' => $manual->DateCreated
+                    ];
+                })
+                ->toArray();
+
+            // Merge manual transactions with payment transactions
+            $transactions = array_merge($transactions, $manualTransactions);
+
+            // Add beginning balance as a deposit transaction if it exists
+            if ($latestRecon && $latestRecon->BeginningBalance > 0) {
+                $beginningBalanceTransaction = [
+                    'id' => 'BB-' . $latestRecon->ReconciliationID,
+                    'payment_date' => $latestRecon->ReconciliationDate,
+                    'payment_amount' => $latestRecon->BeginningBalance,
+                    'payment_type' => 'Beginning Balance',
+                    'payment_status' => 'Completed',
+                    'reference_number' => 'BB-' . str_pad($latestRecon->ReconciliationID, 6, '0', STR_PAD_LEFT),
+                    'check_number' => null,
+                    'check_id' => null,
+                    'remarks' => $latestRecon->Notes ?? 'Initial beginning balance',
+                    'supplier_name' => 'N/A',
+                    'supplier_code' => 'N/A',
+                    'ap_reference' => 'N/A',
+                    'transaction_type' => 'IN', // Beginning balance is an inflow (Deposit)
+                    'created_at' => $latestRecon->DateCreated,
+                    'is_beginning_balance' => true // Flag to identify beginning balance
+                ];
+                
+                // Add beginning balance transaction to the array
+                $transactions[] = $beginningBalanceTransaction;
+            }
+
+            // Sort transactions: Beginning balance first, then by date ascending, then by created_at ascending
+            usort($transactions, function($a, $b) {
+                // Beginning balance always comes first
+                $aIsBeginning = isset($a['is_beginning_balance']) && $a['is_beginning_balance'];
+                $bIsBeginning = isset($b['is_beginning_balance']) && $b['is_beginning_balance'];
+                
+                if ($aIsBeginning && !$bIsBeginning) return -1;
+                if (!$aIsBeginning && $bIsBeginning) return 1;
+                
+                // For other transactions, sort by date ascending
+                $dateCompare = strtotime($a['payment_date']) - strtotime($b['payment_date']);
+                if ($dateCompare === 0) {
+                    // If dates are the same, sort by creation time ascending
+                    return strtotime($a['created_at']) - strtotime($b['created_at']);
+                }
+                return $dateCompare;
+            });
+
+            // Calculate total outflows from transactions (excluding beginning balance)
+            $totalTransactionOutflows = collect($transactions)
+                ->where('transaction_type', 'OUT')
+                ->sum('payment_amount');
 
             // Calculate available balance
             $beginningBalance = $latestRecon->BeginningBalance ?? 0;
@@ -155,7 +230,7 @@ class BankReconciliationController extends Controller
                 'Notes' => $latestRecon->Notes ?? null,
                 'HasReconciliation' => $latestRecon ? true : false,
                 'transactions' => $transactions,
-                'transaction_count' => $transactions->count()
+                'transaction_count' => count($transactions)
             ];
 
             return response()->json([
@@ -296,5 +371,96 @@ class BankReconciliationController extends Controller
             'TotalOutflows' => $totalOutflows,
             'AvailableBalance' => $availableBalance,
         ]);
+    }
+
+    /**
+     * Store a manual transaction (deposit or withdrawal)
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function storeManualTransaction(Request $request)
+    {
+        try {
+            $data = $request->data;
+            
+            // Check if bank exists
+            $bank = Bank::find($data['BankID']);
+            if (!$bank) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bank not found',
+                ], 404);
+            }
+
+            // Validate transaction type
+            if (!in_array($data['TransactionType'], ['IN', 'OUT'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid transaction type. Must be IN or OUT.',
+                ], 400);
+            }
+
+            // Get current user ID (if authentication is enabled)
+            $userId = Auth::id() ?? null;
+
+            // Create manual transaction record
+            $manualTransaction = ManualTransaction::create([
+                'BankID' => $data['BankID'],
+                'TransactionType' => $data['TransactionType'],
+                'Amount' => $data['Amount'],
+                'TransactionDate' => $data['TransactionDate'],
+                'ReferenceNumber' => $data['ReferenceNumber'] ?? null,
+                'Remarks' => $data['Remarks'],
+                'CreatedBy' => $userId,
+            ]);
+
+            // Update bank reconciliation totals
+            $reconciliation = BankReconciliation::where('BankID', $data['BankID'])
+                ->orderBy('DateCreated', 'desc')
+                ->first();
+
+            if ($reconciliation) {
+                if ($data['TransactionType'] === 'IN') {
+                    // Deposit: increase TotalInflows
+                    $newTotalInflows = ($reconciliation->TotalInflows ?? 0) + $data['Amount'];
+                    $reconciliation->TotalInflows = $newTotalInflows;
+                } else {
+                    // Withdrawal: increase TotalOutflows
+                    $newTotalOutflows = ($reconciliation->TotalOutflows ?? 0) + $data['Amount'];
+                    $reconciliation->TotalOutflows = $newTotalOutflows;
+                }
+
+                // Recalculate available balance
+                $reconciliation->AvailableBalance = $reconciliation->calculateAvailableBalance();
+                $reconciliation->save();
+            }
+
+            // Log activity
+            $transactionTypeLabel = $data['TransactionType'] === 'IN' ? 'deposit' : 'withdrawal';
+            activity('bank_reconciliation')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'bank_name' => $bank->BankName,
+                    'transaction_type' => $data['TransactionType'],
+                    'amount' => $data['Amount'],
+                    'reference' => $data['ReferenceNumber'] ?? 'N/A',
+                    'event' => 'manual_transaction_created',
+                ])
+                ->log("Created manual {$transactionTypeLabel} for '{$bank->BankName}': ₱" . number_format($data['Amount'], 2));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Manual transaction saved successfully',
+                'data' => $manualTransaction
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
