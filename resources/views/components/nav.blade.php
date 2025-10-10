@@ -162,6 +162,12 @@
                             <span class="ms-2 px-1">GCash</span>
                         </a>
                     </li>
+                    <li class="">
+                        <a href="{{ route('gcash-reconciliation') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">GCash Reconciliation</span>
+                        </a>
+                    </li>
                 </div>
             </ul>
         </li>

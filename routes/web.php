@@ -250,6 +250,11 @@ Route::get('/master-data/bank-reconciliation', function () {
     return page_view('bank_reconciliation/bank_reconciliation_page');
 })->name('bank-reconciliation')->middleware('check.user.status');
 
+// GCASH RECONCILIATION MODULE
+Route::get('/master-data/gcash-reconciliation', function () {
+    return page_view('gcash_reconciliation/gcash_reconciliation_page');
+})->name('gcash-reconciliation')->middleware('check.user.status');
+
 // GCASH MAINTENANCE MODULE
 Route::get('/master-data/gcash', function () {
     return page_view('gcash/gcash_page');

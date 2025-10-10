@@ -26,4 +26,16 @@ class Gcash extends Model
         'DateCreated',
         'DateUpdated',
     ];
+
+    // Relationship with GcashReconciliation
+    public function reconciliations()
+    {
+        return $this->hasMany(GcashReconciliation::class, 'GcashID', 'GcashID');
+    }
+
+    // Relationship with GcashManualTransaction
+    public function manualTransactions()
+    {
+        return $this->hasMany(GcashManualTransaction::class, 'GcashID', 'GcashID');
+    }
 }

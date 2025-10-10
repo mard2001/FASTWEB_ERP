@@ -200,6 +200,12 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
     Route::get('/bank-reconciliation/{bankId}', [\App\Http\Controllers\api\BankReconciliationController::class, 'show']);
     Route::get('/bank-reconciliation', [\App\Http\Controllers\api\BankReconciliationController::class, 'index']);
 
+    // Gcash Reconciliation routes
+    Route::post('/gcash-reconciliation/set-beginning-balance', [\App\Http\Controllers\api\GcashReconciliationController::class, 'setBeginningBalance']);
+    Route::post('/gcash-reconciliation/manual-transaction', [\App\Http\Controllers\api\GcashReconciliationController::class, 'storeManualTransaction']);
+    Route::get('/gcash-reconciliation/{gcashId}', [\App\Http\Controllers\api\GcashReconciliationController::class, 'show']);
+    Route::get('/gcash-reconciliation', [\App\Http\Controllers\api\GcashReconciliationController::class, 'index']);
+
     // Activity Log routes
     Route::prefix('activity-log')->group(function () {
         Route::get('/', [ActivityLogController::class, 'index']);
