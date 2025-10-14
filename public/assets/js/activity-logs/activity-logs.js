@@ -881,6 +881,41 @@ $(document).ready(function() {
         });
     });
 
+    // Helper function to format currency amounts with commas
+    function formatCurrencyAmount(value, currencySymbol = '₱') {
+        if (!value || isNaN(value)) return value;
+        
+        const numValue = parseFloat(value);
+        if (numValue === 0) return currencySymbol + '0.00';
+        
+        return currencySymbol + numValue.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    // Helper function to format percentage amounts with commas
+    function formatPercentageAmount(value) {
+        if (!value || isNaN(value)) return value;
+        
+        const numValue = parseFloat(value);
+        return numValue.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + '%';
+    }
+
+    // Helper function to format numeric amounts with commas (no currency symbol)
+    function formatNumericAmount(value, unit = '') {
+        if (!value || isNaN(value)) return value;
+        
+        const numValue = parseFloat(value);
+        return numValue.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + (unit ? ' ' + unit : '');
+    }
+
     // Display activity details in modal
     function displayActivityDetails(activity) {
         let properties = {};
@@ -1227,37 +1262,54 @@ $(document).ready(function() {
                         if (newValueStr) formattedNewValue = statusMap[newValue] || newValue;
                     }
                     
-                    // Format currency values
-                    if (['CreditLimit', 'LabourCost', 'MaterialCost', 'FixOverhead', 'VariableOverhead', 'MinPricePct', 
-                         'TotalMerchandise', 'DiscountValue', 'FreightValue', 'MiscChargeValue', 'TaxValue', 'OrderValue', 'ExchangeRate'].includes(key) && (oldValueStr || newValueStr)) {
-                        if (oldValueStr) {
-                            if (key === 'MinPricePct' || key === 'DiscountPercent') {
-                                formattedOldValue = parseFloat(oldValueStr).toFixed(2) + '%';
-                            } else {
-                                formattedOldValue = '₱' + parseFloat(oldValueStr).toLocaleString();
-                            }
+                    // Format currency values with proper comma separation
+                    const currencyFields = ['CreditLimit', 'LabourCost', 'MaterialCost', 'FixOverhead', 'VariableOverhead', 
+                                          'TotalMerchandise', 'DiscountValue', 'FreightValue', 'MiscChargeValue', 'TaxValue', 
+                                          'OrderValue', 'ExchangeRate', 'Amount', 'Price', 'UnitPrice', 'Cost', 'Value', 
+                                          'Total', 'Subtotal', 'NetAmount', 'GrossAmount', 'Balance', 'Total_paid', 
+                                          'Credit_balance', 'Debit_balance', 'Outstanding_balance', 'Paid_amount', 
+                                          'Due_amount', 'Remaining_balance', 'Payment_amount', 'Invoice_amount',
+                                          'Total_amount', 'Grand_total', 'Final_amount', 'Net_total'];
+                    
+                    const percentageFields = ['MinPricePct', 'DiscountPercent', 'TaxPercent', 'CommissionPercent'];
+                    
+                    if (currencyFields.includes(key) && (oldValueStr || newValueStr)) {
+                        if (oldValueStr && !isNaN(oldValueStr)) {
+                            formattedOldValue = formatCurrencyAmount(oldValueStr);
                         }
-                        if (newValueStr) {
-                            if (key === 'MinPricePct' || key === 'DiscountPercent') {
-                                formattedNewValue = parseFloat(newValueStr).toFixed(2) + '%';
-                            } else {
-                                formattedNewValue = '₱' + parseFloat(newValueStr).toLocaleString();
-                            }
+                        if (newValueStr && !isNaN(newValueStr)) {
+                            formattedNewValue = formatCurrencyAmount(newValueStr);
+                        }
+                    } else if (percentageFields.includes(key) && (oldValueStr || newValueStr)) {
+                        if (oldValueStr && !isNaN(oldValueStr)) {
+                            formattedOldValue = formatPercentageAmount(oldValueStr);
+                        }
+                        if (newValueStr && !isNaN(newValueStr)) {
+                            formattedNewValue = formatPercentageAmount(newValueStr);
                         }
                     }
                     
-                    // Format numeric values with units
-                    if (['Mass', 'Volume', 'ShelfLife', 'DemandTimeFence', 'ManufLeadTime', 'DockToStock'].includes(key) && (oldValueStr || newValueStr)) {
+                    // Format numeric values with units and comma separation
+                    const numericFieldsWithUnits = ['Mass', 'Volume', 'ShelfLife', 'DemandTimeFence', 'ManufLeadTime', 'DockToStock', 'Quantity', 'Stock', 'OnHand', 'Available'];
+                    if (numericFieldsWithUnits.includes(key) && (oldValueStr || newValueStr)) {
                         const units = {
                             'Mass': 'kg',
                             'Volume': 'm³',
                             'ShelfLife': 'days',
                             'DemandTimeFence': 'days',
                             'ManufLeadTime': 'days',
-                            'DockToStock': 'days'
+                            'DockToStock': 'days',
+                            'Quantity': 'pcs',
+                            'Stock': 'pcs',
+                            'OnHand': 'pcs',
+                            'Available': 'pcs'
                         };
-                        if (oldValueStr) formattedOldValue = oldValueStr + ' ' + units[key];
-                        if (newValueStr) formattedNewValue = newValueStr + ' ' + units[key];
+                        if (oldValueStr && !isNaN(oldValueStr)) {
+                            formattedOldValue = formatNumericAmount(oldValueStr, units[key] || '');
+                        }
+                        if (newValueStr && !isNaN(newValueStr)) {
+                            formattedNewValue = formatNumericAmount(newValueStr, units[key] || '');
+                        }
                     }
                     
                     // Format date values
@@ -1284,6 +1336,45 @@ $(document).ready(function() {
                     if (['PrintedFlag', 'EmailFlag', 'ApprovalFlag', 'LocalCurrencyFlag'].includes(key)) {
                         formattedOldValue = (oldValue === 1 || oldValue === '1' || oldValue === true) ? 'Yes' : 'No';
                         formattedNewValue = (newValue === 1 || newValue === '1' || newValue === true) ? 'Yes' : 'No';
+                    }
+                    
+                    // General numeric formatting for any remaining numeric fields that contain large numbers
+                    // This catches any field that contains numbers with more than 4 digits
+                    const excludeFromGeneralFormatting = ['id', 'ID', 'Code', 'Number', 'Year', 'Month', 'Day', 'Hour', 'Minute', 'Second'];
+                    const shouldSkipGeneralFormatting = excludeFromGeneralFormatting.some(exclude => 
+                        key.toLowerCase().includes(exclude.toLowerCase())
+                    );
+                    
+                    // Check if field name suggests it's a monetary value
+                    const monetaryKeywords = ['total', 'amount', 'balance', 'paid', 'due', 'cost', 'price', 'value', 'payment', 'credit', 'debit'];
+                    const isMomentaryField = monetaryKeywords.some(keyword => 
+                        key.toLowerCase().includes(keyword.toLowerCase())
+                    );
+                    
+                    if (!shouldSkipGeneralFormatting && 
+                        !currencyFields.includes(key) && 
+                        !percentageFields.includes(key) && 
+                        !numericFieldsWithUnits.includes(key) &&
+                        !['IsActive', 'SerEntryAtSale', 'holdStatus', 'Status', 'PrintedFlag', 'EmailFlag', 'ApprovalFlag', 'LocalCurrencyFlag'].includes(key)) {
+                        
+                        // If it's a monetary field, format as currency
+                        if (isMomentaryField && (oldValueStr || newValueStr)) {
+                            if (oldValueStr && !isNaN(oldValueStr)) {
+                                formattedOldValue = formatCurrencyAmount(oldValueStr);
+                            }
+                            if (newValueStr && !isNaN(newValueStr)) {
+                                formattedNewValue = formatCurrencyAmount(newValueStr);
+                            }
+                        } 
+                        // Otherwise, check if the values are large numbers (5+ digits) that would benefit from comma formatting
+                        else {
+                            if (oldValueStr && !isNaN(oldValueStr) && Math.abs(parseFloat(oldValueStr)) >= 10000) {
+                                formattedOldValue = parseFloat(oldValueStr).toLocaleString('en-US');
+                            }
+                            if (newValueStr && !isNaN(newValueStr) && Math.abs(parseFloat(newValueStr)) >= 10000) {
+                                formattedNewValue = parseFloat(newValueStr).toLocaleString('en-US');
+                            }
+                        }
                     }
                     
                     detailsHTML += `
@@ -1331,6 +1422,77 @@ $(document).ready(function() {
 
         window.open(`/api/activity-log/export?${params.toString()}`, '_blank');
         showAlert('Export started! File will download shortly.', 'info');
+    });
+
+    // Refresh Button Functionality
+    $('#refreshBtn').click(function() {
+        // Show loading indication
+        const refreshIcon = $('#refreshImg .mdi-refresh');
+        refreshIcon.addClass('mdi-spin');
+        
+        // Disable button temporarily to prevent multiple clicks
+        $(this).prop('disabled', true).addClass('disabled');
+        
+        // Reload both statistics and activity log data
+        Promise.all([
+            new Promise(resolve => {
+                $.ajax({
+                    url: '/api/activity-log/statistics',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            updateStatistics(response.data);
+                        }
+                        resolve();
+                    },
+                    error: function() {
+                        resolve(); // Continue even if statistics fail
+                    }
+                });
+            }),
+            new Promise(resolve => {
+                const filters = {
+                    date_from: $('#dateFrom').val(),
+                    date_to: $('#dateTo').val(),
+                    activity_type: $('#activityType_VS')[0]?.value || '',
+                    subject_type: $('#subjectType_VS')[0]?.value || '',
+                    user_name: $('#userName').val()
+                };
+
+                $.ajax({
+                    url: '/api/activity-log',
+                    type: 'GET',
+                    data: filters,
+                    success: function(response) {
+                        if (response.statistics) {
+                            updateStatistics(response.statistics);
+                        }
+                        initActivityLogDatatable(response);
+                        resolve();
+                    },
+                    error: function(xhr, error, code) {
+                        console.error('Error refreshing activity logs:', error);
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.error === 'TABLE_NOT_FOUND') {
+                                showTableNotFoundMessage();
+                            } else {
+                                showAlert('Error refreshing data: ' + (response.message || 'Please try again.'), 'error');
+                            }
+                        } catch (e) {
+                            showAlert('Error refreshing data. Please try again.', 'error');
+                        }
+                        resolve();
+                    }
+                });
+            })
+        ]).then(() => {
+            // Re-enable button and remove loading indication
+            setTimeout(() => {
+                $('#refreshBtn').prop('disabled', false).removeClass('disabled');
+                refreshIcon.removeClass('mdi-spin');
+            }, 500); // Small delay to show the spinning animation
+        });
     });
 
     // Set default date range (last 30 days)

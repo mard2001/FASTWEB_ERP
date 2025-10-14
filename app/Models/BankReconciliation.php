@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\ActivityLoggable;
 
 class BankReconciliation extends Model
 {
-    use HasFactory;
+    use HasFactory, ActivityLoggable;
 
     protected $table = 'tblBankReconciliation';
     protected $primaryKey = 'ReconciliationID';
@@ -59,5 +60,30 @@ class BankReconciliation extends Model
     {
         // If value exists in database, return it; otherwise calculate
         return $value ?? $this->calculateAvailableBalance();
+    }
+
+    /**
+     * Get the log name for this model.
+     */
+    protected function getLogName(): string
+    {
+        return 'bank_reconciliation';
+    }
+
+    /**
+     * Get the log description for different events.
+     */
+    protected function getLogDescription(string $eventName): string
+    {
+        $bankName = $this->bank ? $this->bank->BankName : 'Unknown Bank';
+        $amount = $this->BeginningBalance ? '₱' . number_format($this->BeginningBalance, 2) : '';
+        
+        $descriptions = [
+            'created' => "Set beginning balance for '{$bankName}': {$amount}",
+            'updated' => "Updated beginning balance for '{$bankName}': {$amount}", 
+            'deleted' => "Deleted bank reconciliation for '{$bankName}'",
+        ];
+
+        return $descriptions[$eventName] ?? "{$eventName} bank reconciliation";
     }
 }

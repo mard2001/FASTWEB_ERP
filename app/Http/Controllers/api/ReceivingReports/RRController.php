@@ -433,21 +433,7 @@ class RRController extends Controller
                 $InventoryManager->InvMovement($rrHeaderDetails,  $detail, 'I', 'R');
             }
 
-            // Create Accounts Payable record after confirming RR
-            try {
-                $this->createAccountsPayableFromRR($header, $details, $user);
-                Log::info("Successfully created Accounts Payable for RR {$rrNo} by user {$user}");
-            } catch (\Exception $e) {
-                Log::error("Failed to create Accounts Payable for RR {$rrNo}: " . $e->getMessage(), [
-                    'exception' => $e,
-                    'rr_no' => $rrNo,
-                    'user' => $user
-                ]);
-                // Don't fail the RR confirmation if AP creation fails, just log it
-                // But we might want to notify the user
-            }
-
-            // Log confirmation activity
+            // Log confirmation activity FIRST (to appear later in chronological order)
             try {
                 activity('receiving_report')
                     ->performedOn($header)
@@ -464,6 +450,20 @@ class RRController extends Controller
                     ->log("Confirmed Receiving Report #{$rrNo}");
             } catch (\Throwable $e) {
                 // Non-blocking: ignore logging failures
+            }
+
+            // Create Accounts Payable record after confirming RR (this will log AFTER RR confirmation)
+            try {
+                $this->createAccountsPayableFromRR($header, $details, $user);
+                Log::info("Successfully created Accounts Payable for RR {$rrNo} by user {$user}");
+            } catch (\Exception $e) {
+                Log::error("Failed to create Accounts Payable for RR {$rrNo}: " . $e->getMessage(), [
+                    'exception' => $e,
+                    'rr_no' => $rrNo,
+                    'user' => $user
+                ]);
+                // Don't fail the RR confirmation if AP creation fails, just log it
+                // But we might want to notify the user
             }
 
             return response()->json([

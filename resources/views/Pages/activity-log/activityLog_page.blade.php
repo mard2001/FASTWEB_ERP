@@ -134,9 +134,43 @@
         .os-browser-icons > * {
             cursor: help;
         }
+        
+        /* Refresh Button Styling */
+        #refreshBtn {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #refreshBtn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        #refreshBtn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        #refreshBtn .mdi-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 
-    <x-contentButtonDiv downloadFunc="true"></x-contentButtonDiv>
+    <x-contentButtonDiv downloadFunc="true">
+        <x-slot:additionalButtons>
+            <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="refreshBtn" title="Refresh Data">
+                <div class="btnImg me-2" id="refreshImg">
+                    <span class="mdi mdi-refresh" style="font-size: 16px;"></span>
+                </div>
+                <span>Refresh</span>
+            </div>
+        </x-slot:additionalButtons>
+    </x-contentButtonDiv>
 
     <x-table id="ActivityLogTable">
         <x-slot:td>

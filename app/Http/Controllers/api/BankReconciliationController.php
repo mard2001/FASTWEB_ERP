@@ -289,17 +289,6 @@ class BankReconciliationController extends Controller
 
                 // Recalculate balances
                 $this->recalculateBalance($data['BankID']);
-
-                activity('bank_reconciliation')
-                    ->withProperties([
-                        'ip' => $request->ip(),
-                        'user_agent' => $request->header('User-Agent'),
-                        'bank_name' => $bank->BankName,
-                        'old_beginning_balance' => $oldData['BeginningBalance'],
-                        'new_beginning_balance' => $data['BeginningBalance'],
-                        'event' => 'updated',
-                    ])
-                    ->log("Updated beginning balance for '{$bank->BankName}' from {$oldData['BeginningBalance']} to {$data['BeginningBalance']}");
                 
             } else {
                 // Create new reconciliation record
@@ -315,16 +304,6 @@ class BankReconciliationController extends Controller
                     'AvailableBalance' => $availableBalance,
                     'Notes' => $data['Notes'] ?? null,
                 ]);
-
-                activity('bank_reconciliation')
-                    ->withProperties([
-                        'ip' => $request->ip(),
-                        'user_agent' => $request->header('User-Agent'),
-                        'bank_name' => $bank->BankName,
-                        'beginning_balance' => $data['BeginningBalance'],
-                        'event' => 'created',
-                    ])
-                    ->log("Set beginning balance for '{$bank->BankName}': {$data['BeginningBalance']}");
             }
 
             return response()->json([
@@ -436,19 +415,7 @@ class BankReconciliationController extends Controller
                 $reconciliation->save();
             }
 
-            // Log activity
-            $transactionTypeLabel = $data['TransactionType'] === 'IN' ? 'deposit' : 'withdrawal';
-            activity('bank_reconciliation')
-                ->withProperties([
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->header('User-Agent'),
-                    'bank_name' => $bank->BankName,
-                    'transaction_type' => $data['TransactionType'],
-                    'amount' => $data['Amount'],
-                    'reference' => $data['ReferenceNumber'] ?? 'N/A',
-                    'event' => 'manual_transaction_created',
-                ])
-                ->log("Created manual {$transactionTypeLabel} for '{$bank->BankName}': ₱" . number_format($data['Amount'], 2));
+
 
             return response()->json([
                 'success' => true,

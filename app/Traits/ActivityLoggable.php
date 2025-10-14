@@ -38,6 +38,15 @@ trait ActivityLoggable
     {
         $modelName = class_basename($this);
         
+        // Special cases for cleaner display names
+        if ($modelName === 'AccountsPayable') {
+            $modelName = 'Payable';
+        } elseif ($modelName === 'BankReconciliation') {
+            $modelName = 'Bank Balance';
+        } elseif ($modelName === 'ManualTransaction') {
+            $modelName = 'Bank Transaction';
+        }
+        
         $descriptions = [
             'created' => "Created a new {$modelName}",
             'updated' => "Updated {$modelName}",
