@@ -54,10 +54,11 @@ function populateSupplierDropdowns() {
         return;
     }
 
-    let supplierOptions = [{ label: 'All Suppliers', value: '' }];
+    let supplierOptions = [{ label: 'All Suppliers/Customers', value: '' }];
     suppliersData.forEach(supplier => {
+        const type = supplier.Type || 'Supplier'; // Default to Supplier if Type is not set
         supplierOptions.push({
-            label: `${supplier.SupplierCode} - ${supplier.SupplierName}`,
+            label: `${supplier.SupplierCode} - ${supplier.SupplierName} (${type})`,
             value: supplier.SupplierCode
         });
     });
@@ -68,7 +69,7 @@ function populateSupplierDropdowns() {
             supplierFilterVS = VirtualSelect.init({
                 ele: '#supplierFilter_VS',
                 options: supplierOptions,
-                placeholder: 'Select Supplier',
+                placeholder: 'Select Supplier/Customer',
                 search: true,
                 multiple: false
             });
@@ -167,20 +168,28 @@ function initPaymentHistoryDataTable() {
                 }
             },
             { 
-                data: 'supplier_name', 
-                title: 'Supplier',
+                data: 'supplier_customer_name', 
+                title: 'Supplier/Customer',
                 render: function(data, type, row) {
+                    // Determine type based on transaction_type
+                    const isAR = row.transaction_type === 'Receivable';
+                    const typeLabel = isAR ? 'Customer' : 'Supplier';
+                    const codeField = row.supplier_customer_code || (isAR ? row.customer_code : row.supplier_code);
+                    
                     return `<div class="supplier-info">
-                                <div class="fw-bold">${data}</div>
-                                <small class="text-muted">${row.supplier_code}</small>
+                                <div class="fw-bold">${data || 'N/A'}</div>
+                                <small class="text-muted">${codeField || 'N/A'}</small>
+                                <small class="text-muted ms-1">(${typeLabel})</small>
                             </div>`;
                 }
             },
             { 
-                data: 'rr_number', 
-                title: 'RR #',
+                data: 'rr_so_number', 
+                title: 'RR#/SO#',
                 render: function(data, type, row) {
-                    return data || 'N/A';
+                    const isAR = row.transaction_type === 'Receivable';
+                    const label = isAR ? 'SO#' : 'RR#';
+                    return `<span class="badge bg-${isAR ? 'info' : 'secondary'}">${label}</span> ${data || 'N/A'}`;
                 }
             },
             { 
@@ -412,6 +421,19 @@ function showPaymentHistoryModal(rowData) {
 
 // Fill modal with data
 function fillPaymentHistoryModal(data) {
+    // Update dynamic labels based on transaction type
+    const isReceivable = data.transaction_type === 'receivable';
+    
+    // Update modal title
+    $('#paymentHistoryModalLabel').text(isReceivable ? 'ACCOUNTS RECEIVABLE PAYMENT RECORD' : 'ACCOUNTS PAYABLE PAYMENT RECORD');
+    
+    // Update section title and labels
+    $('#supplier_customer_section_title').text(isReceivable ? 'CUSTOMER INFORMATION:' : 'SUPPLIER INFORMATION:');
+    $('#supplier_customer_code_label').text(isReceivable ? 'CUSTOMER CODE' : 'SUPPLIER CODE');
+    $('#supplier_customer_name_label').text(isReceivable ? 'CUSTOMER NAME' : 'SUPPLIER NAME');
+    $('#rr_so_number_label').text(isReceivable ? 'SO# NUMBER' : 'RR# NUMBER');
+    
+    // Fill form fields
     $('#view_payment_date').val(data.payment_date || '');
     $('#view_supplier_code').val(data.supplier_code || 'N/A');
     $('#view_supplier_name').val(data.supplier_name || 'N/A');

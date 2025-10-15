@@ -50,6 +50,12 @@
                         </a>
                     </li>
                     <li class="">
+                        <a href="{{ route('accounts-receivable') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Account's Receivable</span>
+                        </a>
+                    </li>
+                    <li class="">
                         <a href="{{ route('payment-history') }}" class="sidebar-link">
                             <span class="mdi mdi-ray-start-arrow"></span>
                             <span class="ms-2 px-1">Payment History</span>

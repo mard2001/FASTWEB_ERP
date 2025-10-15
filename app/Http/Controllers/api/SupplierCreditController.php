@@ -20,15 +20,13 @@ class SupplierCreditController extends Controller
     public function getSuppliersWithCredits()
     {
         try {
-            // First, try to get data from the new SupplierCredit table with supplier relationship
-            $suppliers = SupplierCredit::with('supplier')->orderBy('supplier_name')->get();
+            // Always refresh supplier credit data to ensure all suppliers are included
+            // especially new suppliers that may not be in the tblSupplierCredits table
+            Log::info('Refreshing supplier credit data to ensure all suppliers are included...');
+            SupplierCredit::refreshAllSupplierCredits();
             
-            // If no data exists in the table, refresh it from the source data
-            if ($suppliers->isEmpty()) {
-                Log::info('SupplierCredit table is empty, refreshing data...');
-                SupplierCredit::refreshAllSupplierCredits();
-                $suppliers = SupplierCredit::with('supplier')->orderBy('supplier_name')->get();
-            }
+            // Get refreshed data from the SupplierCredit table
+            $suppliers = SupplierCredit::with('supplier')->orderBy('supplier_name')->get();
             
             // Convert to array format expected by the frontend
             $suppliersArray = $suppliers->map(function ($supplier) {

@@ -21,7 +21,7 @@
             </div>
         </div>
         <div class="mb-1 whMoverangeDiv">
-            <label class="form-label">SUPPLIER</label>
+            <label class="form-label">SUPPLIER/CUSTOMER</label>
             <div id="supplierFilter_VS" class="VSSelect"></div>
         </div>
         <div class="mb-1 whMoverangeDiv">
@@ -287,22 +287,22 @@
                     </div>
                 </div>
 
-                <!-- Supplier Information Section -->
+                <!-- Supplier/Customer Information Section -->
                 <div class="d-flex align-items-center" style="margin-bottom:-10px;">
                     <div style="width:100%;"><hr></div>
-                    <div class="phheaderSectionTitle">SUPPLIER INFORMATION:</div>
+                    <div class="phheaderSectionTitle" id="supplier_customer_section_title">SUPPLIER/CUSTOMER INFORMATION:</div>
                     <div style="width:100%;"><hr></div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-12 col-sm-6 col-md-4">
                         <div class="">
-                            <label class="form-label">SUPPLIER CODE</label>
+                            <label class="form-label" id="supplier_customer_code_label">SUPPLIER/CUSTOMER CODE</label>
                             <input type="text" class="form-control" id="view_supplier_code" readonly>
                         </div>
                     </div>
                     <div class="col-12 col-sm-6 col-md-8">
                         <div class="">
-                            <label class="form-label">SUPPLIER NAME</label>
+                            <label class="form-label" id="supplier_customer_name_label">SUPPLIER/CUSTOMER NAME</label>
                             <input type="text" class="form-control" id="view_supplier_name" readonly>
                         </div>
                     </div>
@@ -317,7 +317,7 @@
                 <div class="row mb-2">
                     <div class="col-12 col-sm-6 col-md-6">
                         <div class="">
-                            <label class="form-label">RR NUMBER</label>
+                            <label class="form-label" id="rr_so_number_label">RR#/SO# NUMBER</label>
                             <input type="text" class="form-control" id="view_rr_number" readonly>
                         </div>
                     </div>

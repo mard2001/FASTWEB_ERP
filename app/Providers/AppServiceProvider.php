@@ -25,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        // Register observers for automatic supplier credit updates
+        \App\Models\Supplier::observe(\App\Observers\SupplierObserver::class);
+        \App\Models\AccountsPayable::observe(\App\Observers\AccountsPayableObserver::class);
     }
 }

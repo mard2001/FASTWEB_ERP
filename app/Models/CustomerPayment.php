@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 
-class Payment extends Model
+class CustomerPayment extends Model
 {
     use HasFactory;
 
-    protected $table = 'tblPayments';
+    protected $table = 'tblCustomerPayments';
     protected $primaryKey = 'id';
     public $incrementing = true;
     protected $keyType = 'int';
@@ -21,7 +21,6 @@ class Payment extends Model
     const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'accounts_payable_id',
         'accounts_receivable_id',
         'payment_amount',
         'payment_type',
@@ -49,15 +48,7 @@ class Payment extends Model
     ];
 
     /**
-     * Relationship: Payment belongs to AccountsPayable
-     */
-    public function accountsPayable()
-    {
-        return $this->belongsTo(AccountsPayable::class, 'accounts_payable_id', 'id');
-    }
-
-    /**
-     * Relationship: Payment belongs to AccountsReceivable
+     * Relationship: CustomerPayment belongs to AccountsReceivable
      */
     public function accountsReceivable()
     {
@@ -65,7 +56,7 @@ class Payment extends Model
     }
 
     /**
-     * Relationship: Payment belongs to Bank
+     * Relationship: CustomerPayment belongs to Bank
      */
     public function bank()
     {
@@ -73,7 +64,7 @@ class Payment extends Model
     }
 
     /**
-     * Relationship: Payment belongs to GCash
+     * Relationship: CustomerPayment belongs to GCash
      */
     public function gcash()
     {
@@ -81,19 +72,11 @@ class Payment extends Model
     }
 
     /**
-     * Relationship: Payment belongs to Check
+     * Relationship: CustomerPayment belongs to Check
      */
     public function check()
     {
         return $this->belongsTo(Check::class, 'check_id', 'CheckID');
-    }
-
-    /**
-     * Scope: Get payments for a specific accounts payable record
-     */
-    public function scopeForAccountsPayable($query, $apId)
-    {
-        return $query->where('accounts_payable_id', $apId);
     }
 
     /**
@@ -102,22 +85,6 @@ class Payment extends Model
     public function scopeForAccountsReceivable($query, $arId)
     {
         return $query->where('accounts_receivable_id', $arId);
-    }
-
-    /**
-     * Scope: Get only AR payments
-     */
-    public function scopeArPayments($query)
-    {
-        return $query->whereNotNull('accounts_receivable_id');
-    }
-
-    /**
-     * Scope: Get only AP payments
-     */
-    public function scopeApPayments($query)
-    {
-        return $query->whereNotNull('accounts_payable_id');
     }
 
     /**

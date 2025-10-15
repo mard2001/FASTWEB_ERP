@@ -4,14 +4,14 @@ let isloading = false;
 let currentEditId = null;
 
 // Global variables
-let accountsPayableData = [];
+let accountsReceivableData = [];
 let filteredData = [];
-let accountsPayableTable;
+let accountsReceivableTable;
 let statusFilterVS;
-let supplierFilterVS;
+let customerFilterVS;
 let filteredStartDate;
 let filteredEndDate;
-let suppliersData = [];
+let customersData = [];
 let banksData = [];
 let gcashData = [];
 
@@ -19,18 +19,18 @@ let gcashData = [];
 $(document).ready(function() {
     initializeFilters();
     initDateRangePicker();
-    loadSuppliersData();
-    loadAccountsPayableData();
+    loadCustomersData();
+    loadAccountsReceivableData();
     loadGcashData(); // Load GCash data for payment dropdown
     
     // Initialize number formatting for amount fields
     initializeAmountFormatting();
 });
 
-// Load suppliers data for dropdown
-function loadSuppliersData() {
+// Load customers data for dropdown
+function loadCustomersData() {
     $.ajax({
-        url: '/api/accounts-payable/suppliers',
+        url: '/api/accounts-receivable/customers',
         type: 'GET',
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
@@ -38,25 +38,25 @@ function loadSuppliersData() {
         },
         success: function(response) {
             if (response.success && response.data) {
-                suppliersData = response.data;
-                populateSupplierDropdowns();
+                customersData = response.data;
+                populateCustomerDropdowns();
             } else {
-                console.warn('No supplier data received or invalid response format');
+                console.warn('No customer data received or invalid response format');
                 // Still initialize dropdowns with empty data
-                populateSupplierDropdowns();
+                populateCustomerDropdowns();
             }
         },
         error: function(xhr) {
-            console.error('Failed to load suppliers data:', xhr);
+            console.error('Failed to load customers data:', xhr);
             // Still initialize dropdowns with empty data to prevent further errors
-            suppliersData = [];
-            populateSupplierDropdowns();
+            customersData = [];
+            populateCustomerDropdowns();
             
             // Show user-friendly message only if it's a critical error
             if (xhr.status === 401) {
-                console.warn('Authentication required for suppliers data');
+                console.warn('Authentication required for customers data');
             } else if (xhr.status >= 500) {
-                console.error('Server error loading suppliers data');
+                console.error('Server error loading customers data');
             }
         }
     });
@@ -161,8 +161,8 @@ function loadGcashData() {
     });
 }
 
-// Populate supplier dropdowns
-function populateSupplierDropdowns() {
+// Populate customer dropdowns
+function populateCustomerDropdowns() {
     // Check if VirtualSelect is available
     if (typeof VirtualSelect === 'undefined') {
         console.error('VirtualSelect library is not loaded');
@@ -170,65 +170,65 @@ function populateSupplierDropdowns() {
     }
 
     // For filter dropdown
-    let supplierOptions = [{ label: 'All Suppliers', value: '' }];
-    suppliersData.forEach(supplier => {
-        supplierOptions.push({
-            label: `${supplier.SupplierCode} - ${supplier.SupplierName}`,
-            value: supplier.SupplierCode
+    let customerOptions = [{ label: 'All Customers', value: '' }];
+    customersData.forEach(customer => {
+        customerOptions.push({
+            label: `${customer.custCode} - ${customer.custName}`,
+            value: customer.custCode
         });
     });
 
-    // Initialize supplier filter if element exists and not already initialized
-    const supplierFilterElement = document.querySelector('#supplierFilter_VS');
-    if (supplierFilterElement && !supplierFilterVS) {
+    // Initialize customer filter if element exists and not already initialized
+    const customerFilterElement = document.querySelector('#customerFilter_VS');
+    if (customerFilterElement && !customerFilterVS) {
         try {
-            supplierFilterVS = VirtualSelect.init({
-                ele: '#supplierFilter_VS',
-                options: supplierOptions,
-                placeholder: 'Select Supplier',
+            customerFilterVS = VirtualSelect.init({
+                ele: '#customerFilter_VS',
+                options: customerOptions,
+                placeholder: 'Select Customer',
                 search: true,
                 multiple: false
             });
 
-            supplierFilterElement.addEventListener('change', function() {
+            customerFilterElement.addEventListener('change', function() {
                 applyFilters();
             });
         } catch (error) {
-            console.error('Error initializing supplier filter:', error);
+            console.error('Error initializing customer filter:', error);
         }
     }
 
     // For form dropdown - only initialize if element exists
-    const supplierFormElement = document.querySelector('#supplier_code_VS');
-    if (supplierFormElement) {
+    const customerFormElement = document.querySelector('#customer_code_VS');
+    if (customerFormElement) {
         try {
-            let formSupplierOptions = [];
-            suppliersData.forEach(supplier => {
-                formSupplierOptions.push({
-                    label: `${supplier.SupplierCode} - ${supplier.SupplierName}`,
-                    value: supplier.SupplierCode,
-                    customData: supplier.SupplierName
+            let formCustomerOptions = [];
+            customersData.forEach(customer => {
+                formCustomerOptions.push({
+                    label: `${customer.custCode} - ${customer.custName}`,
+                    value: customer.custCode,
+                    customData: customer.custName
                 });
             });
 
             VirtualSelect.init({
-                ele: '#supplier_code_VS',
-                options: formSupplierOptions,
-                placeholder: 'Select Supplier',
+                ele: '#customer_code_VS',
+                options: formCustomerOptions,
+                placeholder: 'Select Customer',
                 search: true,
                 multiple: false
             });
 
-            // Add event listener for supplier selection in form
-            supplierFormElement.addEventListener('change', function() {
+            // Add event listener for customer selection in form
+            customerFormElement.addEventListener('change', function() {
                 const selectedValue = this.value;
-                const selectedSupplier = suppliersData.find(s => s.SupplierCode === selectedValue);
-                if (selectedSupplier) {
-                    $('#supplier_name').val(selectedSupplier.SupplierName);
+                const selectedCustomer = customersData.find(c => c.custCode === selectedValue);
+                if (selectedCustomer) {
+                    $('#customer_name').val(selectedCustomer.custName);
                 }
             });
         } catch (error) {
-            console.error('Error initializing supplier form dropdown:', error);
+            console.error('Error initializing customer form dropdown:', error);
         }
     }
 }
@@ -266,9 +266,9 @@ function initializeFilters() {
         ele: '#statusFilter_VS',
         options: [
             { label: 'All Status', value: '' },
-            { label: 'Pending', value: 'Pending' },
+            { label: 'Outstanding', value: 'Outstanding' },
             { label: 'Partial', value: 'Partial' },
-            { label: 'Paid', value: 'Paid' },
+            { label: 'Settled', value: 'Settled' },
             { label: 'Overdue', value: 'overdue' }
         ],
         placeholder: 'Select Status',
@@ -280,7 +280,7 @@ function initializeFilters() {
     statusFilterVS = document.querySelector('#statusFilter_VS');
 
     // Set up event listeners for filters
-    $('#rrNumberFilter').on('change keyup', function() {
+    $('#soNumberFilter').on('change keyup', function() {
         applyFilters();
     });
 
@@ -289,10 +289,10 @@ function initializeFilters() {
     });
 }
 
-// Load accounts Payable data
-function loadAccountsPayableData(page = 1) {
+// Load accounts receivable data
+function loadAccountsReceivableData(page = 1) {
     $.ajax({
-        url: '/api/accounts-payable',
+        url: '/api/accounts-receivable',
         type: 'GET',
         data: {
             page: page,
@@ -300,9 +300,9 @@ function loadAccountsPayableData(page = 1) {
         },
         success: function(response) {
             if (response.success) {
-                accountsPayableData = response.data;
-                filteredData = [...accountsPayableData];
-                initAccountsPayableDataTable();
+                accountsReceivableData = response.data;
+                filteredData = [...accountsReceivableData];
+                initAccountsReceivableDataTable();
                 loadStatistics();
                 // Re-apply current filters after reload so user selections persist
                 applyFilters();
@@ -314,8 +314,8 @@ function loadAccountsPayableData(page = 1) {
             }
         },
         error: function(xhr) {
-            console.error('Failed to load accounts payable data:', xhr);
-            Swal.fire('Error!', 'Failed to load accounts payable data.', 'error');
+            console.error('Failed to load accounts receivable data:', xhr);
+            Swal.fire('Error!', 'Failed to load accounts receivable data.', 'error');
         }
     });
 }
@@ -349,14 +349,14 @@ function ajax(url, method, data, successCallback, errorCallback) {
 }
 
 // Initialize DataTable
-function initAccountsPayableDataTable() {
-    if (accountsPayableTable) {
+function initAccountsReceivableDataTable() {
+    if (accountsReceivableTable) {
         // Fast refresh: just update data without recreating table
-        accountsPayableTable.clear().rows.add(filteredData).draw(false);
+        accountsReceivableTable.clear().rows.add(filteredData).draw(false);
         return;
     }
 
-    accountsPayableTable = $('#AccountsPayableTable').DataTable({
+    accountsReceivableTable = $('#AccountsReceivableTable').DataTable({
         data: filteredData,
         language: {
             searchPlaceholder: "Search here..."
@@ -381,18 +381,18 @@ function initAccountsPayableDataTable() {
                 }
             },
             { 
-                data: 'supplier_name', 
-                title: 'Supplier',
+                data: 'customer_name', 
+                title: 'Customer',
                 render: function(data, type, row) {
                     if (type === 'display') {
-                        return `<div class="supplier-info"><div class="fw-bold">${data}</div><small class="text-muted">${row.supplier_code}</small></div>`;
+                        return `<div class="customer-info"><div class="fw-bold">${data}</div><small class="text-muted">${row.customer_code}</small></div>`;
                     }
                     return data;
                 }
             },
             { 
-                data: 'rr_number', 
-                title: 'RR #',
+                data: 'so_number', 
+                title: 'SO #',
                 defaultContent: 'N/A'
             },
             { 
@@ -454,8 +454,8 @@ function initAccountsPayableDataTable() {
                 defaultContent: 'N/A'
             },
             {
-                data: 'sort_timestamp',
-                title: 'Sort Timestamp',
+                data: 'created_at',
+                title: 'Created At',
                 visible: false,
                 searchable: false
             }
@@ -470,9 +470,9 @@ function initAccountsPayableDataTable() {
             $row.addClass('clickable-row').attr('data-id', data.id);
             
             // Add status-based classes efficiently
-            if (data.status === 'Pending' && data.is_overdue) {
+            if (data.status === 'Outstanding' && data.is_overdue) {
                 $row.addClass('table-danger');
-            } else if (data.status === 'Paid') {
+            } else if (data.status === 'Settled') {
                 $row.addClass('table-success');
             } else if (data.status === 'Partial') {
                 $row.addClass('table-warning');
@@ -495,40 +495,18 @@ function initAccountsPayableDataTable() {
     $('.loadingScreen').remove();
     $('#dattableDiv').removeClass('opacity-0');
 
-    // Add blue header to the table
-    const tableDiv = $('.dt-layout-row').first();
-    tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F) ); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px; color: var(--text-color-light, #FFF);">Accounts Payable Management</p></div>');
-
-    // Set up event handlers
+        // Add blue header to the table
+        const tableDiv = $('.dt-layout-row').first();
+        tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F) ); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px; color: var(--text-color-light, #FFF);">Accounts Receivable Management</p></div>');    // Set up event handlers
     setupEventHandlers();
     
-    // Add CSS for hover effects and validation styling (more efficient than jQuery hover)
+    // Add CSS for hover effects (more efficient than jQuery hover)
     if (!$('#ap-hover-styles').length) {
         $('<style id="ap-hover-styles">')
             .text(`
                 .clickable-row { cursor: pointer; transition: background-color 0.2s ease; }
                 .clickable-row:hover { background-color: #f8f9fa !important; }
                 .table-hover-effect { background-color: #e9ecef !important; }
-                
-                /* Validation styles for inputs and dropdowns */
-                .is-invalid.form-control, .is-invalid.form-select, 
-                select.is-invalid, input.is-invalid {
-                    border-color: #dc3545 !important;
-                    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
-                }
-                
-                /* Label styling for validation errors */
-                label.text-danger {
-                    color: #dc3545 !important;
-                    font-weight: 500;
-                }
-                
-                /* Focus state for invalid fields */
-                .is-invalid.form-control:focus, .is-invalid.form-select:focus,
-                select.is-invalid:focus, input.is-invalid:focus {
-                    border-color: #dc3545 !important;
-                    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
-                }
             `)
             .appendTo('head');
     }
@@ -574,24 +552,24 @@ function initDateRangePicker() {
 
 // Apply filters
 function applyFilters() {
-    const rrNumberFilterRaw = $('#rrNumberFilter').val();
-    let rrNumberFilter = (rrNumberFilterRaw || '').toLowerCase();
+    const soNumberFilterRaw = $('#soNumberFilter').val();
+    let soNumberFilter = (soNumberFilterRaw || '').toLowerCase();
     let statusFilter = '';
     if (statusFilterVS && typeof statusFilterVS.getSelectedOptions === 'function') {
         const statusOpts = statusFilterVS.getSelectedOptions();
         statusFilter = (Array.isArray(statusOpts) && statusOpts[0] && statusOpts[0].value) ? statusOpts[0].value : '';
     }
-    let supplierFilter = '';
-    if (supplierFilterVS && typeof supplierFilterVS.getSelectedOptions === 'function') {
-        const supplierOpts = supplierFilterVS.getSelectedOptions();
-        supplierFilter = (Array.isArray(supplierOpts) && supplierOpts[0] && supplierOpts[0].value) ? supplierOpts[0].value : '';
+    let customerFilter = '';
+    if (customerFilterVS && typeof customerFilterVS.getSelectedOptions === 'function') {
+        const customerOpts = customerFilterVS.getSelectedOptions();
+        customerFilter = (Array.isArray(customerOpts) && customerOpts[0] && customerOpts[0].value) ? customerOpts[0].value : '';
     }
 
-    filteredData = accountsPayableData.filter(function(item) {
+    filteredData = accountsReceivableData.filter(function(item) {
         let matchesDate = true;
-        let matchesRRNumber = true;
+        let matchesSONumber = true;
         let matchesStatus = true;
-        let matchesSupplier = true;
+        let matchesCustomer = true;
 
         // Date filter
         if (filteredStartDate && filteredEndDate) {
@@ -601,34 +579,34 @@ function applyFilters() {
             }
         }
 
-        // RR Number filter (guard against undefined rr_number)
-        const rrText = (item.rr_number || '').toString().toLowerCase();
-        if (rrNumberFilter && !rrText.includes(rrNumberFilter)) {
-            matchesRRNumber = false;
+        // SO Number filter (guard against undefined so_number)
+        const soText = (item.so_number || '').toString().toLowerCase();
+        if (soNumberFilter && !soText.includes(soNumberFilter)) {
+            matchesSONumber = false;
         }
 
         // Status filter
         if (statusFilter) {
             if (statusFilter === 'overdue') {
-                matchesStatus = item.status === 'Pending' && item.is_overdue;
+                matchesStatus = item.status === 'Outstanding' && item.is_overdue;
             } else {
                 matchesStatus = item.status === statusFilter;
             }
         }
 
-        // Supplier filter
-        if (supplierFilter && item.supplier_code !== supplierFilter) {
-            matchesSupplier = false;
+        // Customer filter
+        if (customerFilter && item.customer_code !== customerFilter) {
+            matchesCustomer = false;
         }
 
-        return matchesDate && matchesRRNumber && matchesStatus && matchesSupplier;
+        return matchesDate && matchesSONumber && matchesStatus && matchesCustomer;
     });
 
     // Update DataTable
-    if (accountsPayableTable) {
-        accountsPayableTable.clear();
-        accountsPayableTable.rows.add(filteredData);
-        accountsPayableTable.draw();
+    if (accountsReceivableTable) {
+        accountsReceivableTable.clear();
+        accountsReceivableTable.rows.add(filteredData);
+        accountsReceivableTable.draw();
     }
 
     // Update statistics
@@ -637,16 +615,16 @@ function applyFilters() {
 
 // Load statistics
 function loadStatistics() {
-    let totalPending = 0;
+    let totalOutstanding = 0;
     let totalPartial = 0;
-    let totalPaid = 0;
+    let totalSettled = 0;
     let totalOverdue = 0;
     let totalBalance = 0;
     let totalRecords = filteredData.length;
 
     filteredData.forEach(function(item) {
-        if (item.status === 'Pending') {
-            totalPending += parseFloat(item.total_amount || 0);
+        if (item.status === 'Outstanding') {
+            totalOutstanding += parseFloat(item.total_amount || 0);
             totalBalance += parseFloat(item.balance_amount || 0);
             
             if (item.is_overdue) {
@@ -655,56 +633,55 @@ function loadStatistics() {
         } else if (item.status === 'Partial') {
             totalPartial += parseFloat(item.total_amount || 0);
             totalBalance += parseFloat(item.balance_amount || 0);
-        } else if (item.status === 'Paid') {
-            totalPaid += parseFloat(item.total_amount || 0);
+        } else if (item.status === 'Settled') {
+            totalSettled += parseFloat(item.total_amount || 0);
         }
     });
 
-    $('#total-pending').text(formatCurrency(totalPending));
-    $('#total-paid').text(formatCurrency(totalPaid));
-    $('#total-overdue').text(formatCurrency(totalOverdue));
-    $('#total-balance').text(formatCurrency(totalBalance));
+    $('#total-outstanding').text(formatCurrency(totalOutstanding));
+    $('#total-invoices').text(formatCurrency(totalSettled));
+    $('#total-credit').text(formatCurrency(totalOverdue));
     $('#total-records').text(totalRecords + ' Records');
 }
 
 // Show main modal for record interaction
-function showAccountsPayableModal(rowData, mode = 'view') {
+function showAccountsReceivableModal(rowData, mode = 'view') {
     // Fill modal with data first
-    fillAccountsPayableModal(rowData);
+    fillAccountsReceivableModal(rowData);
     
     // Set modal mode (view only)
     setModalMode(mode, rowData.status);
     
     // Store data in modal for later use
-    const formElement = $('#accountsPayableForm');
+    const formElement = $('#accountsReceivableForm');
     if (formElement.length > 0) {
         formElement.data('id', rowData.id);
         formElement.data('record-data', rowData);
     } else {
         // If form still not found, store data on modal itself
-        $('#accountsPayableModal').data('id', rowData.id);
-        $('#accountsPayableModal').data('record-data', rowData);
+        $('#accountsReceivableModal').data('id', rowData.id);
+        $('#accountsReceivableModal').data('record-data', rowData);
     }
     
     // Now show the modal after everything is configured
-    $('#accountsPayableModal').modal('show');
+    $('#accountsReceivableModal').modal('show');
 }
 
 // Fill modal with data
-function fillAccountsPayableModal(data) {
+function fillAccountsReceivableModal(data) {
     // Format date for HTML date input (yyyy-MM-dd)
     let formattedDate = data.date ? moment(data.date).format('YYYY-MM-DD') : '';
     $('#date').val(formattedDate);
     
-    $('#rr_number').val(data.rr_number || '');
+    $('#so_number').val(data.so_number || '');
     $('#reference_number').val(data.reference_number || '');
     $('#total_amount').val(formatNumberWithCommas(data.total_amount || ''));
     $('#terms').val(data.terms || '');
     $('#status').val(data.status || '');
     
-    // Set Balance Amount - if status is "Paid", balance should be 0
+    // Set Balance Amount - if status is "Settled", balance should be 0
     let balanceAmount = data.balance_amount || '';
-    if (data.status && data.status.toLowerCase() === 'paid') {
+    if (data.status && data.status.toLowerCase() === 'settled') {
         balanceAmount = '0.00';
     }
     $('#balance_amount').val(formatNumberWithCommas(balanceAmount));
@@ -717,86 +694,75 @@ function fillAccountsPayableModal(data) {
     const totalPaid = totalAmount - balanceAmountForCalculation;
     $('#total_paid').val(formatNumberWithCommas(totalPaid.toFixed(2)));
     
-    // Handle Credit Memo display
-    if (data.CreditMemo && data.CreditMemo > 0) {
-        $('#credit_memo').val(formatCurrency(data.CreditMemo));
-        $('#credit_memo_container').show();
-    } else {
-        $('#credit_memo').val(''); // Clear the field value
-        $('#credit_memo_container').hide();
-    }
-    
     // Control balance amount visibility based on status
     const status = data.status || '';
-    if (status.toLowerCase() === 'pending') {
+    if (status.toLowerCase() === 'outstanding') {
         $('#balance_amount_container').hide();
     } else {
         $('#balance_amount_container').show();
     }
     
-    // Set supplier in Virtual Select and display field
-    const supplierVS = document.querySelector('#supplier_code_VS');
-    if (supplierVS && supplierVS.setValue && data.supplier_code) {
-        supplierVS.setValue(data.supplier_code);
+    // Set customer in Virtual Select and display field
+    const customerVS = document.querySelector('#customer_code_VS');
+    if (customerVS && customerVS.setValue && data.customer_code) {
+        customerVS.setValue(data.customer_code);
     }
     
-    // Set supplier display field (readonly)
-    const supplierDisplay = document.getElementById('supplier_display');
-    if (supplierDisplay && data.supplier_name) {
-        supplierDisplay.value = `${data.supplier_name} (${data.supplier_code})`;
-    } else if (supplierDisplay && data.supplier_code) {
-        // Fallback: find supplier name from suppliersData
-        const supplier = suppliersData.find(s => s.supplier_code === data.supplier_code);
-        if (supplier) {
-            supplierDisplay.value = `${supplier.supplier_name} (${supplier.supplier_code})`;
+    // Set customer display field (readonly)
+    const customerDisplay = document.getElementById('customer_display');
+    if (customerDisplay && data.customer_name) {
+        customerDisplay.value = `${data.customer_name} (${data.customer_code})`;
+    } else if (customerDisplay && data.customer_code) {
+        // Fallback: find customer name from customersData
+        const customer = customersData.find(c => c.custCode === data.customer_code);
+        if (customer) {
+            customerDisplay.value = `${customer.custName} (${customer.custCode})`;
         } else {
-            supplierDisplay.value = data.supplier_code;
+            customerDisplay.value = data.customer_code;
         }
     }
 }
 
 // Set modal mode (view only - no edit functionality)
 function setModalMode(mode, status) {
-    const isPending = status === 'Pending' || status === 'Partial';
+    const isOutstanding = status === 'Outstanding' || status === 'Partial';
     
     // All form fields are always disabled (view-only)
-    $('#accountsPayableForm input, #accountsPayableForm textarea').prop('disabled', true);
+    $('#accountsReceivableForm input, #accountsReceivableForm textarea').prop('disabled', true);
     
     // Always show readonly field, hide dropdown (view-only mode)
-    const supplierDisplay = document.getElementById('supplier_display');
-    const supplierVS = document.getElementById('supplier_code_VS');
+    const customerDisplay = document.getElementById('customer_display');
+    const customerVS = document.getElementById('customer_code_VS');
     
-    if (supplierDisplay) supplierDisplay.style.display = 'block';
-    if (supplierVS) supplierVS.style.display = 'none';
+    if (customerDisplay) customerDisplay.style.display = 'block';
+    if (customerVS) customerVS.style.display = 'none';
     
-    // Show/hide buttons - only Process Payment for pending/partial records
-    $('#processPaymentBtn').toggle(isPending);
+    // Show/hide buttons - only Process Payment for outstanding/partial records
+    $('#processPaymentBtn').toggle(isOutstanding);
     
     // Control balance amount visibility based on status
-    if (status && status.toLowerCase() === 'pending') {
+    if (status && status.toLowerCase() === 'outstanding') {
         $('#balance_amount_container').hide();
     } else {
         $('#balance_amount_container').show();
     }
     
-    // Note: Credit memo visibility is handled in fillAccountsPayableModal based on data
-    
     // Update modal title (always view mode)
-    const titleElement = $('#accountsPayableModal .modalHeaderTitle');
-    titleElement.text('ACCOUNTS PAYABLE RECORD');
+    const titleElement = $('#accountsReceivableModal .modalHeaderTitle');
+    titleElement.text('ACCOUNTS RECEIVABLE RECORD');
 }
 
 // Show payment modal
 function showPaymentModal(rowData) {
-    // FIFO pre-check on frontend (UX): block payment if not the oldest unpaid for this supplier
+    // FIFO pre-check on frontend (UX): block payment if not the oldest unpaid for this customer
     try {
-        const supplierCode = rowData.supplier_code;
+        const customerCode = rowData.customer_code;
         // Assume filteredData holds the current AP rows shown in the table
         if (Array.isArray(window.filteredData)) {
-            const sameSupplier = window.filteredData.filter(r => r.supplier_code === supplierCode && (parseFloat(r.balance_amount) > 0));
-            if (sameSupplier.length > 0) {
+            const sameCustomer = window.filteredData.filter(r => r.customer_code === customerCode && (parseFloat(r.balance_amount) > 0));
+            if (sameCustomer.length > 0) {
                 // Sort by date asc, then created_at asc (if available), then id asc
-                sameSupplier.sort((a, b) => {
+                sameCustomer.sort((a, b) => {
                     const da = new Date(a.date);
                     const db = new Date(b.date);
                     if (da.getTime() !== db.getTime()) return da - db;
@@ -805,15 +771,15 @@ function showPaymentModal(rowData) {
                     if (ca !== cb) return ca - cb;
                     return (a.id || 0) - (b.id || 0);
                 });
-                const oldestUnpaid = sameSupplier[0];
+                const oldestUnpaid = sameCustomer[0];
                 if (oldestUnpaid && oldestUnpaid.id !== rowData.id) {
                     Swal.fire({
                         title: 'Payment Order Violation',
                         html: `
                             <div class="text-start">
-                                <p><strong>You must pay older invoices first for this supplier.</strong></p>
+                                <p><strong>You must collect payment for older invoices first for this customer.</strong></p>
                                 <hr>
-                                <p><strong>Oldest Unpaid Invoice:</strong></p>
+                                <p><strong>Oldest Outstanding Invoice:</strong></p>
                                 <ul class="list-unstyled ms-3">
                                     <li><strong>Invoice #:</strong> ${oldestUnpaid.reference_number || 'N/A'}</li>
                                     <li><strong>Date:</strong> ${new Date(oldestUnpaid.date).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}</li>
@@ -838,8 +804,8 @@ function showPaymentModal(rowData) {
     $('#payment_original_amount').text(formatCurrency(rowData.total_amount));
     $('#payment_balance_amount').text(formatCurrency(rowData.balance_amount));
     
-    // Store supplier code for payee auto-population
-    $('#paymentModal').data('supplier-code', rowData.supplier_code);
+    // Store customer code for payee auto-population
+    $('#paymentModal').data('customer-code', rowData.customer_code);
     
     // Set max and data attributes for all payment amount fields
     const balanceAmount = rowData.balance_amount;
@@ -891,10 +857,6 @@ function showPaymentModal(rowData) {
     // Load banks data and populate dropdown
     loadBanksDataForModal();
     
-    // Disable HTML5 validation on form elements to use custom validation
-    $('#paymentForm').attr('novalidate', 'novalidate');
-    $('#payment_method, #bank_selection, #gcash_selection').removeAttr('required');
-    
     $('#paymentModal').modal('show');
 }
 
@@ -918,27 +880,27 @@ function resetCheckFields() {
     $('#checkDetailsSection').hide();
 }
 
-// Auto-populate payee field with supplier contact person
+// Auto-populate payee field with customer contact person
 function autoPopulatePayeeField() {
-    const supplierCode = $('#paymentModal').data('supplier-code');
+    const customerCode = $('#paymentModal').data('customer-code');
     
-    if (!supplierCode || !suppliersData || suppliersData.length === 0) {
-        console.warn('No supplier code found or suppliers data not loaded');
+    if (!customerCode || !customersData || customersData.length === 0) {
+        console.warn('No customer code found or customers data not loaded');
         return;
     }
     
-    // Find the supplier in the suppliersData array
-    const supplier = suppliersData.find(s => s.SupplierCode === supplierCode);
+    // Find the customer in the customersData array
+    const customer = customersData.find(c => c.custCode === customerCode);
     
-    if (supplier && supplier.ContactPerson) {
-        $('#check_payee').val(supplier.ContactPerson);
-        console.log(`Auto-populated payee field with: ${supplier.ContactPerson} for supplier: ${supplier.SupplierName}`);
-    } else if (supplier) {
+    if (customer && customer.contactPerson) {
+        $('#check_payee').val(customer.contactPerson);
+        console.log(`Auto-populated payee field with: ${customer.contactPerson} for customer: ${customer.custName}`);
+    } else if (customer) {
         // Don't populate if no contact person found
-        console.warn(`No contact person found for supplier ${supplier.SupplierName}, payee field left empty`);
+        console.warn(`No contact person found for customer ${customer.custName}, payee field left empty`);
         $('#check_payee').val('');
     } else {
-        console.warn(`Supplier with code ${supplierCode} not found in suppliers data`);
+        console.warn(`Customer with code ${customerCode} not found in customers data`);
         $('#check_payee').val('');
     }
 }
@@ -1106,14 +1068,14 @@ function setupEventHandlers() {
     $(document).on('click', '.clickable-row', function(e) {
         e.preventDefault();
         let id = $(this).data('id');
-        let rowData = accountsPayableData.find(item => item.id == id);
+        let rowData = accountsReceivableData.find(item => item.id == id);
         
         if (rowData) {
             // Show the main modal in view mode
-            showAccountsPayableModal(rowData, 'view');
+            showAccountsReceivableModal(rowData, 'view');
         }
     });
-
+    
     // Modal button handlers
     $(document).on('click', '#processPaymentBtn', function(e) {
         e.preventDefault();
@@ -1123,7 +1085,7 @@ function setupEventHandlers() {
         let recordId = null;
         
         // Try to get data from form first
-        const formElement = $('#accountsPayableForm');
+        const formElement = $('#accountsReceivableForm');
         
         if (formElement.length > 0) {
             recordData = formElement.data('record-data');
@@ -1132,13 +1094,13 @@ function setupEventHandlers() {
         
         // If no data from form, try to get from modal
         if (!recordData) {
-            recordData = $('#accountsPayableModal').data('record-data');
-            recordId = $('#accountsPayableModal').data('id');
+            recordData = $('#accountsReceivableModal').data('record-data');
+            recordId = $('#accountsReceivableModal').data('id');
         }
         
         if (recordData && recordData.id) {
             // Hide the main modal first, then show payment modal after a short delay
-            $('#accountsPayableModal').modal('hide');
+            $('#accountsReceivableModal').modal('hide');
             
             // Wait for modal to hide completely before showing payment modal
             setTimeout(function() {
@@ -1150,15 +1112,15 @@ function setupEventHandlers() {
     });
 
     // Alternative direct binding for the button (backup approach)
-    $('#accountsPayableModal').on('shown.bs.modal', function() {
+    $('#accountsReceivableModal').on('shown.bs.modal', function() {
         $('#processPaymentBtn').off('click.payment').on('click.payment', function(e) {
             e.preventDefault();
             
             // Try to get data from form first, then modal
-            let recordData = $('#accountsPayableForm').data('record-data') || $('#accountsPayableModal').data('record-data');
+            let recordData = $('#accountsReceivableForm').data('record-data') || $('#accountsReceivableModal').data('record-data');
             
             if (recordData) {
-                $('#accountsPayableModal').modal('hide');
+                $('#accountsReceivableModal').modal('hide');
                 setTimeout(() => showPaymentModal(recordData), 300);
             }
         });
@@ -1194,22 +1156,13 @@ function setupEventHandlers() {
     });
 
     // Refresh data tables without full page reload
-    $('#apRefreshBtn').on('click', function() {
-        loadAccountsPayableData();
+    $('#arRefreshBtn').on('click', function() {
+        loadAccountsReceivableData();
     });
 
     // Payment form submission
     $('#paymentForm').on('submit', function(e) {
         e.preventDefault();
-        e.stopPropagation(); // Stop event propagation to prevent default validation
-        
-        // Disable HTML5 validation for this form
-        this.classList.add('was-validated');
-        
-        // Use visual validation instead of sweet alerts and HTML5 validation
-        if (!validatePaymentForm()) {
-            return; // Stop submission if validation fails
-        }
         
         let id = $('#payment_ap_id').val();
         let currentAmountField = getCurrentPaymentAmountField();
@@ -1219,10 +1172,108 @@ function setupEventHandlers() {
         let paymentType = $('#payment_type').val();
         let paymentMethod = $('#payment_method').val();
         
-        // Create form data and set the raw amount (without commas)
-        let formData = new FormData(this);
-        formData.set('payment_amount', rawAmount); // Send raw number without commas
-        formData.set('payment_type', paymentMethod); // Use the payment method (cash/bank/gcash)
+        // Final validation before submission
+        if (enteredAmount <= 0) {
+            Swal.fire('Error!', 'Please enter a valid payment amount.', 'error');
+            return;
+        }
+        
+        // Overpayments are now allowed - removed balance validation
+        
+        if (!paymentType) {
+            Swal.fire('Error!', 'Invalid payment amount detected.', 'error');
+            return;
+        }
+
+        if (!paymentMethod) {
+            Swal.fire('Error!', 'Please select a payment method.', 'error');
+            return;
+        }
+
+        // Validate bank selection if payment method is bank
+        if (paymentMethod === 'bank') {
+            const selectedBank = $('#bank_selection').val();
+            if (!selectedBank) {
+                Swal.fire('Error!', 'Please select a bank when using bank payment method.', 'error');
+                return;
+            }
+            
+            // Additional validation for check payment
+            if ($('#pay_by_check').is(':checked')) {
+                const payee = $('#check_payee').val().trim();
+                const checkDate = $('#check_date').val();
+                
+                if (!payee) {
+                    Swal.fire('Error!', 'Please enter the payee name for the check.', 'error');
+                    return;
+                }
+                
+                if (!checkDate) {
+                    Swal.fire('Error!', 'Please select the check date.', 'error');
+                    return;
+                }
+            }
+        }
+
+        // Validate GCash selection if payment method is GCash
+        if (paymentMethod === 'gcash') {
+            const selectedGcash = $('#gcash_selection').val();
+            if (!selectedGcash) {
+                Swal.fire('Error!', 'Please select a GCash account when using GCash payment method.', 'error');
+                return;
+            }
+        }
+        
+        // Helper function to clean UTF-8 text
+        function cleanText(text) {
+            if (!text) return '';
+            // Clean problematic characters while preserving valid UTF-8
+            return text.toString()
+                .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters but keep valid Unicode
+                .replace(/\r\n|\r|\n/g, ' ') // Replace line breaks with spaces
+                .trim();
+        }
+        
+        // Create clean form data
+        let formData = new FormData();
+        
+        // Add basic payment data with UTF-8 cleaning
+        formData.set('payment_amount', rawAmount.toString()); // Ensure it's a string
+        
+        // Map frontend payment method to backend expected values
+        let backendPaymentMethod;
+        if (paymentMethod === 'bank' && $('#pay_by_check').is(':checked')) {
+            backendPaymentMethod = 'check';
+        } else if (paymentMethod === 'bank') {
+            backendPaymentMethod = 'bank_transfer';
+        } else if (paymentMethod === 'gcash') {
+            backendPaymentMethod = 'gcash';
+        } else {
+            backendPaymentMethod = 'cash'; // Default to cash
+        }
+        
+        formData.set('payment_method', backendPaymentMethod); // Backend expects 'payment_method'
+        
+        // Add current date as payment date (with fallback if moment.js not available)
+        let currentDate;
+        if (typeof moment !== 'undefined') {
+            currentDate = moment().format('YYYY-MM-DD');
+        } else {
+            currentDate = new Date().toISOString().split('T')[0];
+        }
+        formData.set('payment_date', currentDate);
+        
+        // Add cleaned remarks if provided
+        let remarksValue = $('#payment_remarks').val();
+        if (remarksValue) {
+            formData.set('remarks', cleanText(remarksValue));
+        }
+        
+        // Add reference number if provided
+        let referenceValue = $('#payment_reference_number').val();
+        if (referenceValue) {
+            formData.set('reference_number', cleanText(referenceValue));
+        }
         
         // Add bank details if bank payment method is selected
         if (paymentMethod === 'bank') {
@@ -1230,21 +1281,21 @@ function setupEventHandlers() {
             const bankData = $('#bank_selection').find('option:selected').data('bank');
             
             if (bankData) {
-                formData.append('bank_id', selectedBankId);
-                formData.append('bank_name', bankData.BankName);
-                formData.append('account_name', bankData.AccountName);
-                formData.append('account_number', bankData.AccountNumber);
-                formData.append('card_number', bankData.CardNumber);
-                formData.append('expiration_date', bankData.ExpirationDate);
+                formData.append('bank_id', selectedBankId.toString());
+                formData.append('bank_name', cleanText(bankData.BankName || ''));
+                formData.append('account_name', cleanText(bankData.AccountName || ''));
+                formData.append('account_number', cleanText(bankData.AccountNumber || ''));
+                formData.append('card_number', cleanText(bankData.CardNumber || ''));
+                formData.append('expiration_date', cleanText(bankData.ExpirationDate || ''));
                 
                 // Add check details if check payment is selected
                 if ($('#pay_by_check').is(':checked')) {
                     formData.append('pay_by_check', '1');
-                    formData.append('check_payee', $('#check_payee').val().trim());
-                    formData.append('check_date', $('#check_date').val());
-                    formData.append('check_number', $('#check_number').val().trim());
-                    formData.append('check_amount', rawAmount);
-                    formData.append('check_amount_in_words', $('#check_amount_in_words').val());
+                    formData.append('check_payee', cleanText($('#check_payee').val() || ''));
+                    formData.set('check_date', $('#check_date').val() || ''); // Use set instead of append for required field
+                    formData.set('check_number', cleanText($('#check_number').val() || '')); // Use set instead of append for required field
+                    formData.append('check_amount', rawAmount.toString());
+                    formData.append('check_amount_in_words', cleanText($('#check_amount_in_words').val() || ''));
                 }
             }
         }
@@ -1255,9 +1306,9 @@ function setupEventHandlers() {
             const gcashData = $('#gcash_selection').find('option:selected').data('gcash');
             
             if (gcashData) {
-                formData.append('gcash_id', selectedGcashId);
-                formData.append('gcash_account_name', gcashData.AccountName);
-                formData.append('gcash_account_number', gcashData.AccountNumber);
+                formData.append('gcash_id', selectedGcashId.toString());
+                formData.append('gcash_account_name', cleanText(gcashData.AccountName || ''));
+                formData.append('gcash_account_number', cleanText(gcashData.AccountNumber || ''));
             }
         }
         
@@ -1266,23 +1317,26 @@ function setupEventHandlers() {
         let originalText = submitBtn.text();
         submitBtn.prop('disabled', true).text('Processing...');
         
-        // Show loading banner
-        showPaymentLoadingBanner();
-        
         $.ajax({
-            url: `/api/accounts-payable/${id}/payment`,
+            url: `/api/accounts-receivable/${id}/payment`,
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
+            cache: false,
             headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json; charset=utf-8'
+            },
+            beforeSend: function(xhr) {
+                // Ensure UTF-8 encoding
+                xhr.overrideMimeType('application/json; charset=utf-8');
             },
             success: function(response) {
                 if (response.success) {
                     Swal.fire('Success!', response.message, 'success');
                     $('#paymentModal').modal('hide');
-                    loadAccountsPayableData(); // Reload data
+                    loadAccountsReceivableData(); // Reload data
                 }
             },
             error: function(xhr) {
@@ -1325,8 +1379,6 @@ function setupEventHandlers() {
                 Swal.fire('Error!', errorMessage, 'error');
             },
             complete: function() {
-                // Hide loading banner
-                hidePaymentLoadingBanner();
                 // Reset button state
                 submitBtn.prop('disabled', false).text(originalText);
             }
@@ -1583,22 +1635,24 @@ function setupEventHandlers() {
             if ($('#pay_by_check').is(':checked')) {
                 $('#checkDetailsSection').show();
             }
-            // Don't add required attribute - using custom validation
-            $('#gcash_selection').val('');
+            // Make bank selection required when bank is chosen
+            $('#bank_selection').attr('required', true);
+            $('#gcash_selection').removeAttr('required').val('');
             resetGcashFields();
             resetCashFields();
         } else if (selectedMethod === 'gcash') {
             $('#gcashDetailsSection').show();
             $('#gcashPaymentSection').show();
-            // Don't add required attribute - using custom validation
-            $('#bank_selection').val('');
+            // Make gcash selection required when gcash is chosen
+            $('#gcash_selection').attr('required', true);
+            $('#bank_selection').removeAttr('required').val('');
             resetBankFields();
             resetCashFields();
         } else if (selectedMethod === 'cash') {
             // Cash payment
             $('#cashPaymentSection').show();
-            $('#bank_selection').val('');
-            $('#gcash_selection').val('');
+            $('#bank_selection').removeAttr('required').val('');
+            $('#gcash_selection').removeAttr('required').val('');
             resetBankFields();
             resetGcashFields();
         }
@@ -1685,83 +1739,20 @@ function setupEventHandlers() {
         $('#check_amount_in_words').val(amountInWords);
     }
 
-    // Real-time validation - clear errors when user starts typing/selecting
-    $(document).on('input change', '#payment_method', function() {
-        if ($(this).val()) {
-            clearFieldError('#payment_method');
-        }
-    });
-
-    $(document).on('input change', '#payment_reference_number', function() {
-        if ($(this).val().trim()) {
-            clearFieldError('#payment_reference_number');
-        }
-    });
-
-    $(document).on('input keyup change', '#cash_amount_display, #bank_payment_amount, #gcash_amount_display, #check_amount_display', function() {
-        const rawValue = $(this).val().replace(/,/g, '');
-        const amount = parseFloat(rawValue) || 0;
-        
-        if (amount > 0) {
-            clearFieldError('#' + $(this).attr('id'));
-        }
-    });
-
-    $(document).on('change', '#bank_selection', function() {
-        if ($(this).val()) {
-            clearFieldError('#bank_selection');
-        }
-    });
-
-    $(document).on('change', '#gcash_selection', function() {
-        if ($(this).val()) {
-            clearFieldError('#gcash_selection');
-        }
-    });
-
-    $(document).on('input change', '#check_payee', function() {
-        if ($(this).val().trim()) {
-            clearFieldError('#check_payee');
-        }
-    });
-
-    $(document).on('change', '#check_date', function() {
-        if ($(this).val()) {
-            clearFieldError('#check_date');
-        }
-    });
-
-    $(document).on('input change', '#check_number', function() {
-        if ($(this).val().trim()) {
-            clearFieldError('#check_number');
-        }
-    });
-
     // Reset payment modal when closed
     $('#paymentModal').on('hidden.bs.modal', function() {
         // Reset all payment amount fields and remove overpayment info
         $('#cash_amount_display, #bank_payment_amount, #gcash_amount_display, #check_amount_display').removeClass('is-invalid is-valid').next('.invalid-feedback, .overpayment-info').remove();
         
         // Reset all payment type indicators
-        // Reset payment amount field styling (inputs)
+        // Reset payment amount field styling
         $('#cash_amount_display, #bank_payment_amount, #gcash_amount_display').css({
             'border-color': '#dee2e6 !important',
             'background-color': '#fff !important'
         }).removeClass('is-invalid is-valid partial-payment');
         
-        // Reset dropdown styling
-        $('#payment_method, #bank_selection, #gcash_selection').css({
-            'border-color': '#dee2e6 !important'
-        }).removeClass('is-invalid is-valid');
-        
         // Remove payment status indicators
         $('.payment-status').remove();
-        
-        // Clear all validation errors
-        clearAllFieldErrors();
-        
-        // Reset form validation settings
-        $('#paymentForm').attr('novalidate', 'novalidate').removeClass('was-validated');
         
         $('#payment_method').val('');
         $('#bankDetailsSection').hide();
@@ -1781,259 +1772,12 @@ function setupEventHandlers() {
     // Hover styles are now handled in initAccountsPayableDataTable()
 }
 
-// Loading banner functions for payment submission
-function showPaymentLoadingBanner() {
-    // Remove any existing loading banner
-    hidePaymentLoadingBanner();
-    
-    // Create loading banner HTML
-    const loadingHTML = `
-        <div id="paymentLoadingBanner" class="payment-loading-overlay">
-            <div class="payment-loading-content">
-                <div class="payment-loading-spinner"></div>
-                <div class="payment-loading-text">
-                    <h4>Processing Payment...</h4>
-                    <p>Please wait while we process your payment request.</p>
-                    <div class="payment-loading-dots">
-                        <span>.</span><span>.</span><span>.</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Add to body
-    $('body').append(loadingHTML);
-    
-    // Add loading styles if not already present
-    if (!$('#payment-loading-styles').length) {
-        const loadingStyles = `
-            <style id="payment-loading-styles">
-                .payment-loading-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.7);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 9999;
-                    backdrop-filter: blur(3px);
-                }
-                
-                .payment-loading-content {
-                    background: white;
-                    padding: 40px;
-                    border-radius: 15px;
-                    text-align: center;
-                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                    max-width: 400px;
-                    width: 90%;
-                }
-                
-                .payment-loading-spinner {
-                    width: 60px;
-                    height: 60px;
-                    border: 4px solid #f3f3f3;
-                    border-top: 4px solid #007bff;
-                    border-radius: 50%;
-                    animation: payment-spin 1s linear infinite;
-                    margin: 0 auto 20px auto;
-                }
-                
-                @keyframes payment-spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                
-                .payment-loading-text h4 {
-                    color: #333;
-                    margin: 0 0 10px 0;
-                    font-size: 24px;
-                    font-weight: 600;
-                }
-                
-                .payment-loading-text p {
-                    color: #666;
-                    margin: 0 0 15px 0;
-                    font-size: 16px;
-                }
-                
-                .payment-loading-dots {
-                    font-size: 20px;
-                    color: #007bff;
-                }
-                
-                .payment-loading-dots span {
-                    animation: payment-blink 1.4s infinite both;
-                }
-                
-                .payment-loading-dots span:nth-child(2) {
-                    animation-delay: 0.2s;
-                }
-                
-                .payment-loading-dots span:nth-child(3) {
-                    animation-delay: 0.4s;
-                }
-                
-                @keyframes payment-blink {
-                    0%, 80%, 100% { opacity: 0; }
-                    40% { opacity: 1; }
-                }
-            </style>
-        `;
-        $('head').append(loadingStyles);
-    }
-}
-
-function hidePaymentLoadingBanner() {
-    $('#paymentLoadingBanner').fadeOut(300, function() {
-        $(this).remove();
-    });
-}
-
 // Helper functions
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-PH', {
         style: 'currency',
         currency: 'PHP'
     }).format(amount || 0);
-}
-
-// Visual validation helper functions
-function showFieldError(fieldId) {
-    const field = $(fieldId);
-    const label = $(`label[for="${fieldId.replace('#', '')}"]`);
-    
-    // Add red border to field (works for both input and select elements)
-    field.addClass('is-invalid').css({
-        'border-color': '#dc3545 !important'
-    });
-    
-    // Add red color to label
-    label.addClass('text-danger');
-}
-
-function clearFieldError(fieldId) {
-    const field = $(fieldId);
-    const label = $(`label[for="${fieldId.replace('#', '')}"]`);
-    
-    // Remove red border from field (works for both input and select elements)
-    field.removeClass('is-invalid').css({
-        'border-color': '#dee2e6'
-    });
-    
-    // Remove red color from label
-    label.removeClass('text-danger');
-}
-
-function validatePaymentForm() {
-    let isValid = true;
-    let firstInvalidField = null;
-    
-    // Get payment method to determine which fields to validate
-    const paymentMethod = $('#payment_method').val();
-    
-    // Clear all previous errors
-    clearAllFieldErrors();
-    
-    // Validate payment method (always required)
-    if (!paymentMethod) {
-        showFieldError('#payment_method');
-        if (!firstInvalidField) firstInvalidField = '#payment_method';
-        isValid = false;
-    }
-    
-    // Validate reference number (always required)
-    const referenceNumber = $('#payment_reference_number').val().trim();
-    if (!referenceNumber) {
-        showFieldError('#payment_reference_number');
-        if (!firstInvalidField) firstInvalidField = '#payment_reference_number';
-        isValid = false;
-    }
-    
-    // Validate payment amount based on selected method
-    let currentAmountField = getCurrentPaymentAmountField();
-    let rawAmount = currentAmountField.val().replace(/,/g, '');
-    let enteredAmount = parseFloat(rawAmount) || 0;
-    
-    if (enteredAmount <= 0) {
-        showFieldError('#' + currentAmountField.attr('id'));
-        if (!firstInvalidField) firstInvalidField = '#' + currentAmountField.attr('id');
-        isValid = false;
-    }
-    
-    // Validate method-specific fields
-    if (paymentMethod === 'bank') {
-        const selectedBank = $('#bank_selection').val();
-        if (!selectedBank) {
-            showFieldError('#bank_selection');
-            if (!firstInvalidField) firstInvalidField = '#bank_selection';
-            isValid = false;
-        }
-        
-        // Additional validation for check payment
-        if ($('#pay_by_check').is(':checked')) {
-            const payee = $('#check_payee').val().trim();
-            const checkDate = $('#check_date').val();
-            const checkNumber = $('#check_number').val().trim();
-            
-            if (!payee) {
-                showFieldError('#check_payee');
-                if (!firstInvalidField) firstInvalidField = '#check_payee';
-                isValid = false;
-            }
-            
-            if (!checkDate) {
-                showFieldError('#check_date');
-                if (!firstInvalidField) firstInvalidField = '#check_date';
-                isValid = false;
-            }
-            
-            if (!checkNumber) {
-                showFieldError('#check_number');
-                if (!firstInvalidField) firstInvalidField = '#check_number';
-                isValid = false;
-            }
-        }
-    } else if (paymentMethod === 'gcash') {
-        const selectedGcash = $('#gcash_selection').val();
-        if (!selectedGcash) {
-            showFieldError('#gcash_selection');
-            if (!firstInvalidField) firstInvalidField = '#gcash_selection';
-            isValid = false;
-        }
-    }
-    
-    // Focus on first invalid field
-    if (!isValid && firstInvalidField) {
-        $(firstInvalidField).focus();
-    }
-    
-    return isValid;
-}
-
-function clearAllFieldErrors() {
-    // Clear all potential error fields
-    const fieldsToCheck = [
-        '#payment_method',
-        '#payment_reference_number',
-        '#cash_amount_display',
-        '#bank_payment_amount',
-        '#gcash_amount_display',
-        '#check_amount_display',
-        '#bank_selection',
-        '#gcash_selection',
-        '#check_payee',
-        '#check_date',
-        '#check_number'
-    ];
-    
-    fieldsToCheck.forEach(fieldId => {
-        clearFieldError(fieldId);
-    });
 }
 
 // Format number with commas (for input fields)

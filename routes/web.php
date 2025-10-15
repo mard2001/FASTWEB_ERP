@@ -158,6 +158,7 @@ Route::get('/transactions/receiving-report', function () {
 
 Route::get('/print/rr/', [RRController::class, 'printPage'])->name('web.print')->middleware('check.user.status');
 Route::get('/print/ap/', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'printPage'])->name('web.print.ap')->middleware('check.user.status');
+Route::get('/print/ar/', [\App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class, 'printPage'])->name('web.print.ar')->middleware('check.user.status');
 
 Route::get('/print/rr/testing', function () {
     $data = [
@@ -217,6 +218,11 @@ Route::get('/transactions/sales-order', function () {
 Route::get('/transactions/accounts-payable', function () {
     return page_view('accounts-payable/accounts_payable_page');
 })->name('accounts-payable')->middleware('check.user.status');
+
+// ACCOUNTS RECEIVABLE MODULE
+Route::get('/transactions/accounts-receivable', function () {
+    return page_view('accounts-receivable/accounts_receivable_page');
+})->name('accounts-receivable')->middleware('check.user.status');
 
 // PAYMENT HISTORY MODULE
 Route::get('/transactions/payment-history', function () {

@@ -95,6 +95,7 @@ Route::middleware(['auth:sanctum', 'check.user.status', DynamicDatabase::class])
 
 Route::post('/redirect', [RRController::class, 'setRRNum']);
 Route::post('/redirect-ap', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'setAPNum'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('/redirect-ar', [\App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class, 'setARNum'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::post('/setCNTHeader', [CountController::class, 'setCNTHeader']);
 Route::get('/remCNTHeader', [CountController::class, 'remCNTHeader']);
 
@@ -255,6 +256,15 @@ Route::post('accounts-payable/{id}/payment', [\App\Http\Controllers\api\Accounts
 Route::get('accounts-payable/{id}/payments', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'getPaymentHistory'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::post('accounts-payable/apply-auto-credit-memos', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'applyAutoCreditMemos'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::apiResource('accounts-payable', \App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class)->middleware(['auth:sanctum', 'check.user.status']);
+
+// Accounts Receivable API Routes
+Route::get('accounts-receivable/summary', [\App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class, 'summary'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('accounts-receivable/customers', [\App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class, 'getCustomers'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('accounts-receivable/banks', [\App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class, 'getBanks'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('accounts-receivable/{id}/payment', [\App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class, 'processPayment'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('accounts-receivable/{id}/payments', [\App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class, 'getPaymentHistory'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('accounts-receivable/apply-auto-credit-memos', [\App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class, 'applyAutoCreditMemos'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::apiResource('accounts-receivable', \App\Http\Controllers\api\AccountsReceivable\AccountsReceivableController::class)->middleware(['auth:sanctum', 'check.user.status']);
 
 // Payment History API Routes
 Route::get('payment-history', [\App\Http\Controllers\api\PaymentHistory\PaymentHistoryController::class, 'index'])->middleware(['auth:sanctum', 'check.user.status']);

@@ -453,23 +453,33 @@ class RRController extends Controller
             }
 
             // Create Accounts Payable record after confirming RR (this will log AFTER RR confirmation)
+            $apCreationResult = null;
             try {
-                $this->createAccountsPayableFromRR($header, $details, $user);
-                Log::info("Successfully created Accounts Payable for RR {$rrNo} by user {$user}");
+                $apCreationResult = $this->createAccountsPayableFromRR($header, $details, $user);
+                Log::info("Successfully created Accounts Payable for RR {$rrNo} by user {$user}", [
+                    'ap_id' => $apCreationResult ? $apCreationResult->id : null
+                ]);
             } catch (\Exception $e) {
                 Log::error("Failed to create Accounts Payable for RR {$rrNo}: " . $e->getMessage(), [
                     'exception' => $e,
                     'rr_no' => $rrNo,
-                    'user' => $user
+                    'user' => $user,
+                    'stack_trace' => $e->getTraceAsString()
                 ]);
-                // Don't fail the RR confirmation if AP creation fails, just log it
-                // But we might want to notify the user
+                // Don't fail the RR confirmation if AP creation fails, but include in response
+                return response()->json([
+                    'message' => 'Receiving Report confirmed successfully but failed to create Accounts Payable',
+                    'success' => true,
+                    'warning' => 'Accounts Payable creation failed: ' . $e->getMessage(),
+                    'ap_created' => false
+                ]);
             }
 
             return response()->json([
                 'message' => 'Receiving Report confirmed successfully and Accounts Payable created',
                 'success' => true,
-                // 'data' => $data
+                'ap_created' => $apCreationResult !== null,
+                'ap_id' => $apCreationResult ? $apCreationResult->id : null
             ]);
         } catch (\Exception $e) {
             Log::error("Error confirming RR: " . $e->getMessage(), [
@@ -584,13 +594,11 @@ class RRController extends Controller
                 'process_by' => $user
             ]);
 
-            // Update supplier credit data after auto credit payment
-            try {
-                SupplierCredit::updateSupplierCredit($supplierCode);
-                Log::info('Supplier credit updated after auto credit payment for supplier: ' . $supplierCode);
-            } catch (\Exception $e) {
-                Log::error('Error updating supplier credit after auto credit payment: ' . $e->getMessage());
-            }
+            Log::info("Created automatic credit memo payment", [
+                'payment_id' => $autoCreditPayment->id,
+                'ap_id' => $accountsPayable->id,
+                'amount' => $creditMemoApplied
+            ]);
 
             // NOTE: We no longer deduct from original credit memo records to preserve them.
             // Credit memo applications are now tracked through Payment records with AUTO-CM- reference.
@@ -668,6 +676,19 @@ class RRController extends Controller
             );
         } catch (\Exception $e) {
             Log::error('Error creating SupplierRunningBalance entry for invoice: ' . $e->getMessage());
+        }
+
+        // Update supplier credit data after creating AP record
+        try {
+            if ($supplierCode) {
+                SupplierCredit::updateSupplierCredit(trim($supplierCode));
+                Log::info('Supplier credit updated after AP creation for supplier: ' . trim($supplierCode));
+            }
+        } catch (\Exception $e) {
+            Log::error('Error updating supplier credit after AP creation: ' . $e->getMessage(), [
+                'supplier_code' => $supplierCode,
+                'ap_id' => $accountsPayable->id
+            ]);
         }
 
         Log::info("Successfully created Accounts Payable record", [

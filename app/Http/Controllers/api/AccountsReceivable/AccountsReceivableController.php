@@ -1,0 +1,798 @@
+<?php
+
+namespace App\Http\Controllers\api\AccountsReceivable;
+
+use App\Http\Controllers\Controller;
+use App\Models\AccountsReceivable;
+use App\Models\Payment;
+use App\Models\Bank;
+use App\Models\Check;
+use App\Models\Customer\Customer;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
+
+class AccountsReceivableController extends Controller
+{
+    /**
+     * Display a listing of accounts receivable
+     */
+    public function index(Request $request): JsonResponse
+    {
+        try {
+            // Use raw SQL for better performance similar to AP system
+            $perPage = $request->get('per_page', 25);
+            $page = $request->get('page', 1);
+            
+            $query = DB::table('tblAccountsReceivable as ar')
+                ->leftJoin('tblCustomer as c', 'ar.customer_code', '=', 'c.Customer')
+                ->leftJoin(DB::raw('(
+                    SELECT accounts_receivable_id, SUM(payment_amount) as total_paid 
+                    FROM tblPayments 
+                    WHERE accounts_receivable_id IS NOT NULL
+                    GROUP BY accounts_receivable_id
+                ) as payments'), 'ar.id', '=', 'payments.accounts_receivable_id')
+                ->select([
+                    'ar.id',
+                    'ar.date',
+                    'ar.customer_code',
+                    'ar.customer_name',
+                    'ar.so_number',
+                    'ar.reference_number',
+                    'ar.total_amount',
+                    'ar.terms',
+                    'ar.status',
+                    'ar.credit_generated',
+                    'ar.process_by',
+                    'ar.created_at',
+                    'c.Name as customer_name_from_table',
+                    DB::raw('ISNULL(payments.total_paid, 0) as total_paid')
+                ]);
+
+            // Apply filters efficiently
+            if ($request->has('date_from') && $request->has('date_to')) {
+                $query->whereBetween('ar.date', [$request->date_from, $request->date_to]);
+            }
+
+            if ($request->has('customer_code') && $request->customer_code != '') {
+                $query->where(function($q) use ($request) {
+                    $q->where('ar.customer_code', 'like', '%' . $request->customer_code . '%')
+                      ->orWhere('ar.customer_name', 'like', '%' . $request->customer_code . '%');
+                });
+            }
+
+            if ($request->has('status') && $request->status != '') {
+                $query->where('ar.status', $request->status);
+            }
+
+            if ($request->has('so_number') && $request->so_number != '') {
+                $query->where('ar.so_number', 'like', '%' . $request->so_number . '%');
+            }
+
+            // Get paginated results
+            $offset = ($page - 1) * $perPage;
+            $totalCount = $query->count();
+            
+            $results = $query->orderBy('ar.date', 'desc')
+                           ->orderBy('ar.id', 'desc')
+                           ->offset($offset)
+                           ->limit($perPage)
+                           ->get();
+
+            // Process results efficiently
+            $data = $results->map(function ($item) {
+                $totalPaid = floatval($item->total_paid ?? 0);
+                $totalCreditMemo = floatval($item->credit_generated ?? 0);
+                $balanceAmount = floatval($item->total_amount) - $totalPaid;
+                
+                // Calculate overdue status
+                $isOverdue = false;
+                if ($item->status !== 'Settled') {
+                    preg_match('/(\d+)/', $item->terms ?? '30', $matches);
+                    $termDays = isset($matches[1]) ? (int)$matches[1] : 30;
+                    $dueDate = \Carbon\Carbon::parse($item->date)->addDays($termDays);
+                    $isOverdue = now()->gt($dueDate);
+                }
+                
+                return [
+                    'id' => $item->id,
+                    'date' => $item->date,
+                    'customer_code' => $item->customer_code,
+                    'customer_name' => $item->customer_name ?: $item->customer_name_from_table,
+                    'so_number' => $item->so_number,
+                    'reference_number' => $item->reference_number,
+                    'total_amount' => floatval($item->total_amount),
+                    'terms' => $item->terms,
+                    'status' => $item->status,
+                    'balance_amount' => $balanceAmount,
+                    'CreditMemo' => floatval($item->credit_generated ?? 0),
+                    'process_by' => $item->process_by,
+                    'is_overdue' => $isOverdue,
+                    'created_at' => $item->created_at,
+                    'sort_timestamp' => strtotime($item->created_at)
+                ];
+            });
+
+            // Calculate pagination info
+            $totalPages = ceil($totalCount / $perPage);
+            $currentPage = $page;
+
+            if ($data->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No Accounts Receivable data found',
+                    'data' => [],
+                    'pagination' => [
+                        'current_page' => $currentPage,
+                        'total_pages' => $totalPages,
+                        'per_page' => $perPage,
+                        'total_records' => $totalCount
+                    ]
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Accounts Receivable data retrieved successfully',
+                'data' => $data,
+                'pagination' => [
+                    'current_page' => $currentPage,
+                    'total_pages' => $totalPages,
+                    'per_page' => $perPage,
+                    'total_records' => $totalCount,
+                    'has_more_pages' => $currentPage < $totalPages
+                ]
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching accounts receivable: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch accounts receivable data',
+                'error' => $e->getMessage()
+            ], 500, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * Store a newly created accounts receivable
+     */
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'customer_code' => 'required|string|max:50',
+                'so_number' => 'required|string|max:50',
+                'date' => 'required|date',
+                'total_amount' => 'required|numeric|min:0',
+                'terms' => 'nullable|string|max:50',
+                'remarks' => 'nullable|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $receivable = AccountsReceivable::create([
+                'customer_code' => $request->customer_code,
+                'customer_name' => $request->customer_name ?? '',
+                'so_number' => $request->so_number,
+                'date' => $request->date,
+                'total_amount' => $request->total_amount,
+                'terms' => $request->terms ?? '30 Days',
+                'remarks' => $request->remarks,
+                'status' => 'Outstanding',
+                'process_by' => auth()->user()->username ?? 'system'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Accounts receivable created successfully',
+                'data' => $receivable->load('customer')
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Error creating accounts receivable: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create accounts receivable',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified accounts receivable
+     */
+    public function show($id): JsonResponse
+    {
+        try {
+            $receivable = AccountsReceivable::with(['customer'])->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $receivable
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching accounts receivable: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Accounts receivable not found',
+                'error' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Update the specified accounts receivable
+     */
+    public function update(Request $request, $id): JsonResponse
+    {
+        try {
+            $receivable = AccountsReceivable::findOrFail($id);
+
+            $validator = Validator::make($request->all(), [
+                'customer_code' => 'sometimes|string|max:50',
+                'so_number' => 'sometimes|string|max:50',
+                'date' => 'sometimes|date',
+                'total_amount' => 'sometimes|numeric|min:0',
+                'terms' => 'sometimes|string|max:50',
+                'remarks' => 'nullable|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $receivable->update($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Accounts receivable updated successfully',
+                'data' => $receivable->load('customer')
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating accounts receivable: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update accounts receivable',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified accounts receivable
+     */
+    public function destroy($id): JsonResponse
+    {
+        try {
+            $receivable = AccountsReceivable::findOrFail($id);
+            $receivable->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Accounts receivable deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting accounts receivable: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete accounts receivable',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get customers for dropdown
+     */
+    public function getCustomers(): JsonResponse
+    {
+        try {
+            $customers = Customer::select('Customer as customer_code', 'Name as customer_name')
+                ->whereRaw('LTRIM(RTRIM(Name)) != \'\'')
+                ->whereNotNull('Name')
+                ->orderBy('Name')
+                ->get()
+                ->map(function ($customer) {
+                    return [
+                        'customer_code' => mb_convert_encoding($customer->customer_code, 'UTF-8', 'UTF-8'),
+                        'customer_name' => mb_convert_encoding($customer->customer_name, 'UTF-8', 'UTF-8')
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $customers
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (\Exception $e) {
+            Log::error('Error fetching customers: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch customers',
+                'error' => $e->getMessage()
+            ], 500, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * Get banks for dropdown
+     */
+    public function getBanks(): JsonResponse
+    {
+        try {
+            $banks = Bank::select('id', 'bank_name', 'account_number')
+                ->where('is_active', true)
+                ->orderBy('bank_name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $banks
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching banks: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch banks',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process payment for accounts receivable
+     */
+    public function processPayment(Request $request, $id): JsonResponse
+    {
+        try {
+            // Clean UTF-8 characters from input data to prevent encoding errors
+            $cleanInput = [];
+            foreach ($request->all() as $key => $value) {
+                if (is_string($value)) {
+                    // Clean and sanitize string values
+                    $cleanValue = $value;
+                    
+                    // Fix encoding issues
+                    if (!mb_check_encoding($cleanValue, 'UTF-8')) {
+                        $cleanValue = mb_convert_encoding($cleanValue, 'UTF-8', 'auto');
+                    }
+                    
+                    // Replace problematic characters that might cause JSON encoding issues
+                    $cleanValue = str_replace(["\r\n", "\r", "\n"], ' ', $cleanValue);
+                    $cleanValue = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $cleanValue);
+                    
+                    $cleanInput[$key] = trim($cleanValue);
+                } else {
+                    $cleanInput[$key] = $value;
+                }
+            }
+            
+            // Replace request data with cleaned data
+            $request->replace($cleanInput);
+            
+            $receivable = AccountsReceivable::findOrFail($id);
+
+            $validator = Validator::make($request->all(), [
+                'payment_amount' => 'required|numeric|min:0.01',
+                'payment_method' => 'required|in:cash,bank_transfer,gcash,check',
+                'reference_number' => 'nullable|string|max:100',
+                'remarks' => 'nullable|string|max:500',
+                'bank_id' => 'nullable|integer',
+                'gcash_id' => 'nullable|integer',
+                // Check-related fields
+                'pay_by_check' => 'nullable|boolean',
+                'check_payee' => 'nullable|string|max:255',
+                'check_date' => 'nullable|date',
+                'check_number' => 'nullable|string|max:50',
+                'check_amount' => 'nullable|numeric|min:0.01',
+                'check_amount_in_words' => 'nullable|string|max:500'
+            ]);
+
+            // Additional validation: bank_id is required when payment_method is 'bank_transfer'
+            if ($request->payment_method === 'bank_transfer' && empty($request->bank_id)) {
+                $validator->after(function ($validator) {
+                    $validator->errors()->add('bank_id', 'Bank selection is required for bank payments.');
+                });
+            }
+
+            // Additional validation: gcash_id is required when payment_method is 'gcash'
+            if ($request->payment_method === 'gcash' && empty($request->gcash_id)) {
+                $validator->after(function ($validator) {
+                    $validator->errors()->add('gcash_id', 'GCash account selection is required for GCash payments.');
+                });
+            }
+
+            // Additional validation: check fields are required when pay_by_check is true
+            if ($request->pay_by_check) {
+                if (empty($request->check_payee)) {
+                    $validator->after(function ($validator) {
+                        $validator->errors()->add('check_payee', 'Payee name is required for check payments.');
+                    });
+                }
+                if (empty($request->check_date)) {
+                    $validator->after(function ($validator) {
+                        $validator->errors()->add('check_date', 'Check date is required for check payments.');
+                    });
+                }
+                if (empty($request->check_amount_in_words)) {
+                    $validator->after(function ($validator) {
+                        $validator->errors()->add('check_amount_in_words', 'Amount in words is required for check payments.');
+                    });
+                }
+            }
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            // FIFO Payment Validation (per customer): enforce paying the oldest unpaid invoice first
+            $customerCode = $receivable->customer_code;
+            
+            // Get all accounts receivable for this customer with calculated balance amounts
+            $customerInvoices = AccountsReceivable::where('customer_code', $customerCode)
+                ->with('payments') // Load payments relationship for balance calculation
+                ->orderBy('date', 'asc')
+                ->orderBy('created_at', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
+            
+            // Filter to find the first unpaid invoice (balance > 0)
+            $firstUnpaid = null;
+            foreach ($customerInvoices as $invoice) {
+                $balanceAmount = $invoice->balance_amount; // This uses the accessor which calculates properly
+                if ($balanceAmount > 0) {
+                    $firstUnpaid = $invoice;
+                    break;
+                }
+            }
+
+            if ($firstUnpaid && $firstUnpaid->id !== $receivable->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment not allowed. You must collect payment for the oldest unpaid invoice first before processing newer ones.',
+                    'fifo_violation' => true,
+                    'older_invoice' => [
+                        'id' => $firstUnpaid->id,
+                        'reference_number' => $firstUnpaid->reference_number ?? $firstUnpaid->so_number,
+                        'date' => $firstUnpaid->date ? $firstUnpaid->date->format('Y-m-d') : null,
+                        'balance_amount' => $firstUnpaid->balance_amount
+                    ]
+                ], 422, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            // Process payment amount - overpayments are now allowed
+            $paymentAmount = $request->payment_amount;
+            $currentBalance = $receivable->balance_amount;
+
+            // Calculate credit memo for overpayments
+            $creditMemo = 0;
+            $actualPaymentAmount = $paymentAmount;
+            
+            if ($paymentAmount > $currentBalance) {
+                // Overpayment detected - calculate credit memo
+                $creditMemo = $paymentAmount - $currentBalance;
+                $actualPaymentAmount = $currentBalance; // Only pay up to the balance
+            }
+
+            // Determine payment status - overpayments are considered full payment
+            $newBalance = $currentBalance - $actualPaymentAmount;
+            $paymentStatus = ($newBalance <= 0.001) ? 'full' : 'partial'; // Using small tolerance for floating point comparison
+
+            // Create payment record (using unified Payment table)
+            $paymentData = [
+                'accounts_receivable_id' => $receivable->id,
+                'accounts_payable_id' => null, // Ensure AP ID is null for AR payments
+                'payment_amount' => $paymentAmount, // Use full payment amount (including overpayment)
+                'payment_type' => $request->payment_method, // cash, bank_transfer, gcash, check
+                'payment_status' => $paymentStatus, // full, partial
+                'payment_date' => now(),
+                'reference_number' => $request->reference_number,
+                'remarks' => $request->remarks,
+                'process_by' => auth()->user()->name ?? 'System'
+            ];
+
+            // Add bank_id if payment method is bank_transfer and bank_id is provided
+            if ($request->payment_method === 'bank_transfer' && $request->bank_id) {
+                $paymentData['bank_id'] = $request->bank_id;
+            }
+
+            // Add gcash_id if payment method is gcash and gcash_id is provided
+            if ($request->payment_method === 'gcash' && $request->gcash_id) {
+                $paymentData['gcash_id'] = $request->gcash_id;
+            }
+
+            // Handle check payment if enabled
+            $checkId = null;
+            
+            // Check if pay_by_check is truthy (could be '1', 1, true, 'true', etc.)
+            if (($request->pay_by_check == '1' || $request->pay_by_check === true || $request->pay_by_check === 'true') && $request->payment_method === 'bank_transfer') {
+                Log::info('Creating check record for AR payment...');
+                
+                // Create check record
+                $checkData = [
+                    'BankID' => $request->bank_id,
+                    'Payee' => $request->check_payee,
+                    'AmountInWords' => $request->check_amount_in_words,
+                    'CheckDate' => $request->check_date,
+                    'CheckAmount' => $paymentAmount, // Use the full entered amount for check
+                    'CheckNumber' => $request->check_number,
+                    'Status' => 'Active',
+                    'CreatedBy' => auth()->user()->name ?? 'System',
+                    'Remarks' => 'Payment for AR #' . $receivable->id . ($creditMemo > 0 ? ' (includes overpayment of ₱' . number_format($creditMemo, 2) . ')' : '')
+                ];
+
+                $check = Check::create($checkData);
+                $checkId = $check->CheckID;
+
+                // Add check_id to payment data
+                $paymentData['check_id'] = $checkId;
+            }
+
+            // Clean payment data before creating record
+            foreach ($paymentData as $key => $value) {
+                if (is_string($value) && !empty($value)) {
+                    // Ensure UTF-8 encoding and remove control characters
+                    $cleanValue = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                    $cleanValue = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $cleanValue);
+                    $paymentData[$key] = $cleanValue;
+                }
+            }
+
+            $payment = Payment::create($paymentData);
+
+            // Update receivable status and balance
+            if ($newBalance <= 0 || $paymentStatus === 'full') {
+                $receivable->status = 'Settled';
+                $receivable->current_balance = 0; // Ensure balance is exactly 0 for settled items
+            } else {
+                // AR system keeps status as 'Outstanding' for partial payments
+                // The payment tracking is handled by the CustomerPayment history
+                $receivable->status = 'Outstanding';
+                $receivable->current_balance = $newBalance;
+            }
+            
+            // Update last balance update timestamp
+            $receivable->last_balance_update = now();
+            
+            // Update credit memo if there's overpayment
+            if ($creditMemo > 0) {
+                $receivable->credit_generated = ($receivable->credit_generated ?? 0) + $creditMemo;
+            }
+            
+            $receivable->save();
+
+            // Prepare response message (avoid peso symbol for UTF-8 safety)
+            $message = 'Payment processed successfully';
+            if ($creditMemo > 0) {
+                $message = 'Payment processed successfully. Overpayment of PHP ' . number_format($creditMemo, 2) . ' stored as Credit Memo.';
+            }
+
+            // Simplified response to avoid UTF-8 issues with complex objects
+            $responseData = [
+                'success' => true,
+                'message' => mb_convert_encoding($message, 'UTF-8', 'UTF-8'),
+                'payment_id' => $payment->id,
+                'new_balance' => round($newBalance, 2),
+                'credit_memo' => round($creditMemo, 2),
+                'payment_amount' => round($paymentAmount, 2),
+                'payment_status' => $paymentStatus,
+                'ar_status' => $receivable->status
+            ];
+
+            // Include check ID if check was created
+            if ($checkId) {
+                $responseData['check_id'] = $checkId;
+                $responseData['message'] = mb_convert_encoding('Payment and check processed successfully', 'UTF-8', 'UTF-8');
+            }
+
+            return response()->json($responseData, 200, ['Content-Type' => 'application/json; charset=utf-8']);
+
+        } catch (\Exception $e) {
+            Log::error('Error processing AR payment: ' . $e->getMessage());
+            
+            // Clean the error message to prevent JSON encoding issues
+            $errorMessage = mb_convert_encoding($e->getMessage(), 'UTF-8', 'UTF-8');
+            $errorMessage = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $errorMessage);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing payment: ' . $errorMessage
+            ], 500, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * Get payment history for accounts receivable
+     */
+    public function getPaymentHistory($id): JsonResponse
+    {
+        try {
+            $receivable = AccountsReceivable::with(['payments' => function($query) {
+                $query->orderBy('payment_date', 'desc');
+            }, 'customer'])->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'receivable' => $receivable,
+                    'payments' => $receivable->payments,
+                    'total_paid' => $receivable->total_paid_amount,
+                    'balance' => $receivable->balance_amount
+                ]
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (\Exception $e) {
+            Log::error('Error fetching AR payment history: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch payment history',
+                'error' => $e->getMessage()
+            ], 500, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * Get summary statistics
+     */
+    public function summary(): JsonResponse
+    {
+        try {
+            $totalReceivables = AccountsReceivable::sum('total_amount');
+            
+            // Calculate total paid from unified payments table
+            $totalPaid = DB::table('tblPayments')
+                ->where('accounts_receivable_id', '!=', null)
+                ->sum('payment_amount') ?? 0;
+                
+            // Calculate outstanding amount using proper balance calculation
+            $outstandingAmount = DB::table('tblAccountsReceivable as ar')
+                ->leftJoin(DB::raw('(
+                    SELECT accounts_receivable_id, SUM(payment_amount) as total_paid 
+                    FROM tblPayments 
+                    WHERE accounts_receivable_id IS NOT NULL
+                    GROUP BY accounts_receivable_id
+                ) as payments'), 'ar.id', '=', 'payments.accounts_receivable_id')
+                ->where('ar.status', 'Outstanding')
+                ->selectRaw('SUM(ar.total_amount - ISNULL(payments.total_paid, 0)) as balance')
+                ->value('balance') ?? 0;
+                
+            // Calculate overdue amount using proper balance calculation  
+            $overdueAmount = DB::table('tblAccountsReceivable as ar')
+                ->leftJoin(DB::raw('(
+                    SELECT accounts_receivable_id, SUM(payment_amount) as total_paid 
+                    FROM tblPayments 
+                    WHERE accounts_receivable_id IS NOT NULL
+                    GROUP BY accounts_receivable_id
+                ) as payments'), 'ar.id', '=', 'payments.accounts_receivable_id')
+                ->where('ar.status', 'Outstanding')
+                ->whereRaw("DATEADD(day, CAST(SUBSTRING(ISNULL(ar.terms, '30'), PATINDEX('%[0-9]%', ISNULL(ar.terms, '30')), PATINDEX('%[^0-9]%', SUBSTRING(ISNULL(ar.terms, '30'), PATINDEX('%[0-9]%', ISNULL(ar.terms, '30')), LEN(ISNULL(ar.terms, '30')))) - 1) AS INT), ar.date) < GETDATE()")
+                ->selectRaw('SUM(ar.total_amount - ISNULL(payments.total_paid, 0)) as balance')
+                ->value('balance') ?? 0;
+            
+            $outstandingCount = AccountsReceivable::outstanding()->count();
+            $overdueCount = AccountsReceivable::overdue()->count();
+            $settledCount = AccountsReceivable::settled()->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_receivables' => $totalReceivables,
+                    'total_paid' => $totalPaid,
+                    'outstanding_amount' => $outstandingAmount,
+                    'overdue_amount' => $overdueAmount,
+                    'outstanding_count' => $outstandingCount,
+                    'overdue_count' => $overdueCount,
+                    'settled_count' => $settledCount
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching summary: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch summary',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Apply automatic credit memos
+     */
+    public function applyAutoCreditMemos(Request $request): JsonResponse
+    {
+        try {
+            $customerCode = $request->get('customer_code');
+            $result = $this->autoApplyCreditMemos($customerCode);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Auto credit memos applied successfully',
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error applying auto credit memos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to apply auto credit memos',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Set AR number for redirection
+     */
+    public function setARNum(Request $request): JsonResponse
+    {
+        try {
+            $request->session()->put('ar_number', $request->ar_number);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'AR number set successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error setting AR number: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to set AR number',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Print page for accounts receivable
+     */
+    public function printPage(Request $request)
+    {
+        try {
+            $arNumber = $request->session()->get('ar_number');
+            if (!$arNumber) {
+                return redirect()->route('accounts-receivable')->with('error', 'No AR number specified for printing');
+            }
+
+            $receivable = AccountsReceivable::where('so_number', $arNumber)
+                ->with(['customer'])
+                ->first();
+
+            if (!$receivable) {
+                return redirect()->route('accounts-receivable')->with('error', 'Accounts receivable not found');
+            }
+
+            return view('Pages.Printing.AR_printing', compact('receivable'));
+        } catch (\Exception $e) {
+            Log::error('Error loading print page: ' . $e->getMessage());
+            return redirect()->route('accounts-receivable')->with('error', 'Failed to load print page');
+        }
+    }
+
+    /**
+     * Auto-apply credit memos for a customer
+     */
+    private function autoApplyCreditMemos($customerCode)
+    {
+        // This would implement the logic to automatically apply credit memos
+        // Similar to the accounts payable system but for customers instead of suppliers
+        // For now, return empty result
+        return [
+            'applied_count' => 0,
+            'total_amount' => 0
+        ];
+    }
+}

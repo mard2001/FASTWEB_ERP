@@ -114,9 +114,36 @@
             opacity: 1 !important;
         }
         
-        /* Hide loading screen */
-        #loadingScreen {
-            display: none !important;
+        /* Enhanced loading screen styling */
+        .loadingScreen {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,249,250,0.95) 100%);
+            backdrop-filter: blur(2px);
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .loadingScreen .loader {
+            border-color: #5bc0de;
+            border-bottom-color: #f7f7f7;
+        }
+
+        /* Enhanced modal loading animation */
+        .spinner-border.text-primary {
+            border-color: #5bc0de;
+            border-right-color: transparent;
+        }
+
+        /* Smooth transitions for table visibility */
+        #dattableDiv {
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        #dattableDiv.opacity-0 {
+            opacity: 0 !important;
+        }
+
+        /* Allow loading screen to show initially */
+        .loadingScreen {
+            display: flex !important;
         }
 
         .transaction-table {
@@ -350,6 +377,6 @@
 @endsection
 
 @section('pagejs')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous" referreferrer="no-referrer"></script>
     <script src="{{ asset('assets/js/supplier-credit/supplier-credit.js') }}"></script>
 @endsection

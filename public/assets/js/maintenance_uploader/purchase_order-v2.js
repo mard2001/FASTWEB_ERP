@@ -206,12 +206,30 @@ $(document).ready(async function () {
       confirmButtonText: "Yes, proceed with the order!",
     }).then(async (result) => {
       if (result.isConfirmed) {
+        // Show loading indicator
+        Swal.fire({
+          title: 'Confirming Purchase Order...',
+          text: 'Please wait while we confirm your purchase order. This process may take a moment...',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          backdrop: `rgba(0,0,0,0.3)`,
+          customClass: {
+            popup: 'swal-loading-fade'
+          },
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
         await ajax(
           "api/orders/po-confirm/" + selectedMain.id,
           "POST",
           null,
           (response) => {
             // Success callback
+            Swal.close(); // Close loading dialog
+            
             if (response.success) {
               datatables.loadPO();
               POModal.hide();
@@ -229,6 +247,7 @@ $(document).ready(async function () {
           },
           (xhr, status, error) => {
             // Error callback
+            Swal.close(); // Close loading dialog
 
             if (xhr.responseJSON && xhr.responseJSON.message) {
               Swal.fire({
@@ -388,6 +407,22 @@ $(document).ready(async function () {
             let updateBody = POModal.getData();
             updateBody.Items = itemTmpSave;
 
+            // Show loading indicator
+            Swal.fire({
+              title: 'Updating Purchase Order...',
+              text: 'Please wait while we update your purchase order. This may take a few moments for orders with many items.',
+              allowOutsideClick: false,
+              allowEscapeKey: false,
+              showConfirmButton: false,
+              backdrop: `rgba(0,0,0,0.3)`,
+              customClass: {
+                popup: 'swal-loading-fade'
+              },
+              didOpen: () => {
+                Swal.showLoading();
+              }
+            });
+
             await ajax(
               "api/orders/po/" + selectedMain.id,
               "POST",
@@ -397,6 +432,7 @@ $(document).ready(async function () {
               }),
               (response) => {
                 // Success callback
+                Swal.close(); // Close loading dialog
 
                 if (response.success) {
                   // datatables.loadItems(selectedMain.PONumber);
@@ -428,6 +464,8 @@ $(document).ready(async function () {
               },
               (xhr, status, error) => {
                 // Error callback
+                Swal.close(); // Close loading dialog
+                
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                   Swal.fire({
                     title: "Opppps..",
@@ -624,6 +662,14 @@ function autoCalculateTotalPrice() {
   $("#TotalPrice").val(
     formatMoney(($("#PricePerUnit").val() || 0) * totalInPieces)
   );
+  
+  // Clear validation errors for TotalPrice since it's auto-calculated
+  var validator = $("#itemModalFields").validate();
+  if (validator) {
+    $("#TotalPrice").removeClass('error is-invalid');
+    $('label.error[for="TotalPrice"]').remove();
+    $("#TotalPrice").next('.invalid-feedback').remove();
+  }
 }
 
 async function getProductPriceCodes() {
@@ -1006,6 +1052,14 @@ const initVS = {
             );
             $("#Decription").val(findProduct.Description);
 
+            // Clear validation errors since fields are being auto-filled
+            var validator = $("#itemModalFields").validate();
+            if (validator) {
+              $('#itemModalFields input, #itemModalFields textarea, #itemModalFields select').removeClass('error is-invalid');
+              $('label.error').remove();
+              $('#itemModalFields .invalid-feedback').remove();
+            }
+
             let priceCode = selectedVendor.PriceCode.trim();
 
             const getPriceBody = {
@@ -1053,6 +1107,15 @@ const initVS = {
                   console.log(response.convertionFactor);
 
                   $("#PricePerUnit").val(response.response.UNITPRICE);
+                  
+                  // Clear validation errors for PricePerUnit since it's auto-filled
+                  var validator = $("#itemModalFields").validate();
+                  if (validator) {
+                    $("#PricePerUnit").removeClass('error is-invalid');
+                    $('label.error[for="PricePerUnit"]').remove();
+                    $("#PricePerUnit").next('.invalid-feedback').remove();
+                  }
+                  
                   $("#itemSave").prop("disabled", false);
 
                   const isAlreadyExist = itemTmpSave.find(
@@ -1308,12 +1371,41 @@ const POModal = {
 
     POData.orderPlacerEmail = "isItUserEmail@email.com";
 
+    // Show loading indicator
+    Swal.fire({
+      title: 'Submitting Purchase Order...',
+      text: 'Please wait while we process your purchase order. This may take a few moments for orders with many items.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      backdrop: `rgba(0,0,0,0.3)`,
+      customClass: {
+        popup: 'swal-loading-fade'
+      },
+      didOpen: () => {
+        Swal.showLoading();
+        // Add custom styles for faded appearance
+        const style = document.createElement('style');
+        style.textContent = `
+          .swal-loading-fade {
+            opacity: 0.95 !important;
+          }
+          .swal2-backdrop-show {
+            backdrop-filter: blur(2px) !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    });
+
     await ajax(
       "api/orders/po",
       "POST",
       JSON.stringify({ data: POData }),
       (response) => {
         // Success callback
+        Swal.close(); // Close loading dialog
+        
         if (response.success) {
           datatables.loadPO();
           POModal.hide();
@@ -1327,6 +1419,7 @@ const POModal = {
       },
       (xhr, status, error) => {
         // Error callback
+        Swal.close(); // Close loading dialog
 
         if (xhr.responseJSON && xhr.responseJSON.message) {
           Swal.fire({
@@ -1385,6 +1478,40 @@ const POItemsModal = {
         alert("Form is valid!");
         form.submit(); // Proceed with form submission if validation passes
       },
+    });
+
+    // Add event handlers to clear validation styling when user starts typing
+    $('#itemModalFields input, #itemModalFields textarea, #itemModalFields select').on('input change', function() {
+      var $this = $(this);
+      var validator = $("#itemModalFields").validate();
+      
+      // Remove error class and styling from the specific field
+      if ($this.hasClass('error')) {
+        $this.removeClass('error');
+      }
+      if ($this.hasClass('is-invalid')) {
+        $this.removeClass('is-invalid');
+      }
+      
+      // Remove error labels for this specific field
+      var fieldName = $this.attr('name');
+      if (fieldName) {
+        $('label.error[for="' + fieldName + '"]').remove();
+        $this.next('.invalid-feedback').remove();
+      }
+      
+      // For the quantity fields, also clear other quantity field errors if at least one has value
+      if ($this.attr('id') === 'CSQuantity' || $this.attr('id') === 'IBQuantity' || $this.attr('id') === 'PCQuantity') {
+        var csQuantity = $("#CSQuantity").val();
+        var ibQuantity = $("#IBQuantity").val();
+        var pcQuantity = $("#PCQuantity").val();
+        
+        if (csQuantity !== "" || ibQuantity !== "" || pcQuantity !== "") {
+          $('#CSQuantity, #IBQuantity, #PCQuantity').removeClass('error is-invalid');
+          $('label.error[for="CSQuantity"], label.error[for="IBQuantity"], label.error[for="PCQuantity"]').remove();
+          $('#CSQuantity, #IBQuantity, #PCQuantity').next('.invalid-feedback').remove();
+        }
+      }
     });
   },
   isValid: () => {

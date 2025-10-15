@@ -2,21 +2,56 @@ var MainTH, selectedMain;
 var suppliersData = [];
 
 $(document).ready(function() {
-    // Load suppliers data using the same pattern as supplier maintenance
-    datatables.loadSupplierData();
+    // Ensure loading screen is visible initially
+    $('.loadingScreen').show();
+    $('#dattableDiv').addClass('opacity-0');
+    
+    // Small delay to ensure DOM is ready and loading screen shows
+    setTimeout(() => {
+        // Load suppliers data using the same pattern as supplier maintenance
+        datatables.loadSupplierData();
+    }, 100);
 
     // Row click handler for supplier transactions
     $("#supplierCreditTable").on("click", "tbody tr", function() {
-        $("#supplierCreditTable tbody").css('pointer-events', 'none');
-        const selectedSupplierCode = $(this).attr('id');
+        const $row = $(this);
+        const selectedSupplierCode = $row.attr('id');
         
-        if (selectedSupplierCode) {
-            showSupplierTransactions(selectedSupplierCode);
+        if (selectedSupplierCode && !$row.hasClass('loading')) {
+            // Add loading state to clicked row
+            $row.addClass('loading').css({
+                'background-color': 'rgba(13, 110, 253, 0.1)',
+                'pointer-events': 'none'
+            });
+            
+            // Add loading indicator to the row
+            const originalContent = $row.html();
+            const loadingHtml = `
+                <td colspan="7" class="text-center py-2">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="text-muted">Loading supplier details...</span>
+                    </div>
+                </td>
+            `;
+            $row.html(loadingHtml);
+            
+            // Disable all row clicks temporarily
+            $("#supplierCreditTable tbody").css('pointer-events', 'none');
+            
+            showSupplierTransactions(selectedSupplierCode).finally(() => {
+                // Restore row and enable clicks after loading
+                setTimeout(() => {
+                    $row.html(originalContent).removeClass('loading').css({
+                        'background-color': '',
+                        'pointer-events': ''
+                    });
+                    $("#supplierCreditTable tbody").css('pointer-events', 'auto');
+                }, 300);
+            });
         }
-        
-        setTimeout(() => {
-            $("#supplierCreditTable tbody").css('pointer-events', 'auto');
-        }, 500);
     });
 });
 
@@ -62,12 +97,21 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 // DataTables object matching the supplier maintenance pattern
 const datatables = {
     loadSupplierData: async () => {
+        // Show enhanced loading message
+        $('.loadingScreen .loader').after('<div class="mt-3 text-center"><small class="text-muted">Loading supplier credit data...</small></div>');
+        
         const supplierData = await ajax('api/supplier-credit', 'GET', null, (response) => {
             suppliersData = response.data;
             datatables.initSupplierDatatable(response);
         }, (xhr, status, error) => {
             console.error('Error loading supplier credit data:', error);
             console.error('XHR Details:', xhr);
+            // Hide loading screen on error
+            $('.loadingScreen').remove();
+            $('#dattableDiv').removeClass('opacity-0').html(
+                '<div class="alert alert-danger m-3"><i class="mdi mdi-alert-circle me-2"></i>Failed to load supplier credit data. Please refresh the page.</div>'
+            );
+            showNotification('error', 'Failed to load supplier credit data');
         });
     },
     
@@ -185,13 +229,15 @@ const datatables = {
                         $(this.api().table().container()).find('.dt-layout-table').addClass('btmdtborder');
 
                         $(this.api().table().container()).find('.dt-search').addClass('d-flex justify-content-end');
-                        $('.loadingScreen').remove();
-                        $('#dattableDiv').removeClass('opacity-0');
-
-                        const tableDiv = $('.dt-layout-row').first();
-                        tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F) ); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Supplier Credit Information</p></div>');
                     }
                 });
+                
+                // Hide loading screen and show table (matching accounts payable pattern)
+                $('.loadingScreen').remove();
+                $('#dattableDiv').removeClass('opacity-0');
+
+                const tableDiv = $('.dt-layout-row').first();
+                tableDiv.after('<div style="background: linear-gradient(to right, var(--primary-color, #1b438f), var(--secondary-color, #33336F) ); color: var(--text-color-light, #FFF); margin-top:10px; padding: 10px 15px; border-top-left-radius:10px; border-top-right-radius: 10px;"><p style="margin:0px">Supplier Credit Information</p></div>');
             }
         }
     }
@@ -202,7 +248,27 @@ const datatables = {
 async function showSupplierTransactions(supplierCode) {
     // Show loading state
     $('#supplierTransactionsModal').modal('show');
-    $('#transactionsTableBody').html('<tr><td colspan="8" class="text-center">Loading transactions...</td></tr>');
+    
+    // Enhanced loading animation for modal
+    const loadingContent = `
+        <tr>
+            <td colspan="8" class="text-center py-4">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="spinner-border text-primary mb-2" role="status" style="width: 2rem; height: 2rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="text-muted">Loading transaction history...</div>
+                    <small class="text-muted mt-1">Please wait while we fetch the data</small>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    $('#transactionsTableBody').html(loadingContent);
+    
+    // Clear previous data while loading
+    $('#modalSupplierCode, #modalSupplierName, #modalContactPerson, #modalContactNo').val('Loading...');
+    $('#totalDebt, #totalPaid, #balanceOwed, #creditMemoBalance').val('Loading...');
     
     try {
         const response = await ajax(`api/supplier-credit/${supplierCode}/transactions`, 'GET', null);
@@ -211,7 +277,14 @@ async function showSupplierTransactions(supplierCode) {
             populateModal(response.data);
         } else {
             showNotification('error', 'Failed to load transactions: ' + response.message);
-            $('#supplierTransactionsModal').modal('hide');
+            $('#transactionsTableBody').html(`
+                <tr>
+                    <td colspan="8" class="text-center text-danger py-4">
+                        <i class="mdi mdi-alert-circle me-2"></i>
+                        Failed to load transaction data: ${response.message}
+                    </td>
+                </tr>
+            `);
         }
     } catch (xhr) {
         console.error('Error loading transactions:', xhr);
@@ -220,7 +293,15 @@ async function showSupplierTransactions(supplierCode) {
             errorMessage = xhr.responseJSON.message;
         }
         showNotification('error', errorMessage);
-        $('#supplierTransactionsModal').modal('hide');
+        $('#transactionsTableBody').html(`
+            <tr>
+                <td colspan="8" class="text-center text-danger py-4">
+                    <i class="mdi mdi-alert-circle-outline me-2"></i>
+                    ${errorMessage}
+                    <br><small class="text-muted mt-1">Please try again or contact support if the problem persists</small>
+                </td>
+            </tr>
+        `);
     }
 }
 
@@ -483,24 +564,86 @@ function downloadToCSV(jsonArr){
 // Add download button click handler
 $(document).ready(function() {
     $('#csvDLBtn').on('click', function () {
-        downloadToCSV(suppliersData);
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        
+        // Show loading state
+        $btn.prop('disabled', true).html(`
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Generating Report...</span>
+            </div>
+        `);
+        
+        // Simulate processing time for user feedback
+        setTimeout(() => {
+            try {
+                downloadToCSV(suppliersData);
+                showNotification('success', 'Supplier credit report downloaded successfully');
+            } catch (error) {
+                showNotification('error', 'Failed to generate report: ' + error.message);
+            } finally {
+                // Restore button
+                setTimeout(() => {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }, 1000);
+            }
+        }, 500);
     });
     
     // Print Statement of Account (all transactions)
     $('#printStatementBtn').on('click', function () {
         const supplierCode = $('#modalSupplierCode').val();
-        if (supplierCode && supplierCode !== '-') {
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        
+        if (supplierCode && supplierCode !== '-' && supplierCode !== 'Loading...') {
+            // Show loading state
+            $btn.prop('disabled', true).html(`
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Generating Statement...
+            `);
+            
             const printUrl = `${globalApi}api/supplier-credit/${supplierCode}/print-statement`;
             window.open(printUrl, '_blank');
+            
+            // Restore button after delay
+            setTimeout(() => {
+                $btn.prop('disabled', false).html(originalHtml);
+            }, 2000);
+        } else {
+            showNotification('error', 'Please select a supplier first');
         }
     });
     
     // Print Counter Receipt (pending transactions only)
     $('#printCounterReceiptBtn').on('click', function () {
         const supplierCode = $('#modalSupplierCode').val();
-        if (supplierCode && supplierCode !== '-') {
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        
+        if (supplierCode && supplierCode !== '-' && supplierCode !== 'Loading...') {
+            // Show loading state
+            $btn.prop('disabled', true).html(`
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Generating Receipt...
+            `);
+            
             const printUrl = `${globalApi}api/supplier-credit/${supplierCode}/print-counter-receipt`;
             window.open(printUrl, '_blank');
+            
+            // Restore button after delay
+            setTimeout(() => {
+                $btn.prop('disabled', false).html(originalHtml);
+            }, 2000);
+        } else {
+            showNotification('error', 'Please select a supplier first');
         }
     });
 });

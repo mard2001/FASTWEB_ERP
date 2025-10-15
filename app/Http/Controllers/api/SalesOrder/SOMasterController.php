@@ -7,12 +7,14 @@ use Illuminate\Http\Request;
 use App\Models\Customer\Customer;
 use App\Services\InventoryManager;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\SalesOrder\SODetail;
 use App\Models\SalesOrder\SOMaster;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Event;
 use App\Events\Inventory\InventoryMovement;
 use App\Events\Inventory\InventoryWarehouse;
+use App\Models\AccountsReceivable;
 
 class SOMasterController extends Controller
 {
@@ -730,6 +732,34 @@ class SOMasterController extends Controller
                     
                     $InventoryManager->InvWareHouseDirectionHandler($sku, $warehouse, $qty, "OUT", null);
                     $InventoryManager->InvMovement($soHeaderDetails,  $detail, 'S', null);
+                }
+
+                // Create Accounts Receivable record for completed Sales Order
+                try {
+                    // Calculate total amount from SO details
+                    $totalAmount = array_sum(array_map(function($detail) {
+                        return (float)$detail['QTYinPCS'] * (float)($detail['MPrice'] ?? 0);
+                    }, $details));
+
+                    // Get customer information
+                    $customer = Customer::where('Customer', $data->Customer)->first();
+                    
+                    // Create the accounts receivable record
+                    AccountsReceivable::create([
+                        'date' => now()->format('Y-m-d'),
+                        'customer_code' => $data->Customer,
+                        'customer_name' => $customer ? $customer->Name : $data->CustomerName,
+                        'so_number' => $data->SalesOrder,
+                        'reference_number' => $data->CustomerPoNumber,
+                        'total_amount' => $totalAmount,
+                        'terms' => $customer && $customer->TermsCode ? $customer->TermsCode . ' Days' : '30 Days',
+                        'status' => 'Outstanding',
+                        'remarks' => 'Auto-generated from completed Sales Order',
+                        'process_by' => $request->lastOperator ?? 'system'
+                    ]);
+                } catch (\Exception $arException) {
+                    // Log the error but don't fail the SO completion
+                    Log::error('Failed to create Accounts Receivable for SO ' . $data->SalesOrder . ': ' . $arException->getMessage());
                 }
 
                 // Log the activity
