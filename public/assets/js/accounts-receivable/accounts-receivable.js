@@ -1156,8 +1156,75 @@ function setupEventHandlers() {
     });
 
     // Refresh data tables without full page reload
-    $('#arRefreshBtn').on('click', function() {
-        loadAccountsReceivableData();
+    $('#apRefreshBtn').on('click', function() {
+        const $btn = $(this);
+        const $icon = $btn.find('.mdi');
+        const $span = $btn.find('span');
+        
+        // Disable button and show loading state
+        $btn.prop('disabled', true);
+        $icon.removeClass('mdi-refresh').addClass('mdi-loading mdi-spin');
+        $span.text('Refreshing...');
+        
+        // Show loading animation in table
+        if (accountsReceivableTable) {
+            accountsReceivableTable.clear().draw();
+            const loadingRow = `<tr>
+                <td colspan="11" class="text-center p-4">
+                    <div class="d-flex justify-content-center align-items-center">
+                        <i class="mdi mdi-loading mdi-spin me-2" style="font-size: 1.5rem;"></i>
+                        <span>Refreshing accounts receivable data...</span>
+                    </div>
+                </td>
+            </tr>`;
+            $('#AccountsReceivableTable tbody').html(loadingRow);
+        }
+        
+        // Make API call to refresh data
+        $.ajax({
+            url: '/api/accounts-receivable',
+            type: 'GET',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
+            success: function(response) {
+                if (response.success) {
+                    accountsReceivableData = response.data;
+                    filteredData = [...accountsReceivableData];
+                    
+                    // Re-apply current filters
+                    applyFilters();
+                    
+                    // Update statistics
+                    loadStatistics();
+                    
+                    // Show success message briefly
+                    $span.text('Refreshed!');
+                    setTimeout(() => {
+                        $span.text('Refresh Data');
+                    }, 1000);
+                }
+            },
+            error: function(xhr) {
+                console.error('Failed to refresh accounts receivable data:', xhr);
+                
+                // Restore original data on error
+                if (accountsReceivableTable && filteredData.length > 0) {
+                    accountsReceivableTable.clear();
+                    accountsReceivableTable.rows.add(filteredData);
+                    accountsReceivableTable.draw();
+                }
+                
+                Swal.fire('Error!', 'Failed to refresh accounts receivable data.', 'error');
+                $span.text('Refresh Data');
+            },
+            complete: function() {
+                // Restore button state
+                $btn.prop('disabled', false);
+                $icon.removeClass('mdi-loading mdi-spin').addClass('mdi-refresh');
+            }
+        });
     });
 
     // Payment form submission

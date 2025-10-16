@@ -337,8 +337,24 @@ function initDateRangePicker() {
 
 // Apply filters
 function applyFilters() {
-    let supplierFilter = supplierFilterVS ? supplierFilterVS.getSelectedOptions()[0]?.value || '' : '';
-    let paymentStatusFilter = paymentStatusFilterVS ? paymentStatusFilterVS.getSelectedOptions()[0]?.value || '' : '';
+    let supplierFilter = '';
+    let paymentStatusFilter = '';
+    
+    // Safe check for supplier filter
+    if (supplierFilterVS && typeof supplierFilterVS.getSelectedOptions === 'function') {
+        const selectedOptions = supplierFilterVS.getSelectedOptions();
+        if (selectedOptions && selectedOptions.length > 0) {
+            supplierFilter = selectedOptions[0].value || '';
+        }
+    }
+    
+    // Safe check for payment status filter
+    if (paymentStatusFilterVS && typeof paymentStatusFilterVS.getSelectedOptions === 'function') {
+        const selectedOptions = paymentStatusFilterVS.getSelectedOptions();
+        if (selectedOptions && selectedOptions.length > 0) {
+            paymentStatusFilter = selectedOptions[0].value || '';
+        }
+    }
 
     filteredData = paymentHistoryData.filter(function(item) {
         let matchesDate = true;
@@ -353,9 +369,12 @@ function applyFilters() {
             }
         }
 
-        // Supplier filter
-        if (supplierFilter && item.supplier_code !== supplierFilter) {
-            matchesSupplier = false;
+        // Supplier filter - check multiple possible field names
+        if (supplierFilter) {
+            const itemSupplierCode = item.supplier_customer_code || item.customer_code || item.supplier_code;
+            if (itemSupplierCode !== supplierFilter) {
+                matchesSupplier = false;
+            }
         }
 
         // Payment status filter
@@ -501,6 +520,78 @@ function setupEventHandlers() {
             title: 'Print Report',
             text: 'Print functionality will be implemented soon.',
             icon: 'info'
+        });
+    });
+
+    // Refresh functionality
+    $('#phRefreshBtn').on('click', function() {
+        const $btn = $(this);
+        const $icon = $btn.find('i');
+        const $span = $btn.find('span');
+        
+        // Disable button and show loading state
+        $btn.prop('disabled', true);
+        $icon.removeClass('mdi-refresh').addClass('mdi-loading mdi-spin');
+        $span.text('Refreshing...');
+        
+        // Show loading animation in table
+        if (paymentHistoryTable) {
+            paymentHistoryTable.clear().draw();
+            const loadingRow = `<tr>
+                <td colspan="10" class="text-center p-4">
+                    <div class="d-flex justify-content-center align-items-center">
+                        <i class="mdi mdi-loading mdi-spin me-2" style="font-size: 1.5rem;"></i>
+                        <span>Refreshing payment history data...</span>
+                    </div>
+                </td>
+            </tr>`;
+            $('#PaymentHistoryTable tbody').html(loadingRow);
+        }
+        
+        // Make API call to refresh data
+        $.ajax({
+            url: '/api/payment-history',
+            type: 'GET',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
+            success: function(response) {
+                if (response.success) {
+                    paymentHistoryData = response.data;
+                    filteredData = [...paymentHistoryData];
+                    
+                    // Re-apply current filters
+                    applyFilters();
+                    
+                    // Update statistics
+                    loadStatistics();
+                    
+                    // Show success message briefly
+                    $span.text('Refreshed!');
+                    setTimeout(() => {
+                        $span.text('Refresh');
+                    }, 1000);
+                }
+            },
+            error: function(xhr) {
+                console.error('Failed to refresh payment history data:', xhr);
+                
+                // Restore original data on error
+                if (paymentHistoryTable) {
+                    paymentHistoryTable.clear();
+                    paymentHistoryTable.rows.add(filteredData);
+                    paymentHistoryTable.draw();
+                }
+                
+                Swal.fire('Error!', 'Failed to refresh payment history data.', 'error');
+                $span.text('Refresh');
+            },
+            complete: function() {
+                // Restore button state
+                $btn.prop('disabled', false);
+                $icon.removeClass('mdi-loading mdi-spin').addClass('mdi-refresh');
+            }
         });
     });
 

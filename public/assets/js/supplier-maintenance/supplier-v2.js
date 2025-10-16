@@ -54,6 +54,92 @@ $(document).ready(async function () {
     // Initialize character counter for address field using the global helper
     window.CharacterCounterHelper.initAddressField('#CompleteAddress', '#completeAddressCharCount', '#supplierMainModal');
 
+    // Credit Limit formatting with real-time comma separator
+    $('#CreditLimit').on('input', function(e) {
+        // Get cursor position
+        const cursorPosition = this.selectionStart;
+        const oldLength = this.value.length;
+        
+        // Remove all non-numeric characters except decimal point
+        let value = this.value.replace(/[^\d.]/g, '');
+        
+        // Ensure only one decimal point
+        const parts = value.split('.');
+        if (parts.length > 2) {
+            value = parts[0] + '.' + parts.slice(1).join('');
+        }
+        
+        // Limit decimal places to 2
+        if (parts[1] && parts[1].length > 2) {
+            value = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+        
+        // Add commas to integer part
+        if (value) {
+            const [integerPart, decimalPart] = value.split('.');
+            const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            value = decimalPart !== undefined ? formattedInteger + '.' + decimalPart : formattedInteger;
+        }
+        
+        // Set the formatted value
+        this.value = value;
+        
+        // Adjust cursor position
+        const newLength = this.value.length;
+        const lengthDiff = newLength - oldLength;
+        this.setSelectionRange(cursorPosition + lengthDiff, cursorPosition + lengthDiff);
+    });
+
+    // Credit Limit keypress validation - allow only numbers, decimal point, and control keys
+    $('#CreditLimit').on('keypress', function(e) {
+        const key = e.which || e.keyCode;
+        const allowedKeys = [8, 9, 37, 38, 39, 40, 46]; // backspace, tab, arrow keys, delete
+        
+        if (allowedKeys.indexOf(key) !== -1) {
+            return true; // Allow control keys
+        }
+        
+        // Allow decimal point (46) but only one
+        if (key === 46 && this.value.indexOf('.') === -1) {
+            return true;
+        }
+        
+        // Allow numbers (48-57)
+        if (key >= 48 && key <= 57) {
+            return true;
+        }
+        
+        e.preventDefault();
+        return false;
+    });
+
+    // Credit Limit paste validation
+    $('#CreditLimit').on('paste', function(e) {
+        e.preventDefault();
+        const paste = (e.originalEvent.clipboardData || window.clipboardData).getData('text');
+        
+        // Remove non-numeric characters except decimal point
+        let cleanPaste = paste.replace(/[^\d.]/g, '');
+        
+        // Ensure only one decimal point
+        const parts = cleanPaste.split('.');
+        if (parts.length > 2) {
+            cleanPaste = parts[0] + '.' + parts.slice(1).join('');
+        }
+        
+        // Limit decimal places to 2
+        if (parts[1] && parts[1].length > 2) {
+            cleanPaste = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+        
+        // Format with commas and set value
+        if (cleanPaste) {
+            const [integerPart, decimalPart] = cleanPaste.split('.');
+            const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            this.value = decimalPart !== undefined ? formattedInteger + '.' + decimalPart : formattedInteger;
+        }
+    });
+
     // Contact Number validation - only allow numbers
     $('#ContactNo').on('input', function(e) {
         // Remove any non-numeric characters
@@ -261,6 +347,10 @@ $(document).ready(async function () {
                     denyButtonText: `Cancel`
                 }).then(async (result) => {
                     if (result.isConfirmed) {
+                        // Show loading animation on edit button
+                        const originalButtonText = $('#editSuppBtn').html();
+                        $('#editSuppBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Updating...');
+                        
                         var selectedSupplierCode = $('#SupplierCode').val();
                         // var mdCode = $('#customerID').val();
                         const supplier = SupplierModal.getData();
@@ -269,8 +359,11 @@ $(document).ready(async function () {
                             data: {...supplier},
                             _method: "PUT"
                         }), (response) => { // Success callback
+                            // Reset button state
+                            $('#editSuppBtn').prop('disabled', false);
+                            
                             if (response.success) {
-                                $(this).text('Edit details').removeClass('btn-primary').addClass('btn-info');
+                                $('#editSuppBtn').text('Edit details').removeClass('btn-primary').addClass('btn-info');
                                 $('#deleteSuppBtn').text('Delete');
 
                                 Swal.fire({
@@ -308,6 +401,9 @@ $(document).ready(async function () {
                             }
 
                         }, (xhr, status, error) => { // Error callback
+                            // Reset button state on error
+                            $('#editSuppBtn').prop('disabled', false).html(originalButtonText);
+                            
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 Swal.fire({
                                     title: "Opppps..",
@@ -579,7 +675,12 @@ const SupplierModal = {
         $('#ContactNo').val(suppData.ContactNo);
         $('#TermsCode').val(suppData.TermsCode);
         $('#PriceCode').val(suppData.PriceCode);
-        $('#CreditLimit').val(suppData.CreditLimit || 0);
+        
+        // Format Credit Limit with commas for display
+        const creditLimit = suppData.CreditLimit || 0;
+        const formattedCreditLimit = creditLimit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        $('#CreditLimit').val(formattedCreditLimit);
+        
         $('#holdStatus').val(suppData.holdStatus);
         $('#CompleteAddress').val(suppData.CompleteAddress);
         $('#PostalCode').val(suppData.PostalCode || '');
@@ -648,9 +749,16 @@ const SupplierModal = {
         }, 500);
     },
     SupplierSave: async () => {
+        // Show loading animation
+        const originalButtonText = $('#addSuppBtn').html();
+        $('#addSuppBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Adding...');
+        
         let suppData = SupplierModal.getData();
         // console.log(suppData);
         await ajax('api/supp/vendors', 'POST', JSON.stringify({ data: suppData }), (response) => { // Success callback
+            // Reset button state
+            $('#addSuppBtn').prop('disabled', false).html(originalButtonText);
+            
             if (response.success) {
                 datatables.loadSupplierData();
                 SupplierModal.hide();
@@ -670,7 +778,9 @@ const SupplierModal = {
             }
 
         }, (xhr, status, error) => { // Error callback
-
+            // Reset button state on error
+            $('#addSuppBtn').prop('disabled', false).html(originalButtonText);
+            
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 Swal.fire({
                     title: "Opppps..",
@@ -681,6 +791,10 @@ const SupplierModal = {
         });
     },
     getData: () => {
+        // Remove commas from Credit Limit before sending to server
+        const creditLimitValue = $('#CreditLimit').val() || '0';
+        const cleanCreditLimit = creditLimitValue.replace(/,/g, '');
+        
         var data = {
             SupplierCode : $('#SupplierCode').val(),
             SupplierName : $('#SupplierName').val(),
@@ -691,7 +805,7 @@ const SupplierModal = {
             CompleteAddress : $('#CompleteAddress').val(),
             PostalCode : $('#PostalCode').val(),
             PriceCode : $('#PriceCode').val(),
-            CreditLimit : $('#CreditLimit').val() || 0,
+            CreditLimit : cleanCreditLimit,
             holdStatus : $('#holdStatus').val(),
             Region : document.querySelector('#VSregion').getDisplayValue(),
             Municipality : document.querySelector('#VSmunicipality').getDisplayValue(),

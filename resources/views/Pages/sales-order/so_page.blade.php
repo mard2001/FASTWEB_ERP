@@ -100,7 +100,14 @@
 
     </style>
 
-    <x-contentButtonDiv addFunc="true" downloadFunc="true" uploadFunc="true"></x-contentButtonDiv>
+    <x-contentButtonDiv addFunc="true" downloadFunc="true" uploadFunc="true">
+        <x-slot:additionalButtons>
+            <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="soRefreshBtn">
+                <i class="mdi mdi-refresh me-2"></i>
+                <span>Refresh</span>
+            </div>
+        </x-slot:additionalButtons>
+    </x-contentButtonDiv>
 
     <x-table id="soTable">
         <x-slot:td>

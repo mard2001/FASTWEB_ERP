@@ -45,7 +45,16 @@
         }
     </style>
 
-    <x-contentButtonDiv downloadFunc="true" ></x-contentButtonDiv>
+    <x-contentButtonDiv downloadFunc="true">
+        <x-slot:additionalButtons>
+            <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="rrRefreshBtn">
+                <div class="btnImg me-2" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;">
+                    <span class="mdi mdi-refresh" style="font-size: 16px;"></span>
+                </div>
+                <span>Refresh Data</span>
+            </div>
+        </x-slot:additionalButtons>
+    </x-contentButtonDiv>
 
     <x-table id="rrTable">
         <x-slot:td>

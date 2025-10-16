@@ -11,6 +11,12 @@
 
 @section('table')
     <div class="main-content buttons w-100 overflow-auto d-flex align-items-center px-2 py-2" style="font-size: 12px;">
+        <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="scRefreshBtn">
+            <div class="btnImg me-2" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;">
+                <span class="mdi mdi-refresh" style="font-size: 16px;"></span>
+            </div>
+            <span>Refresh Data</span>
+        </div>
         <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="csvDLBtn">
             <div class="btnImg me-2" id="dlImg">
             </div>

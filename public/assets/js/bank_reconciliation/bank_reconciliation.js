@@ -140,6 +140,95 @@ $(document).ready(async function () {
     $('#csvDLBtn').on('click', function () {
         downloadToCSV(jsonArr);
     });
+
+    // Refresh data handler
+    $('#brRefreshBtn').on('click', function() {
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        
+        // Show loading state
+        $btn.prop('disabled', true).html(`
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Refreshing...</span>
+            </div>
+        `);
+        
+        // Show loading animation inside the table
+        if (MainTH) {
+            // Clear current data and add a single loading row
+            MainTH.clear().draw();
+            
+            // Insert loading HTML directly into the table body
+            $('#bankReconTable tbody').html(`
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <div class="d-flex flex-column align-items-center justify-content-center">
+                            <div class="spinner-border text-primary mb-2" role="status" style="width: 2rem; height: 2rem;">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div class="text-muted">Refreshing bank reconciliation data...</div>
+                        </div>
+                    </td>
+                </tr>
+            `);
+        }
+        
+        // Clear current data 
+        jsonArr = [];
+        
+        // Call refresh API directly with proper error handling
+        ajax('api/bank-reconciliation', 'GET', null, 
+            (response) => {
+                // Success callback
+                jsonArr = response.data;
+                datatables.initBankReconDatatable(response);
+                Swal.fire({
+                    title: "Success",
+                    text: "Bank reconciliation data refreshed successfully",
+                    icon: "success",
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Restore button after short delay
+                setTimeout(() => {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }, 500);
+            }, 
+            (xhr, status, error) => {
+                // Error callback
+                console.error('Error refreshing bank reconciliation data:', error);
+                Swal.fire({
+                    title: "Error",
+                    text: "Failed to refresh bank reconciliation data",
+                    icon: "error"
+                });
+                
+                // Show error message in table
+                if (MainTH) {
+                    $('#bankReconTable tbody').html(`
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-danger">
+                                <div class="d-flex flex-column align-items-center justify-content-center">
+                                    <i class="mdi mdi-alert-circle-outline mb-2" style="font-size: 2rem;"></i>
+                                    <div>Failed to refresh bank reconciliation data</div>
+                                    <small class="text-muted mt-1">Please try again or contact support</small>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                }
+                
+                // Restore button on error
+                setTimeout(() => {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }, 500);
+            }
+        );
+    });
 });
 
 function openBeginningBalanceModal(bankId, bankName, accountName, existingData = null) {

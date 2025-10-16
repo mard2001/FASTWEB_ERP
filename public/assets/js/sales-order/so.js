@@ -171,6 +171,65 @@ $(document).ready(async function () {
         getFilteredSO();
     });
 
+    // Refresh functionality
+    $('#soRefreshBtn').on('click', function() {
+        const $btn = $(this);
+        const $icon = $btn.find('i');
+        const $span = $btn.find('span');
+        
+        // Disable button and show loading state
+        $btn.prop('disabled', true);
+        $icon.removeClass('mdi-refresh').addClass('mdi-loading mdi-spin');
+        $span.text('Refreshing...');
+        
+        // Show loading animation in table
+        if (MainTH) {
+            MainTH.clear().draw();
+            const loadingRow = `<tr>
+                <td colspan="10" class="text-center p-4">
+                    <div class="d-flex justify-content-center align-items-center">
+                        <i class="mdi mdi-loading mdi-spin me-2" style="font-size: 1.5rem;"></i>
+                        <span>Refreshing sales order data...</span>
+                    </div>
+                </td>
+            </tr>`;
+            $('#soTable tbody').html(loadingRow);
+        }
+        
+        // Make API call to refresh data
+        ajax('api/sales-order/header', 'GET', null,
+            (response) => {
+                // Success callback
+                jsonArr = response.data;
+                datatables.initSODatatable(response);
+                
+                // Show success message briefly
+                $span.text('Refreshed!');
+                setTimeout(() => {
+                    $span.text('Refresh');
+                }, 1000);
+            },
+            (xhr, status, error) => {
+                // Error callback
+                console.error('Failed to refresh sales order data:', error);
+                
+                // Restore original data on error
+                if (MainTH && jsonArr) {
+                    MainTH.clear();
+                    MainTH.rows.add(jsonArr);
+                    MainTH.draw();
+                }
+                
+                Swal.fire('Error!', 'Failed to refresh sales order data.', 'error');
+                $span.text('Refresh');
+            }
+        ).finally(() => {
+            // Restore button state
+            $btn.prop('disabled', false);
+            $icon.removeClass('mdi-loading mdi-spin').addClass('mdi-refresh');
+        });
+    });
+
     $('#checkboxDateFiltering').change(function() {
         if ($(this).is(':checked')) {
             $('.reportrangeDiv').show();

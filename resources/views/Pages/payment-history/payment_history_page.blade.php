@@ -176,8 +176,12 @@
 
     <x-contentButtonDiv downloadFunc="true">
         <x-slot:additionalButtons>
+            <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="phRefreshBtn">
+                <i class="mdi mdi-refresh me-2"></i>
+                <span>Refresh</span>
+            </div>
             <div class="btn d-flex justify-content-around px-2 align-items-center me-1 actionBtn" id="phPrintAllBtn">
-                <div class="btnImg me-2" style="background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0xOCAzSDZ2NGgxMlYzem0tMiA2SDh2Mmg4VjltMiAydjZIOHYtNmgxMHptLTIgNEg4djJoOHYtMnoiLz48L3N2Zz4='); background-size: 16px; background-repeat: no-repeat; background-position: center; width: 16px; height: 16px;">
+                <div class="btnImg me-2" style="background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ink4IDNINnY0aDEyVjN6bS0yIDZIOHYyaDhWOW0yIDJ2Nkg4di02aDEwem0tMiA0SDh2Mmg4di0yeiIvPjwvc3ZnPg=='); background-size: 16px; background-repeat: no-repeat; background-position: center; width: 16px; height: 16px;">
                 </div>
                 <span>Print Report</span>
             </div>

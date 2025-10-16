@@ -137,7 +137,7 @@
                     <div class="col-4">
                         <div class="mb-3">
                             <label for="CreditLimit">Credit Limit</label>
-                            <input disabled type="text" id="CreditLimit" name="CreditLimit" class="form-control bg-white" step="0.01" min="0" placeholder="0.00">
+                            <input disabled type="text" id="CreditLimit" name="CreditLimit" class="form-control bg-white" placeholder="0.00">
                         </div>
                     </div>
                     <div class="col-4">

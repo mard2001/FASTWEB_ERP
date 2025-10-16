@@ -66,6 +66,10 @@ $(document).ready(async function () {
     });
 
     $('#rrConfirm').on('click', function () {
+        // Show loading animation on confirm button
+        const originalButtonText = $('#rrConfirm').html();
+        $('#rrConfirm').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Confirming...');
+        
         var dataConf = {
             user: userObject.name,
             rrNum: selectedMain.RRNo,
@@ -76,6 +80,9 @@ $(document).ready(async function () {
                 data: dataConf
             }),
             (response) => {
+                // Reset button state
+                $('#rrConfirm').prop('disabled', false).html(originalButtonText);
+                
                 if (response.success) {
                     datatables.loadRRData();
                     RRModal.hide();
@@ -88,6 +95,9 @@ $(document).ready(async function () {
                 }
             },
             (xhr, status, error) => {
+                // Reset button state on error
+                $('#rrConfirm').prop('disabled', false).html(originalButtonText);
+                
                 // Error callback
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                 Swal.fire({
@@ -100,6 +110,107 @@ $(document).ready(async function () {
         );
 
         console.log(dataConf);
+    });
+
+    // Refresh data handler
+    $('#rrRefreshBtn').on('click', function() {
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        
+        // Show loading state
+        $btn.prop('disabled', true).html(`
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Refreshing...</span>
+            </div>
+        `);
+        
+        // Show loading animation inside the table
+        if (MainTH) {
+            // Clear current data and add a single loading row
+            MainTH.clear().draw();
+            
+            // Insert loading HTML directly into the table body
+            $('#rrTable tbody').html(`
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <div class="d-flex flex-column align-items-center justify-content-center">
+                            <div class="spinner-border text-primary mb-2" role="status" style="width: 2rem; height: 2rem;">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div class="text-muted">Refreshing receiving report data...</div>
+                        </div>
+                    </td>
+                </tr>
+            `);
+        }
+        
+        // Clear current data 
+        jsonArr = [];
+        
+        // Call refresh API directly with proper error handling
+        ajax('api/report/v2/rr', 'GET', null, 
+            (response) => {
+                // Success callback
+                if (response.success) {
+                    jsonArr = response.data;
+                    datatables.initRRDatatable(response);
+                } else {
+                    // Handle case when API returns success: false (no data found)
+                    jsonArr = [];
+                    datatables.initRRDatatable({ success: true, data: [] });
+                }
+                
+                Swal.fire({
+                    title: "Success",
+                    text: "Receiving report data refreshed successfully",
+                    icon: "success",
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Restore button after short delay
+                setTimeout(() => {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }, 500);
+            }, 
+            (xhr, status, error) => {
+                // Error callback
+                console.error('Error refreshing receiving report data:', error);
+                
+                // Initialize DataTable with empty data if API call fails
+                jsonArr = [];
+                datatables.initRRDatatable({ success: true, data: [] });
+                
+                Swal.fire({
+                    title: "Error",
+                    text: "Failed to refresh receiving report data",
+                    icon: "error"
+                });
+                
+                // Show error message in table
+                if (MainTH) {
+                    $('#rrTable tbody').html(`
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-danger">
+                                <div class="d-flex flex-column align-items-center justify-content-center">
+                                    <i class="mdi mdi-alert-circle-outline mb-2" style="font-size: 2rem;"></i>
+                                    <div>Failed to refresh receiving report data</div>
+                                    <small class="text-muted mt-1">Please try again or contact support</small>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                }
+                
+                // Restore button on error
+                setTimeout(() => {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }, 500);
+            }
+        );
     });
 });
 
