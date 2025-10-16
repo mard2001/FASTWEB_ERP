@@ -464,12 +464,15 @@ function populateModal(data) {
         let grandTotalAmount = 0;
         let grandTotalPaid = 0;
         let grandTotalBalance = 0;
-        let finalBalance = 0; // Track the final running balance
+        let runningBalance = 0; // Track the cumulative running balance
         
         // Track unique transactions to avoid double counting
         let processedTransactionIds = new Set();
         
-        groupedTransactions.forEach(function(transaction) {
+        // Track credit memos from payments to apply to subsequent invoices
+        let availableCredits = []; // Array to store available credit memos
+        
+        groupedTransactions.forEach(function(transaction, index) {
             // Format the date with time if available
             let formattedDate = 'N/A';
             if (transaction.date) {
@@ -499,33 +502,85 @@ function populateModal(data) {
             
             let amountDisplay, paidDisplay, balanceDisplay, descriptionText, statusBadge;
             
+            // Calculate running balance properly
+            let currentTransactionBalance;
+            
             if (isPayment) {
-                // For payment rows (auto credit memo applications are no longer separate payment records)
+                // For payment rows
+                const paymentAmount = parseFloat(transaction.payment_amount);
+                
                 if (hasCredit) {
+                    // Payment with credit memo - show the calculated balance but reset running balance for next transactions
+                    const beforePayment = runningBalance;
+                    runningBalance -= paymentAmount;
+                    currentTransactionBalance = runningBalance;
+                    
+                    // If payment creates a credit (negative balance), add it to available credits
+                    if (runningBalance < 0) {
+                        const creditAmount = Math.abs(runningBalance);
+                        availableCredits.push({
+                            amount: creditAmount,
+                            fromTransaction: transaction.id || transaction.parent_transaction_id
+                        });
+                        runningBalance = 0; // Reset running balance to 0
+                    }
+                    
                     // Payment with credit memo
                     descriptionText = transaction.description; // Already includes credit memo info from backend
                     statusBadge = '<span class="badge bg-success">Fully Paid with CM</span>';
                 } else {
+                    // Regular payment - normal subtraction
+                    runningBalance -= paymentAmount;
+                    currentTransactionBalance = runningBalance;
+                    
                     descriptionText = `Payment - ${transaction.payment_type || 'Cash'}`;
-                    statusBadge = transaction.running_balance <= 0 ? 
+                    statusBadge = runningBalance <= 0 ? 
                         '<span class="badge bg-success">Fully Paid</span>' : 
                         '<span class="badge bg-info">Payment Made</span>';
                 }
+                
                 amountDisplay = '-'; // No original amount for payments
-                paidDisplay = `₱${parseFloat(transaction.payment_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                balanceDisplay = `₱${parseFloat(transaction.running_balance).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                paidDisplay = `₱${paymentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                     
                 // Add to grand totals - only count actual payments
-                grandTotalPaid += parseFloat(transaction.payment_amount);
+                grandTotalPaid += paymentAmount;
             } else {
                 // For original transaction rows (invoices)
                 const originalAmount = parseFloat(transaction.transaction_amount);
-                const hasAutoCreditMemo = transaction.auto_credit_memo && parseFloat(transaction.auto_credit_memo) > 0;
+                
+                // Add the invoice amount to running balance first
+                runningBalance += originalAmount;
+                
+                // Check if there are available credits to apply to this invoice
+                if (availableCredits.length > 0) {
+                    // Use the most recent credit (last in array)
+                    const mostRecentCredit = availableCredits[availableCredits.length - 1];
+                    const creditToApply = Math.min(mostRecentCredit.amount, runningBalance);
+                    
+                    if (creditToApply > 0) {
+                        runningBalance -= creditToApply;
+                        mostRecentCredit.amount -= creditToApply;
+                        
+                        paidDisplay = `(-${creditToApply.toLocaleString('en-US', {minimumFractionDigits: 2})})`;
+                        // DON'T add auto credit to grandTotalPaid - it's already counted in the original payment
+                        
+                        // Remove credit if fully used
+                        if (mostRecentCredit.amount <= 0) {
+                            availableCredits.pop();
+                        }
+                    } else {
+                        paidDisplay = '-';
+                    }
+                } else {
+                    paidDisplay = '-';
+                }
+                
+                currentTransactionBalance = runningBalance;
                 
                 descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
                 
                 // Status badge for original transactions
-                if (transaction.status === 'Paid' || parseFloat(transaction.running_balance) <= 0) {
+                if (transaction.status === 'Paid' || currentTransactionBalance <= 0) {
                     statusBadge = '<span class="badge bg-success">Paid</span>';
                 } else if (transaction.is_overdue) {
                     statusBadge = '<span class="badge bg-danger">Overdue</span>';
@@ -533,15 +588,6 @@ function populateModal(data) {
                     statusBadge = '<span class="badge bg-warning">Pending</span>';
                 }
                 
-                // Handle auto credit memo display in Paid column
-                if (hasAutoCreditMemo) {
-                    const creditAmount = parseFloat(transaction.auto_credit_memo);
-                    paidDisplay = `(-${creditAmount.toLocaleString('en-US', {minimumFractionDigits: 2})})`;
-                } else {
-                    paidDisplay = '-';
-                }
-                
-                balanceDisplay = `₱${parseFloat(transaction.running_balance).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 amountDisplay = `₱${originalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 
                 // Add to grand totals - only for transaction types, and only once per unique transaction
@@ -551,12 +597,11 @@ function populateModal(data) {
                 }
             }
             
-            // Track the final running balance (use the last transaction's running balance)
-            finalBalance = parseFloat(transaction.running_balance);
+            // Use the calculated running balance for display
+            balanceDisplay = `₱${currentTransactionBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             
             // Balance color
-            const currentBalance = parseFloat(transaction.running_balance);
-            const balanceColor = currentBalance > 0 ? '#dc3545' : '#28a745';
+            const balanceColor = currentTransactionBalance > 0 ? '#dc3545' : '#28a745';
             
             // Determine row styling
             let rowStyle = '';
@@ -583,8 +628,8 @@ function populateModal(data) {
             tbody.append(row);
         });
         
-        // Calculate the correct balance: Amount - Paid = Balance
-        grandTotalBalance = grandTotalAmount - grandTotalPaid;
+        // Use the final running balance as the grand total balance
+        grandTotalBalance = runningBalance;
         
         // Add summary row
         const summaryRow = `

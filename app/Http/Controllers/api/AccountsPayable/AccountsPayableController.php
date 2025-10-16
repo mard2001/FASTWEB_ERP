@@ -464,41 +464,6 @@ class AccountsPayableController extends Controller
                 ], 422);
             }
 
-            // FIFO Payment Validation (per supplier): enforce paying the oldest unpaid invoice first
-            $supplierCode = $accountsPayable->supplier_code;
-            
-            // Get all accounts payable for this supplier with calculated balance amounts
-            $supplierInvoices = AccountsPayable::where('supplier_code', $supplierCode)
-                ->with('payments') // Load payments relationship for balance calculation
-                ->orderBy('date', 'asc')
-                ->orderBy('created_at', 'asc')
-                ->orderBy('id', 'asc')
-                ->get();
-            
-            // Filter to find the first unpaid invoice (balance > 0)
-            $firstUnpaid = null;
-            foreach ($supplierInvoices as $invoice) {
-                $balanceAmount = $invoice->balance_amount; // This uses the accessor which calculates properly
-                if ($balanceAmount > 0) {
-                    $firstUnpaid = $invoice;
-                    break;
-                }
-            }
-
-            if ($firstUnpaid && $firstUnpaid->id !== $accountsPayable->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment not allowed. You must pay the oldest unpaid invoice first before paying newer ones.',
-                    'fifo_violation' => true,
-                    'older_invoice' => [
-                        'id' => $firstUnpaid->id,
-                        'reference_number' => $firstUnpaid->reference_number,
-                        'date' => $firstUnpaid->date ? $firstUnpaid->date->format('Y-m-d') : null,
-                        'balance_amount' => $firstUnpaid->balance_amount
-                    ]
-                ], 422);
-            }
-
             // Process payment amount - overpayments are now allowed
             $paymentAmount = $request->payment_amount;
             $currentBalance = $accountsPayable->balance_amount;
