@@ -464,13 +464,214 @@ function populateModal(data) {
         let grandTotalAmount = 0;
         let grandTotalPaid = 0;
         let grandTotalBalance = 0;
-        let runningBalance = 0; // Track the cumulative running balance
         
         // Track unique transactions to avoid double counting
         let processedTransactionIds = new Set();
         
-        // Track credit memos from payments to apply to subsequent invoices
-        let availableCredits = []; // Array to store available credit memos
+        // Pre-process to identify which invoices should get credit memos applied
+        let invoiceCreditMap = new Map(); // Map invoice index to credit amount
+        let standbyCredits = []; // Track unused/partial credits
+        
+        // First pass: identify credit memo payments and their amounts
+        for (let i = 0; i < groupedTransactions.length; i++) {
+            const trans = groupedTransactions[i];
+            if (trans.type === 'payment' && trans.has_credit_memo) {
+                // Find the invoice this payment was for by matching RR number or parent ID
+                let paidInvoiceAmount = 0;
+                let totalPreviousPayments = 0;
+                const paymentRR = trans.rr_number;
+                const paymentParentId = trans.parent_transaction_id;
+                
+                // Look through ALL transactions to find the matching invoice
+                for (let j = 0; j < groupedTransactions.length; j++) {
+                    const checkTrans = groupedTransactions[j];
+                    if (checkTrans.type !== 'payment' && 
+                        (checkTrans.rr_number === paymentRR || 
+                         checkTrans.parent_transaction_id === paymentParentId ||
+                         checkTrans.id === paymentParentId)) {
+                        paidInvoiceAmount = parseFloat(checkTrans.transaction_amount);
+                        break;
+                    }
+                }
+                
+                // Calculate total previous payments for this invoice (before this payment)
+                for (let k = 0; k < i; k++) {
+                    const prevTrans = groupedTransactions[k];
+                    if (prevTrans.type === 'payment' && 
+                        (prevTrans.rr_number === paymentRR || 
+                         prevTrans.parent_transaction_id === paymentParentId)) {
+                        totalPreviousPayments += parseFloat(prevTrans.payment_amount);
+                        
+                        // Debug for DODOY 5 payments
+                        if (paymentRR === "RR-20251016112044990924065") {
+                            console.log(`Found previous payment for DODOY 5:`, {
+                                index: k,
+                                amount: prevTrans.payment_amount,
+                                description: prevTrans.description,
+                                runningTotal: totalPreviousPayments
+                            });
+                        }
+                    }
+                }
+                
+                // Also check for any auto-applied credits for this invoice
+                let appliedCredits = 0;
+                if (paymentRR === "RR-20251016112044990924065") {
+                    // Look for any credits that might have been applied to this invoice
+                    for (let c = 0; c < i; c++) {
+                        if (invoiceCreditMap && invoiceCreditMap.has(c)) {
+                            const creditTrans = groupedTransactions[c];
+                            if (creditTrans && creditTrans.rr_number === paymentRR) {
+                                appliedCredits += invoiceCreditMap.get(c);
+                                console.log(`Found applied credit to DODOY 5:`, {
+                                    amount: invoiceCreditMap.get(c)
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Check for any previously applied credits to this invoice
+                let previouslyAppliedCredits = 0;
+                for (let invoiceIdx = 0; invoiceIdx < groupedTransactions.length; invoiceIdx++) {
+                    const invoiceTrans = groupedTransactions[invoiceIdx];
+                    if (invoiceTrans.type !== 'payment' && 
+                        (invoiceTrans.rr_number === paymentRR || 
+                         invoiceTrans.parent_transaction_id === paymentParentId ||
+                         invoiceTrans.id === paymentParentId)) {
+                        // Found the invoice, check if it has auto_credit_memo applied
+                        if (invoiceTrans.auto_credit_memo && parseFloat(invoiceTrans.auto_credit_memo) > 0) {
+                            previouslyAppliedCredits += parseFloat(invoiceTrans.auto_credit_memo);
+                        }
+                        break;
+                    }
+                }
+                
+                const paymentAmount = parseFloat(trans.payment_amount);
+                const remainingInvoiceAmount = paidInvoiceAmount - totalPreviousPayments - previouslyAppliedCredits;
+                
+                // Debug the last payment with CM (should be around index 10)
+                if (i >= 9) {
+                    console.log(`Payment with CM ${i}:`, {
+                        description: trans.description,
+                        paymentAmount,
+                        paidInvoiceAmount,
+                        totalPreviousPayments,
+                        previouslyAppliedCredits,
+                        remainingInvoiceAmount,
+                        rr_number: paymentRR
+                    });
+                }
+                
+                // Check if this payment creates a credit
+                if (paymentAmount > remainingInvoiceAmount) {
+                    const creditAmount = paymentAmount - remainingInvoiceAmount;
+                    console.log(`Creating credit from payment ${i}:`, {
+                        creditAmount,
+                        paymentAmount,
+                        remainingInvoiceAmount
+                    });
+                    standbyCredits.push({
+                        amount: creditAmount,
+                        paymentIndex: i
+                    });
+                }
+            }
+        }
+        
+        console.log('All standby credits:', standbyCredits);
+        
+        // Second pass: apply credits to eligible invoices (partial application allowed)
+        for (let i = 0; i < groupedTransactions.length; i++) {
+            const trans = groupedTransactions[i];
+            if (trans.type !== 'payment' && standbyCredits.length > 0) {
+                // Debug Invoice DODOY 6 specifically
+                if (i >= 10) {
+                    console.log(`Checking invoice ${i} (DODOY 6?):`, {
+                        description: trans.description,
+                        amount: trans.transaction_amount,
+                        rr_number: trans.rr_number,
+                        availableCredits: standbyCredits.length
+                    });
+                }
+                
+                // Look for any standby credit that comes from a payment BEFORE this invoice
+                // Process credits in order and stop after applying one credit to avoid double application
+                for (let creditIdx = 0; creditIdx < standbyCredits.length; creditIdx++) {
+                    const credit = standbyCredits[creditIdx];
+                    
+                    if (i >= 10) {
+                        console.log(`Checking credit ${creditIdx} for invoice ${i}:`, {
+                            creditAmount: credit.amount,
+                            paymentIndex: credit.paymentIndex,
+                            isPaymentBefore: credit.paymentIndex < i
+                        });
+                    }
+                    
+                    // Only proceed if: payment is before this invoice, credit has amount, and invoice doesn't already have credit
+                    if (credit.paymentIndex < i && credit.amount > 0 && !invoiceCreditMap.has(i)) {
+                        // Check if this invoice is already fully paid
+                        let isInvoiceAlreadyPaid = false;
+                        let invoiceAmount = parseFloat(trans.transaction_amount);
+                        let totalPaymentsForThisInvoice = 0;
+                        
+                        // Check all transactions after this invoice to see if it's already fully paid
+                        for (let m = i + 1; m < groupedTransactions.length; m++) {
+                            const laterTrans = groupedTransactions[m];
+                            if (laterTrans.type === 'payment' && 
+                                (laterTrans.rr_number === trans.rr_number || 
+                                 laterTrans.parent_transaction_id === trans.parent_transaction_id ||
+                                 laterTrans.parent_transaction_id === trans.id)) {
+                                totalPaymentsForThisInvoice += parseFloat(laterTrans.payment_amount);
+                            }
+                        }
+                        
+                        if (totalPaymentsForThisInvoice >= invoiceAmount) {
+                            isInvoiceAlreadyPaid = true;
+                        }
+                        
+                        if (i >= 10) {
+                            console.log(`Invoice ${i} eligibility:`, {
+                                invoiceAmount,
+                                totalPaymentsForThisInvoice,
+                                isInvoiceAlreadyPaid
+                            });
+                        }
+                        
+                        // Apply credit if invoice is eligible (not already paid and no previous credit)
+                        if (!isInvoiceAlreadyPaid) {
+                            const creditToApply = Math.min(credit.amount, invoiceAmount);
+                            if (i >= 10) {
+                                console.log(`APPLYING CREDIT TO INVOICE ${i}:`, {
+                                    creditToApply,
+                                    originalCreditAmount: credit.amount
+                                });
+                            }
+                            
+                            // Apply the credit to the invoice
+                            invoiceCreditMap.set(i, creditToApply);
+                            
+                            // Reduce the standby credit amount
+                            credit.amount = Math.max(0, credit.amount - creditToApply);
+                            
+                            // Remove credit from array if fully used
+                            if (credit.amount <= 0) {
+                                standbyCredits.splice(creditIdx, 1);
+                                if (i >= 10) {
+                                    console.log(`Credit fully used, removed from standby credits. Remaining credits: ${standbyCredits.length}`);
+                                }
+                            }
+                            
+                            // IMPORTANT: Break after applying one credit to prevent double application
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Track running balance for display
+        let runningBalance = 0;
         
         groupedTransactions.forEach(function(transaction, index) {
             // Format the date with time if available
@@ -508,75 +709,51 @@ function populateModal(data) {
             if (isPayment) {
                 // For payment rows
                 const paymentAmount = parseFloat(transaction.payment_amount);
+                runningBalance -= paymentAmount;
+                currentTransactionBalance = runningBalance;
                 
                 if (hasCredit) {
-                    // Payment with credit memo - show the calculated balance but reset running balance for next transactions
-                    const beforePayment = runningBalance;
-                    runningBalance -= paymentAmount;
-                    currentTransactionBalance = runningBalance;
-                    
-                    // If payment creates a credit (negative balance), add it to available credits
+                    // Reset running balance if it went negative (credit memo case)
                     if (runningBalance < 0) {
-                        const creditAmount = Math.abs(runningBalance);
-                        availableCredits.push({
-                            amount: creditAmount,
-                            fromTransaction: transaction.id || transaction.parent_transaction_id
-                        });
-                        runningBalance = 0; // Reset running balance to 0
+                        runningBalance = 0;
                     }
-                    
-                    // Payment with credit memo
-                    descriptionText = transaction.description; // Already includes credit memo info from backend
+                    descriptionText = transaction.description;
                     statusBadge = '<span class="badge bg-success">Fully Paid with CM</span>';
                 } else {
-                    // Regular payment - normal subtraction
-                    runningBalance -= paymentAmount;
-                    currentTransactionBalance = runningBalance;
-                    
                     descriptionText = `Payment - ${transaction.payment_type || 'Cash'}`;
                     statusBadge = runningBalance <= 0 ? 
                         '<span class="badge bg-success">Fully Paid</span>' : 
                         '<span class="badge bg-info">Payment Made</span>';
                 }
                 
-                amountDisplay = '-'; // No original amount for payments
+                amountDisplay = '-';
                 paidDisplay = `₱${paymentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                    
-                // Add to grand totals - only count actual payments
                 grandTotalPaid += paymentAmount;
             } else {
                 // For original transaction rows (invoices)
                 const originalAmount = parseFloat(transaction.transaction_amount);
-                
-                // Add the invoice amount to running balance first
                 runningBalance += originalAmount;
                 
-                // Check if there are available credits to apply to this invoice
-                if (availableCredits.length > 0) {
-                    // Use the most recent credit (last in array)
-                    const mostRecentCredit = availableCredits[availableCredits.length - 1];
-                    const creditToApply = Math.min(mostRecentCredit.amount, runningBalance);
+                // Check if this invoice should get a credit memo applied from our pre-processed map
+                const creditAmount = invoiceCreditMap.get(index);
+                if (creditAmount && creditAmount > 0) {
+                    runningBalance -= creditAmount;
+                    paidDisplay = `(-${creditAmount.toLocaleString('en-US', {minimumFractionDigits: 2})})`;;
                     
-                    if (creditToApply > 0) {
-                        runningBalance -= creditToApply;
-                        mostRecentCredit.amount -= creditToApply;
-                        
-                        paidDisplay = `(-${creditToApply.toLocaleString('en-US', {minimumFractionDigits: 2})})`;
-                        // DON'T add auto credit to grandTotalPaid - it's already counted in the original payment
-                        
-                        // Remove credit if fully used
-                        if (mostRecentCredit.amount <= 0) {
-                            availableCredits.pop();
-                        }
+                    // Calculate the remaining standby credit after this application
+                    const currentStandbyCredit = standbyCredits.reduce((sum, credit) => sum + credit.amount, 0);
+                    
+                    // If invoice is fully paid by credit memo, show remaining credit as negative balance
+                    if (creditAmount >= originalAmount) {
+                        // Show the remaining total standby credit as negative balance
+                        currentTransactionBalance = -currentStandbyCredit;
                     } else {
-                        paidDisplay = '-';
+                        currentTransactionBalance = runningBalance;
                     }
                 } else {
                     paidDisplay = '-';
+                    currentTransactionBalance = runningBalance;
                 }
-                
-                currentTransactionBalance = runningBalance;
-                
                 descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
                 
                 // Status badge for original transactions
@@ -598,7 +775,9 @@ function populateModal(data) {
             }
             
             // Use the calculated running balance for display
-            balanceDisplay = `₱${currentTransactionBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            // Handle negative zero display issue
+            const displayBalance = currentTransactionBalance === 0 ? 0 : currentTransactionBalance;
+            balanceDisplay = `₱${displayBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             
             // Balance color
             const balanceColor = currentTransactionBalance > 0 ? '#dc3545' : '#28a745';
@@ -628,8 +807,9 @@ function populateModal(data) {
             tbody.append(row);
         });
         
-        // Use the final running balance as the grand total balance
-        grandTotalBalance = runningBalance;
+        // Use the final running balance minus any remaining standby credits as the grand total balance
+        const finalStandbyCredit = standbyCredits.reduce((sum, credit) => sum + credit.amount, 0);
+        grandTotalBalance = runningBalance - finalStandbyCredit;
         
         // Add summary row
         const summaryRow = `

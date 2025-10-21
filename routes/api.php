@@ -255,6 +255,7 @@ Route::get('accounts-payable/banks', [\App\Http\Controllers\api\AccountsPayable\
 Route::post('accounts-payable/{id}/payment', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'processPayment'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::get('accounts-payable/{id}/payments', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'getPaymentHistory'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::post('accounts-payable/apply-auto-credit-memos', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'applyAutoCreditMemos'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('accounts-payable/fix-double-applied-credit-memos', [\App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class, 'fixDoubleAppliedCreditMemos'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::apiResource('accounts-payable', \App\Http\Controllers\api\AccountsPayable\AccountsPayableController::class)->middleware(['auth:sanctum', 'check.user.status']);
 
 // Accounts Receivable API Routes

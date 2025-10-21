@@ -637,7 +637,21 @@ class AccountsPayableController extends Controller
             // This will check if there are any available credits for this supplier
             // and apply them to outstanding invoices
             try {
-                $this->applyAutoCreditMemosForSupplier($accountsPayable->supplier_code);
+                // Only apply auto credit memos if this payment generated a credit memo
+                // This prevents unnecessary processing for regular payments
+                if ($creditMemo > 0) {
+                    Log::info('Payment generated credit memo, applying auto credit memos for supplier', [
+                        'supplier_code' => $accountsPayable->supplier_code,
+                        'credit_memo_generated' => $creditMemo
+                    ]);
+                    $this->applyAutoCreditMemosForSupplier($accountsPayable->supplier_code);
+                } else {
+                    Log::info('No credit memo generated from payment, skipping auto application', [
+                        'supplier_code' => $accountsPayable->supplier_code,
+                        'payment_amount' => $paymentAmount,
+                        'balance_amount' => $currentBalance
+                    ]);
+                }
             } catch (Exception $e) {
                 // Log the error but don't fail the payment
                 Log::error('Error applying auto credit memos after payment: ' . $e->getMessage());
@@ -862,11 +876,22 @@ class AccountsPayableController extends Controller
                 // If there's an overpayment (negative balance), it becomes available credit
                 // Use a minimum threshold to avoid floating point precision issues
                 if ($currentBalance < -0.01) {
-                    // Check if this credit has already been used by looking for outgoing automatic payments
-                    $creditAlreadyUsed = Payment::where('reference_number', 'LIKE', 'AUTO-CM-' . $record['reference_number'])
-                        ->sum('payment_amount');
+                    // FIXED: Check ALL patterns of credit memo usage for this supplier, not just specific reference
+                    // This includes AUTO-CM-[reference] and also AUTO-CM-[source_reference] patterns
+                    $creditAlreadyUsed = Payment::where(function($query) use ($record, $supplierCode) {
+                        $query->where('reference_number', 'LIKE', 'AUTO-CM-' . $record['reference_number'])
+                              ->orWhere(function($subQuery) use ($supplierCode) {
+                                  // Also check payments to other APs from this supplier using this credit
+                                  $subQuery->where('reference_number', 'LIKE', 'AUTO-CM-%')
+                                           ->whereHas('accountsPayable', function($apQuery) use ($supplierCode) {
+                                               $apQuery->where('supplier_code', $supplierCode);
+                                           });
+                              });
+                    })->sum('payment_amount');
                     
-                    $creditAmount = abs($currentBalance);
+                    // Get the original credit memo amount from the AP record
+                    $creditMemoFromAP = floatval($record['CreditMemo'] ?? 0);
+                    $creditAmount = max($creditMemoFromAP, abs($currentBalance));
                     $availableCreditAmount = $creditAmount - $creditAlreadyUsed;
                     
                     // Only add to available credits if there's still unused credit
@@ -904,6 +929,18 @@ class AccountsPayableController extends Controller
                 }
                 // Apply available credits to this record if it has a positive balance
                 else if ($currentBalance > 0.01 && !empty($availableCredits)) {
+                    // ENHANCED CHECK: Verify supplier has available credit memos before applying
+                    $supplierAvailableCredits = $this->getAvailableCreditMemosForSupplier($record['supplier_code']);
+                    
+                    if ($supplierAvailableCredits <= 0) {
+                        Log::info('No available credit memos for supplier, skipping credit application', [
+                            'supplier_code' => $record['supplier_code'],
+                            'record_id' => $record['id'],
+                            'reference' => $record['reference_number']
+                        ]);
+                        continue;
+                    }
+                    
                     // Check if automatic credit memo payments already exist for this record
                     $existingAutoCreditPayments = Payment::where('accounts_payable_id', $record['id'])
                         ->where('reference_number', 'LIKE', 'AUTO-CM-%')
@@ -1128,6 +1165,34 @@ class AccountsPayableController extends Controller
     }
 
     /**
+     * Calculate available credit memos for a supplier with proper usage tracking
+     */
+    private function getAvailableCreditMemosForSupplier($supplierCode)
+    {
+        // Get total credit memos generated for this supplier
+        $totalCreditMemos = AccountsPayable::where('supplier_code', $supplierCode)
+            ->sum('CreditMemo') ?? 0;
+        
+        // Get total credit memos used (from AUTO-CM payments)
+        $usedCreditMemos = Payment::whereHas('accountsPayable', function($query) use ($supplierCode) {
+            $query->where('supplier_code', $supplierCode);
+        })
+        ->where('reference_number', 'LIKE', 'AUTO-CM-%')
+        ->sum('payment_amount') ?? 0;
+        
+        $availableCredits = $totalCreditMemos - $usedCreditMemos;
+        
+        Log::info('Credit memo calculation for supplier', [
+            'supplier_code' => $supplierCode,
+            'total_generated' => $totalCreditMemos,
+            'total_used' => $usedCreditMemos,
+            'available' => $availableCredits
+        ]);
+        
+        return max(0, $availableCredits); // Ensure non-negative
+    }
+
+    /**
      * Apply auto credit memos for a specific supplier.
      * This method is called after payment processing to apply available credits
      * to outstanding invoices for the same supplier.
@@ -1135,6 +1200,17 @@ class AccountsPayableController extends Controller
     private function applyAutoCreditMemosForSupplier($supplierCode)
     {
         Log::info('Auto Credit Memo - Processing supplier', ['supplier_code' => $supplierCode]);
+
+        // First, check if there are any available credit memos for this supplier
+        $availableCredits = $this->getAvailableCreditMemosForSupplier($supplierCode);
+        
+        if ($availableCredits <= 0) {
+            Log::info('No available credit memos for supplier, skipping auto application', [
+                'supplier_code' => $supplierCode,
+                'available_credits' => $availableCredits
+            ]);
+            return; // Exit early if no credits available
+        }
 
         // Get all accounts payable records for this supplier
         $query = DB::table('tblAccountsPayable as ap')
@@ -1192,5 +1268,131 @@ class AccountsPayableController extends Controller
         $this->applyAutoCreditMemosToAP($data);
 
         Log::info('Auto Credit Memo - Completed processing supplier', ['supplier_code' => $supplierCode]);
+    }
+
+    /**
+     * Fix double-applied credit memos by removing excess auto-payments
+     * This is a maintenance endpoint to fix existing data issues
+     */
+    public function fixDoubleAppliedCreditMemos(Request $request)
+    {
+        try {
+            $supplierCode = $request->get('supplier_code');
+            $fixCount = 0;
+            $issues = [];
+            
+            // Get suppliers to process
+            $suppliers = $supplierCode ? [$supplierCode] : 
+                AccountsPayable::distinct('supplier_code')->pluck('supplier_code');
+            
+            foreach ($suppliers as $supplier) {
+                Log::info('Checking supplier for credit memo issues', ['supplier_code' => $supplier]);
+                
+                // Calculate actual available credit memos
+                $totalCreditMemos = AccountsPayable::where('supplier_code', $supplier)
+                    ->sum('CreditMemo') ?? 0;
+                
+                $totalUsedCreditMemos = Payment::whereHas('accountsPayable', function($query) use ($supplier) {
+                    $query->where('supplier_code', $supplier);
+                })
+                ->where('reference_number', 'LIKE', 'AUTO-CM-%')
+                ->sum('payment_amount') ?? 0;
+                
+                $expectedAvailable = $totalCreditMemos - $totalUsedCreditMemos;
+                
+                if ($expectedAvailable < 0) {
+                    // Credit memos over-applied - we have an issue
+                    $overApplied = abs($expectedAvailable);
+                    
+                    $issues[] = [
+                        'supplier_code' => $supplier,
+                        'total_generated' => $totalCreditMemos,
+                        'total_used' => $totalUsedCreditMemos,
+                        'over_applied_amount' => $overApplied
+                    ];
+                    
+                    Log::warning('Credit memo over-application detected', [
+                        'supplier_code' => $supplier,
+                        'total_generated' => $totalCreditMemos,
+                        'total_used' => $totalUsedCreditMemos,
+                        'over_applied' => $overApplied
+                    ]);
+                    
+                    // Find the most recent auto-CM payments to reverse
+                    $excessPayments = Payment::whereHas('accountsPayable', function($query) use ($supplier) {
+                        $query->where('supplier_code', $supplier);
+                    })
+                    ->where('reference_number', 'LIKE', 'AUTO-CM-%')
+                    ->orderBy('payment_date', 'desc')
+                    ->orderBy('id', 'desc')
+                    ->get();
+                    
+                    $amountToReverse = $overApplied;
+                    
+                    foreach ($excessPayments as $payment) {
+                        if ($amountToReverse <= 0) break;
+                        
+                        $paymentAmount = floatval($payment->payment_amount);
+                        
+                        if ($paymentAmount <= $amountToReverse) {
+                            // Remove entire payment
+                            Log::info('Removing excess auto-CM payment', [
+                                'payment_id' => $payment->id,
+                                'amount' => $paymentAmount,
+                                'reference' => $payment->reference_number
+                            ]);
+                            
+                            $payment->delete();
+                            $amountToReverse -= $paymentAmount;
+                            $fixCount++;
+                        } else {
+                            // Reduce payment amount
+                            $newAmount = $paymentAmount - $amountToReverse;
+                            
+                            Log::info('Reducing excess auto-CM payment', [
+                                'payment_id' => $payment->id,
+                                'old_amount' => $paymentAmount,
+                                'new_amount' => $newAmount,
+                                'reduction' => $amountToReverse
+                            ]);
+                            
+                            $payment->update(['payment_amount' => $newAmount]);
+                            $amountToReverse = 0;
+                            $fixCount++;
+                        }
+                    }
+                    
+                    // Recalculate and update AP statuses for this supplier
+                    $supplierAPs = AccountsPayable::where('supplier_code', $supplier)->get();
+                    foreach ($supplierAPs as $ap) {
+                        $totalPaid = $ap->payments()->sum('payment_amount');
+                        $balance = $ap->total_amount - $totalPaid;
+                        
+                        $newStatus = 'Pending';
+                        if ($balance <= 0) {
+                            $newStatus = 'Paid';
+                        } elseif ($totalPaid > 0) {
+                            $newStatus = 'Partial';
+                        }
+                        
+                        $ap->update(['status' => $newStatus]);
+                    }
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Fixed {$fixCount} double-applied credit memo payments",
+                'fixes_applied' => $fixCount,
+                'issues_found' => $issues
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error fixing double-applied credit memos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fixing credit memo issues: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -25,6 +25,11 @@ $(document).ready(function() {
     
     // Initialize number formatting for amount fields
     initializeAmountFormatting();
+    
+    // Clear credit memo warnings when payment modal is closed
+    $('#paymentModal').on('hidden.bs.modal', function() {
+        $('.credit-memo-warning').remove();
+    });
 });
 
 // Load suppliers data for dropdown
@@ -722,7 +727,7 @@ function fillAccountsPayableModal(data) {
         $('#credit_memo').val(formatCurrency(data.CreditMemo));
         $('#credit_memo_container').show();
     } else {
-        $('#credit_memo').val(''); // Clear the field value
+        $('#credit_memo').val('0.00'); // Display 0.00 instead of blank
         $('#credit_memo_container').hide();
     }
     
@@ -793,8 +798,12 @@ function showPaymentModal(rowData) {
     $('#payment_original_amount').text(formatCurrency(rowData.total_amount));
     $('#payment_balance_amount').text(formatCurrency(rowData.balance_amount));
     
-    // Store supplier code for payee auto-population
+    // Store supplier code for payee auto-population and full row data for validation
     $('#paymentModal').data('supplier-code', rowData.supplier_code);
+    $('#paymentModal').data('row-data', rowData);
+    
+    // Check for potential credit memo issues
+    checkForCreditMemoIssues(rowData);
     
     // Set max and data attributes for all payment amount fields
     const balanceAmount = rowData.balance_amount;
@@ -851,6 +860,114 @@ function showPaymentModal(rowData) {
     $('#payment_method, #bank_selection, #gcash_selection').removeAttr('required');
     
     $('#paymentModal').modal('show');
+}
+
+// Function to check for potential credit memo double-application issues
+function checkForCreditMemoIssues(rowData) {
+    console.log('Checking for credit memo issues for supplier:', rowData.supplier_code);
+    
+    // Remove any existing credit memo warnings
+    $('.credit-memo-warning').remove();
+    
+    // Check if this supplier has credit memo transactions
+    if (rowData.supplier_code) {
+        $.ajax({
+            url: `/api/supplier-credit/${rowData.supplier_code}/transactions`,
+            method: 'GET',
+            success: function(response) {
+                if (response && response.data && response.data.transactions) {
+                    const transactions = response.data.transactions;
+                    
+                    // Check for credit memos and their usage
+                    let totalCreditsGenerated = 0;
+                    let usedCredits = 0;
+                    
+                    // Find credit memo generating payments (overpayments)
+                    transactions.forEach(transaction => {
+                        if (transaction.type === 'payment' && transaction.has_credit_memo) {
+                            const creditAmount = parseFloat(transaction.credit_memo_amount || 0);
+                            if (creditAmount > 0) {
+                                totalCreditsGenerated += creditAmount;
+                                console.log(`Found credit memo: ${creditAmount} from ${transaction.description}`);
+                            }
+                        }
+                        
+                        // Check for auto-applied credit memos in transaction records
+                        if (transaction.auto_credit_memo && parseFloat(transaction.auto_credit_memo) > 0) {
+                            usedCredits += parseFloat(transaction.auto_credit_memo);
+                            console.log(`Found used credit: ${transaction.auto_credit_memo} on ${transaction.description}`);
+                        }
+                        
+                        // Also check payment descriptions for AUTO-CM patterns
+                        if (transaction.type === 'payment' && 
+                            transaction.description && 
+                            transaction.description.includes('AUTO-CM')) {
+                            const autoCredit = parseFloat(transaction.payment_amount || 0);
+                            if (autoCredit > 0) {
+                                usedCredits += autoCredit;
+                                console.log(`Found AUTO-CM payment: ${autoCredit} - ${transaction.description}`);
+                            }
+                        }
+                    });
+                    
+                    const remainingCredits = totalCreditsGenerated - usedCredits;
+                    
+                    console.log('Credit memo analysis:', {
+                        totalGenerated: totalCreditsGenerated,
+                        totalUsed: usedCredits,
+                        remaining: remainingCredits
+                    });
+                    
+                    // Show warning if credits might be exhausted but system might still apply them
+                    if (totalCreditsGenerated > 0 && remainingCredits <= 0) {
+                        showCreditMemoWarning('exhausted', {
+                            totalGenerated: totalCreditsGenerated,
+                            totalUsed: usedCredits,
+                            remaining: remainingCredits
+                        });
+                    } else if (remainingCredits > 0) {
+                        showCreditMemoWarning('available', {
+                            remaining: remainingCredits
+                        });
+                    }
+                }
+            },
+            error: function(xhr) {
+                console.warn('Could not check credit memo status:', xhr);
+            }
+        });
+    }
+}
+
+// Function to show credit memo warnings or info
+function showCreditMemoWarning(type, data) {
+    let alertClass = type === 'exhausted' ? 'alert-warning' : 'alert-info';
+    let icon = type === 'exhausted' ? 'exclamation-triangle' : 'info-circle';
+    let title = type === 'exhausted' ? 'Credit Memo Warning' : 'Credit Memo Available';
+    
+    let message = '';
+    if (type === 'exhausted') {
+        message = `
+            <strong>⚠️ Warning:</strong> This supplier appears to have exhausted all credit memos 
+            (Generated: ₱${data.totalGenerated.toLocaleString()}, Used: ₱${data.totalUsed.toLocaleString()}).
+            <br><strong>If you see unexpected credit deductions after payment, the system may be incorrectly applying already-used credit memos.</strong>
+            <br><small class="text-muted">Please verify the final balance after payment processing and contact IT if discrepancies occur.</small>
+        `;
+    } else {
+        message = `
+            <strong>ℹ️ Info:</strong> This supplier has ₱${data.remaining.toLocaleString()} in available credit memos 
+            that may be automatically applied to this payment.
+        `;
+    }
+    
+    const warningHtml = `
+        <div class="alert ${alertClass} credit-memo-warning mt-2 mb-3" role="alert">
+            <div>${message}</div>
+        </div>
+    `;
+    
+    // Insert warning after the balance amount display
+    $('#payment_balance_container').after(warningHtml);
 }
 
 // Reset bank fields
@@ -1161,10 +1278,19 @@ function setupEventHandlers() {
         // Disable HTML5 validation for this form
         this.classList.add('was-validated');
         
+        // Prevent double submission by checking if already processing
+        if ($(this).data('processing')) {
+            console.warn('Payment already being processed, ignoring duplicate submission');
+            return;
+        }
+        
         // Use visual validation instead of sweet alerts and HTML5 validation
         if (!validatePaymentForm()) {
             return; // Stop submission if validation fails
         }
+        
+        // Mark form as processing to prevent double submission
+        $(this).data('processing', true);
         
         let id = $('#payment_ap_id').val();
         let currentAmountField = getCurrentPaymentAmountField();
@@ -1224,6 +1350,9 @@ function setupEventHandlers() {
         // Show loading banner
         showPaymentLoadingBanner();
         
+        // Disable submit button to prevent double submission
+        $('#paymentModal button[type="submit"]').prop('disabled', true);
+        
         $.ajax({
             url: `/api/accounts-payable/${id}/payment`,
             type: 'POST',
@@ -1234,6 +1363,8 @@ function setupEventHandlers() {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
+                console.log('Payment successful - preventing credit memo double application:', response);
+                
                 if (response.success) {
                     Swal.fire('Success!', response.message, 'success');
                     $('#paymentModal').modal('hide');
@@ -1241,6 +1372,7 @@ function setupEventHandlers() {
                 }
             },
             error: function(xhr) {
+                console.error('Payment error:', xhr);
                 let response = xhr.responseJSON;
                 let errors = response?.errors;
                 let errorMessage = response?.message || 'Please check your input.';
@@ -1252,6 +1384,10 @@ function setupEventHandlers() {
                 Swal.fire('Error!', errorMessage, 'error');
             },
             complete: function() {
+                // Re-enable submit button and reset processing flag
+                $('#paymentForm').data('processing', false);
+                $('#paymentModal button[type="submit"]').prop('disabled', false);
+                
                 // Hide loading banner
                 hidePaymentLoadingBanner();
                 // Reset button state

@@ -49,6 +49,25 @@
             font-size: 13px;
             margin-bottom: 0;
         }
+
+        .invalid-feedback {
+            display: block !important;
+            font-size: 10px;
+            color: #dc3545;
+            margin-top: 2px;
+        }
+
+        .is-invalid {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+
+        .validation-error {
+            color: #dc3545 !important;
+            font-size: 8px !important;
+            text-transform: uppercase !important;
+            margin-top: 2px;
+        }
     </style>
 
     <x-mainModal mainModalTitle="supplierMainModal" modalDialogClass="modal-lg" modalHeaderTitle="<span style='color: var(--primary-color, #0275d8);'>SUPPLIER DETAILS</span>" modalSubHeaderTitle="Key details about this supplier's identity.">

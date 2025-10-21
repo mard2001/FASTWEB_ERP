@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Supplier;
 use App\Models\SupplierCredit;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\SupplierRequest;
+use Illuminate\Validation\ValidationException;
 
 class SupplierController
 {
@@ -77,12 +79,13 @@ class SupplierController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(SupplierRequest $request)
     {
         try {
             $data = $request->data;
             // Add current timestamp to lastUpdated field with Asia/Manila timezone
             $data['lastUpdated'] = now()->setTimezone('Asia/Manila');
+            
             $res = Supplier::create($data);
 
             // Log the activity
@@ -106,12 +109,17 @@ class SupplierController
                 ])
                 ->log("Created new supplier '{$data['SupplierName']}' with code '{$data['SupplierCode']}'");
 
-            return response()->json( [
-                'message' => 'Supplier inserted succesfully!',
+            return response()->json([
+                'message' => 'Supplier inserted successfully!',
                 'success' => true,
-            ]);
+            ], 201);
 
-           
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first(),
+                'errors' => $e->validator->errors()
+            ], 422);  // HTTP 422 Unprocessable Entity
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -154,7 +162,7 @@ class SupplierController
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $supplierCode)
+    public function update(SupplierRequest $request, string $supplierCode)
     {
         try {
             $data = $request['data'];
@@ -162,14 +170,12 @@ class SupplierController
             $data['lastUpdated'] = now()->setTimezone('Asia/Manila');
             
             $found = Supplier::where('SupplierCode', $supplierCode)->first();
-            // dd($found);
+            
             if (!$found) {
-                $response = [
-                    'message' => 'data not found',
+                return response()->json([
+                    'message' => 'Supplier not found',
                     'success' => false
-                ];
-
-                return response()->json($response);
+                ], 404);
             }
 
             // Store old data for logging
@@ -194,20 +200,24 @@ class SupplierController
                 ])
                 ->log("Updated supplier '{$data['SupplierName']}' (Code: {$supplierCode})");
 
-            $response = [
-                'message' => 'Supplier details updated succesfully!',
+            return response()->json([
+                'message' => 'Supplier details updated successfully!',
                 'success' => true,
-                "data"=> $found
-            ];
+                'data' => $found
+            ], 200);
 
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first(),
+                'errors' => $e->validator->errors()
+            ], 422);  // HTTP 422 Unprocessable Entity
         } catch (\Exception $e) {
-            $response = [
+            return response()->json([
                 'message' => $e->getMessage(),
                 'success' => false
-            ];
+            ], 500);
         }
-
-        return response()->json($response);
     }
 
     /**

@@ -54,6 +54,50 @@ $(document).ready(async function () {
     // Initialize character counter for address field using the global helper
     window.CharacterCounterHelper.initAddressField('#CompleteAddress', '#completeAddressCharCount', '#supplierMainModal');
 
+    // Supplier Code validation on input with debounce
+    let supplierCodeTimeout;
+    $('#SupplierCode').on('input', function() {
+        const supplierCode = $(this).val().trim();
+        const $input = $(this);
+        
+        // Clear previous timeout
+        clearTimeout(supplierCodeTimeout);
+        
+        // Remove previous validation messages
+        $input.removeClass('is-invalid');
+        $input.siblings('.invalid-feedback').remove();
+        
+        if (supplierCode && !$input.prop('disabled')) {
+            supplierCodeTimeout = setTimeout(async () => {
+                const exists = await SupplierModal.checkSupplierCodeExists(supplierCode);
+                if (exists) {
+                    $input.addClass('is-invalid');
+                    $input.after('<div class="invalid-feedback">Supplier Code is already taken, try another one.</div>');
+                }
+            }, 500); // 500ms debounce
+        }
+    });
+
+    // Supplier Code validation on blur (immediate check)
+    $('#SupplierCode').on('blur', async function() {
+        const supplierCode = $(this).val().trim();
+        
+        if (supplierCode && !$(this).prop('disabled')) {
+            // Clear any pending timeout
+            clearTimeout(supplierCodeTimeout);
+            
+            // Remove previous validation messages
+            $(this).removeClass('is-invalid');
+            $(this).siblings('.invalid-feedback').remove();
+            
+            const exists = await SupplierModal.checkSupplierCodeExists(supplierCode);
+            if (exists) {
+                $(this).addClass('is-invalid');
+                $(this).after('<div class="invalid-feedback">Supplier Code is already taken, try another one.</div>');
+            }
+        }
+    });
+
     // Credit Limit formatting with real-time comma separator
     $('#CreditLimit').on('input', function(e) {
         // Get cursor position
@@ -216,7 +260,8 @@ $(document).ready(async function () {
     $('#addBtn').on('click', async function () {
         SupplierModal.enable(true);
         SupplierModal.clear();
-        $('#modalFields #SupplierCode').prop('disabled', false);
+        $('#modalFields #SupplierCode').prop('disabled', false).removeClass('is-invalid');
+        $('#modalFields #SupplierCode').siblings('.invalid-feedback').remove();
 
         $('#supplierMainModal').modal('show');
 
@@ -391,10 +436,9 @@ $(document).ready(async function () {
                                         datatables.loadSupplierData();
                                     }
                                 });
-                                // ItemsTH.column(6).visible(false);
                             } else {
                                 Swal.fire({
-                                    title: "Opppps..",
+                                    title: "Error",
                                     text: response.message,
                                     icon: "error"
                                 });
@@ -404,14 +448,22 @@ $(document).ready(async function () {
                             // Reset button state on error
                             $('#editSuppBtn').prop('disabled', false).html(originalButtonText);
                             
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                Swal.fire({
-                                    title: "Opppps..",
-                                    text: xhr.responseJSON.message,
-                                    icon: "error"
-                                });
-
+                            let errorMessage = "An error occurred while updating the supplier.";
+                            
+                            if (xhr.responseJSON) {
+                                if (xhr.status === 422) {
+                                    // Validation error
+                                    errorMessage = xhr.responseJSON.message || "Please check your input fields.";
+                                } else if (xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
                             }
+                            
+                            Swal.fire({
+                                title: "Validation Error",
+                                text: errorMessage,
+                                icon: "error"
+                            });
                         });
 
                     }
@@ -556,6 +608,12 @@ const SupplierModal = {
         let isRegionValid = true;
         let isProvinceValid = true;
         let isMunicipalityValid = true;
+        let isSupplierCodeValid = true;
+        
+        // Check if supplier code has validation error
+        if ($('#SupplierCode').hasClass('is-invalid')) {
+            isSupplierCodeValid = false;
+        }
         
         // Validate Region
         const regionValue = document.querySelector('#VSregion')?.value;
@@ -610,7 +668,18 @@ const SupplierModal = {
             $('#VSbarangay').siblings('.validation-error').remove();
         }
         
-        return isFormValid && isRegionValid && isProvinceValid && isMunicipalityValid && isBarangayValid;
+        return isFormValid && isRegionValid && isProvinceValid && isMunicipalityValid && isBarangayValid && isSupplierCodeValid;
+    },
+    checkSupplierCodeExists: async (supplierCode, excludeCode = null) => {
+        // Check if supplier code already exists in the current data
+        if (jsonArr && jsonArr.length > 0) {
+            const exists = jsonArr.some(supplier => 
+                supplier.SupplierCode === supplierCode && 
+                (excludeCode === null || supplier.SupplierCode !== excludeCode)
+            );
+            return exists;
+        }
+        return false;
     },
     hide: () => {
         $('#supplierMainModal').modal('hide');
@@ -626,15 +695,16 @@ const SupplierModal = {
         $('#supplierMainModal').modal('show');
     },
     clear: () => {
-        $('#modalFields input[type="text"]').val('');
-        $('#modalFields input[type="number"]').val('');
-        $('#modalFields textarea').val('');
+        $('#modalFields input[type="text"]').val('').removeClass('is-invalid');
+        $('#modalFields input[type="number"]').val('').removeClass('is-invalid');
+        $('#modalFields textarea').val('').removeClass('is-invalid');
         $('#CreditLimit').val('');
+        $('.invalid-feedback').remove();
+        $('.validation-error').remove();
         initVS.regionVS();
         document.querySelector('#VSprovince').setOptions([])
         document.querySelector('#VSmunicipality').setOptions([])
         document.querySelector('#VSbarangay').setOptions([])
-
     },
     enable: (enable) => {
         $('#modalFields input[type="text"]').prop('disabled', !enable);
@@ -768,10 +838,9 @@ const SupplierModal = {
                     text: response.message,
                     icon: "success"
                 });
-
-            }else if(response.success == 409){
+            } else {
                 Swal.fire({
-                    title: "error",
+                    title: "Error",
                     text: response.message,
                     icon: "error"
                 });
@@ -781,13 +850,22 @@ const SupplierModal = {
             // Reset button state on error
             $('#addSuppBtn').prop('disabled', false).html(originalButtonText);
             
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                Swal.fire({
-                    title: "Opppps..",
-                    text: xhr.responseJSON.message,
-                    icon: "error"
-                });
+            let errorMessage = "An error occurred while adding the supplier.";
+            
+            if (xhr.responseJSON) {
+                if (xhr.status === 422) {
+                    // Validation error
+                    errorMessage = xhr.responseJSON.message || "Please check your input fields.";
+                } else if (xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
             }
+            
+            Swal.fire({
+                title: "Validation Error",
+                text: errorMessage,
+                icon: "error"
+            });
         });
     },
     getData: () => {
