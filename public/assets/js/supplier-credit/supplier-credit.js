@@ -83,6 +83,7 @@ $(document).ready(function() {
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                             <div class="text-muted">Refreshing supplier credit data...</div>
+                            <small class="text-muted">Applying auto credit memos...</small>
                         </div>
                     </td>
                 </tr>
@@ -92,42 +93,91 @@ $(document).ready(function() {
         // Clear current data 
         suppliersData = [];
         
-        // Call refresh API directly with proper error handling
-        ajax('api/supplier-credit', 'GET', null, 
-            (response) => {
-                // Success callback
-                suppliersData = response.data;
-                datatables.initSupplierDatatable(response);
+        // First, trigger auto credit memo application to ensure data is synchronized
+        ajax('api/accounts-payable/apply-auto-credit-memos', 'POST', null,
+            (autoCreditResponse) => {
+                console.log('Auto credit memos applied:', autoCreditResponse);
                 
-                // Restore button after short delay
-                setTimeout(() => {
-                    $btn.prop('disabled', false).html(originalHtml);
-                }, 500);
-            }, 
+                // Then refresh the supplier credit data
+                ajax('api/supplier-credit', 'GET', null, 
+                    (response) => {
+                        // Success callback
+                        suppliersData = response.data;
+                        datatables.initSupplierDatatable(response);
+                        
+                        showNotification('success', 'Supplier credit data refreshed and sync successfully');
+                        
+                        // Restore button after short delay
+                        setTimeout(() => {
+                            $btn.prop('disabled', false).html(originalHtml);
+                        }, 500);
+                    }, 
+                    (xhr, status, error) => {
+                        // Error callback for supplier credit refresh
+                        console.error('Error refreshing supplier credit data:', error);
+                        showNotification('error', 'Failed to refresh supplier credit data');
+                        
+                        // Show error message in table
+                        if (MainTH) {
+                            $('#supplierCreditTable tbody').html(`
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-danger">
+                                        <div class="d-flex flex-column align-items-center justify-content-center">
+                                            <i class="mdi mdi-alert-circle-outline mb-2" style="font-size: 2rem;"></i>
+                                            <div>Failed to refresh supplier credit data</div>
+                                            <small class="text-muted mt-1">Please try again or contact support</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `);
+                        }
+                        
+                        // Restore button on error
+                        setTimeout(() => {
+                            $btn.prop('disabled', false).html(originalHtml);
+                        }, 500);
+                    }
+                );
+            },
             (xhr, status, error) => {
-                // Error callback
-                console.error('Error refreshing supplier credit data:', error);
-                showNotification('error', 'Failed to refresh supplier credit data');
+                // Error callback for auto credit memo application
+                console.warn('Auto credit memo application failed, proceeding with refresh:', error);
                 
-                // Show error message in table
-                if (MainTH) {
-                    $('#supplierCreditTable tbody').html(`
-                        <tr>
-                            <td colspan="7" class="text-center py-4 text-danger">
-                                <div class="d-flex flex-column align-items-center justify-content-center">
-                                    <i class="mdi mdi-alert-circle-outline mb-2" style="font-size: 2rem;"></i>
-                                    <div>Failed to refresh supplier credit data</div>
-                                    <small class="text-muted mt-1">Please try again or contact support</small>
-                                </div>
-                            </td>
-                        </tr>
-                    `);
-                }
-                
-                // Restore button on error
-                setTimeout(() => {
-                    $btn.prop('disabled', false).html(originalHtml);
-                }, 500);
+                // Still try to refresh the data even if auto credit memo fails
+                ajax('api/supplier-credit', 'GET', null, 
+                    (response) => {
+                        suppliersData = response.data;
+                        datatables.initSupplierDatatable(response);
+                        
+                        showNotification('warning', 'Supplier credit data refreshed (auto credit memo sync may have failed)');
+                        
+                        setTimeout(() => {
+                            $btn.prop('disabled', false).html(originalHtml);
+                        }, 500);
+                    }, 
+                    (xhr, status, error) => {
+                        console.error('Error refreshing supplier credit data:', error);
+                        showNotification('error', 'Failed to refresh supplier credit data');
+                        
+                        if (MainTH) {
+                            $('#supplierCreditTable tbody').html(`
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-danger">
+                                        <div class="d-flex flex-column align-items-center justify-content-center">
+                                            <i class="mdi mdi-alert-circle-outline mb-2" style="font-size: 2rem;"></i>
+                                            <div>Failed to refresh supplier credit data</div>
+                                            <small class="text-muted mt-1">Please try again or contact support</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `);
+                        }
+                        
+                        setTimeout(() => {
+                            $btn.prop('disabled', false).html(originalHtml);
+                        }, 500);
+                    }
+                );
             }
         );
     });
@@ -178,19 +228,37 @@ const datatables = {
         // Show enhanced loading message
         $('.loadingScreen .loader').after('<div class="mt-3 text-center"><small class="text-muted">Loading supplier credit data...</small></div>');
         
-        const supplierData = await ajax('api/supplier-credit', 'GET', null, (response) => {
-            suppliersData = response.data;
-            datatables.initSupplierDatatable(response);
-        }, (xhr, status, error) => {
-            console.error('Error loading supplier credit data:', error);
-            console.error('XHR Details:', xhr);
-            // Hide loading screen on error
+        try {
+            // First, ensure auto credit memos are applied for data synchronization
+            try {
+                await ajax('api/accounts-payable/apply-auto-credit-memos', 'POST', null);
+                console.log('Auto credit memos applied during initial load');
+            } catch (autoCreditError) {
+                console.warn('Auto credit memo application failed during initial load, proceeding with data load:', autoCreditError);
+            }
+            
+            // Then load the supplier credit data
+            const supplierData = await ajax('api/supplier-credit', 'GET', null, (response) => {
+                suppliersData = response.data;
+                datatables.initSupplierDatatable(response);
+            }, (xhr, status, error) => {
+                console.error('Error loading supplier credit data:', error);
+                console.error('XHR Details:', xhr);
+                // Hide loading screen on error
+                $('.loadingScreen').remove();
+                $('#dattableDiv').removeClass('opacity-0').html(
+                    '<div class="alert alert-danger m-3"><i class="mdi mdi-alert-circle me-2"></i>Failed to load supplier credit data. Please refresh the page.</div>'
+                );
+                showNotification('error', 'Failed to load supplier credit data');
+            });
+        } catch (error) {
+            console.error('Error in loadSupplierData:', error);
             $('.loadingScreen').remove();
             $('#dattableDiv').removeClass('opacity-0').html(
                 '<div class="alert alert-danger m-3"><i class="mdi mdi-alert-circle me-2"></i>Failed to load supplier credit data. Please refresh the page.</div>'
             );
             showNotification('error', 'Failed to load supplier credit data');
-        });
+        }
     },
     
     initSupplierDatatable: (response) => {
@@ -420,6 +488,13 @@ function populateModal(data) {
         creditMemoElement.removeClass('text-info');
     }
 
+    // Populate credit limit and credit balance
+    const creditLimit = summary ? parseFloat(summary.credit_limit) || 0 : 0;
+    const creditBalance = summary ? parseFloat(summary.credit_balance) || 0 : 0;
+    
+    $('#creditLimit').val('₱' + creditLimit.toLocaleString('en-US', {minimumFractionDigits: 2}));
+    $('#creditBalance').val('₱' + creditBalance.toLocaleString('en-US', {minimumFractionDigits: 2}));
+
     // Populate transactions table
     const tbody = $('#transactionsTableBody');
     tbody.empty();
@@ -427,264 +502,88 @@ function populateModal(data) {
     if (transactions && transactions.length > 0) {
         $('#noTransactionsMessage').hide();
         
-        // Sort all transactions by date and time (oldest first)
+        // Sort all transactions by date and time (oldest first) to match backend logic
         const sortedTransactions = transactions.sort((a, b) => {
             const dateA = new Date(a.sort_date || a.date);
             const dateB = new Date(b.sort_date || b.date);
             return dateA - dateB; // Ascending order (oldest first)
         });
 
-        // Group payments so they always appear immediately after their corresponding invoice
-        const paymentsByParent = {};
+        // Separate invoices and payments for proper sequential processing
+        const invoices = [];
+        const payments = [];
+        const autoCreditPayments = [];
+        
         sortedTransactions.forEach((item) => {
-            if (item.type === 'payment' && item.parent_transaction_id) {
-                const key = item.parent_transaction_id;
-                if (!paymentsByParent[key]) paymentsByParent[key] = [];
-                paymentsByParent[key].push(item);
-            }
-        });
-
-        const groupedTransactions = [];
-        sortedTransactions.forEach((item) => {
-            if (item.type === 'invoice' || item.type === 'transaction') {
-                groupedTransactions.push(item);
-                const key = item.parent_transaction_id;
-                if (paymentsByParent[key] && paymentsByParent[key].length) {
-                    paymentsByParent[key].forEach((p) => groupedTransactions.push(p));
-                    delete paymentsByParent[key];
+            if (item.type === 'payment') {
+                if (item.reference_number && item.reference_number.startsWith('AUTO-CM-')) {
+                    autoCreditPayments.push(item);
+                } else {
+                    payments.push(item);
                 }
+            } else {
+                invoices.push(item);
             }
         });
 
-        // Append any remaining payments without a matching transaction at the end
-        Object.keys(paymentsByParent).forEach((key) => {
-            paymentsByParent[key].forEach((p) => groupedTransactions.push(p));
+        // Create a map of auto credit applications for display
+        const autoCreditMap = new Map();
+        autoCreditPayments.forEach(payment => {
+            const targetId = payment.accounts_payable_id;
+            if (!autoCreditMap.has(targetId)) {
+                autoCreditMap.set(targetId, []);
+            }
+            autoCreditMap.get(targetId).push(payment);
+        });
+
+        // Process invoices and their related payments in chronological order
+        const processedTransactions = [];
+        
+        invoices.forEach(invoice => {
+            processedTransactions.push(invoice);
+            
+            // Add auto credit memo applications for this invoice
+            if (autoCreditMap.has(invoice.id)) {
+                autoCreditMap.get(invoice.id).forEach(autoCredit => {
+                    processedTransactions.push({
+                        ...autoCredit,
+                        type: 'auto_credit',
+                        display_type: 'Auto Credit Memo',
+                        source_reference: autoCredit.reference_number.replace('AUTO-CM-', ''),
+                        parent_invoice_id: invoice.id
+                    });
+                });
+            }
+            
+            // Add regular payments for this invoice
+            const relatedPayments = payments.filter(payment => 
+                payment.parent_transaction_id === invoice.id || 
+                payment.rr_number === invoice.rr_number
+            );
+            relatedPayments.forEach(payment => {
+                processedTransactions.push(payment);
+            });
         });
         
         let grandTotalAmount = 0;
         let grandTotalPaid = 0;
-        let grandTotalBalance = 0;
+        let runningBalance = 0;
         
         // Track unique transactions to avoid double counting
         let processedTransactionIds = new Set();
         
-        // Pre-process to identify which invoices should get credit memos applied
-        let invoiceCreditMap = new Map(); // Map invoice index to credit amount
-        let standbyCredits = []; // Track unused/partial credits
-        
-        // First pass: identify credit memo payments and their amounts
-        for (let i = 0; i < groupedTransactions.length; i++) {
-            const trans = groupedTransactions[i];
-            if (trans.type === 'payment' && trans.has_credit_memo) {
-                // Find the invoice this payment was for by matching RR number or parent ID
-                let paidInvoiceAmount = 0;
-                let totalPreviousPayments = 0;
-                const paymentRR = trans.rr_number;
-                const paymentParentId = trans.parent_transaction_id;
-                
-                // Look through ALL transactions to find the matching invoice
-                for (let j = 0; j < groupedTransactions.length; j++) {
-                    const checkTrans = groupedTransactions[j];
-                    if (checkTrans.type !== 'payment' && 
-                        (checkTrans.rr_number === paymentRR || 
-                         checkTrans.parent_transaction_id === paymentParentId ||
-                         checkTrans.id === paymentParentId)) {
-                        paidInvoiceAmount = parseFloat(checkTrans.transaction_amount);
-                        break;
-                    }
-                }
-                
-                // Calculate total previous payments for this invoice (before this payment)
-                for (let k = 0; k < i; k++) {
-                    const prevTrans = groupedTransactions[k];
-                    if (prevTrans.type === 'payment' && 
-                        (prevTrans.rr_number === paymentRR || 
-                         prevTrans.parent_transaction_id === paymentParentId)) {
-                        totalPreviousPayments += parseFloat(prevTrans.payment_amount);
-                        
-                        // Debug for DODOY 5 payments
-                        if (paymentRR === "RR-20251016112044990924065") {
-                            console.log(`Found previous payment for DODOY 5:`, {
-                                index: k,
-                                amount: prevTrans.payment_amount,
-                                description: prevTrans.description,
-                                runningTotal: totalPreviousPayments
-                            });
-                        }
-                    }
-                }
-                
-                // Also check for any auto-applied credits for this invoice
-                let appliedCredits = 0;
-                if (paymentRR === "RR-20251016112044990924065") {
-                    // Look for any credits that might have been applied to this invoice
-                    for (let c = 0; c < i; c++) {
-                        if (invoiceCreditMap && invoiceCreditMap.has(c)) {
-                            const creditTrans = groupedTransactions[c];
-                            if (creditTrans && creditTrans.rr_number === paymentRR) {
-                                appliedCredits += invoiceCreditMap.get(c);
-                                console.log(`Found applied credit to DODOY 5:`, {
-                                    amount: invoiceCreditMap.get(c)
-                                });
-                            }
-                        }
-                    }
-                }
-                
-                // Check for any previously applied credits to this invoice
-                let previouslyAppliedCredits = 0;
-                for (let invoiceIdx = 0; invoiceIdx < groupedTransactions.length; invoiceIdx++) {
-                    const invoiceTrans = groupedTransactions[invoiceIdx];
-                    if (invoiceTrans.type !== 'payment' && 
-                        (invoiceTrans.rr_number === paymentRR || 
-                         invoiceTrans.parent_transaction_id === paymentParentId ||
-                         invoiceTrans.id === paymentParentId)) {
-                        // Found the invoice, check if it has auto_credit_memo applied
-                        if (invoiceTrans.auto_credit_memo && parseFloat(invoiceTrans.auto_credit_memo) > 0) {
-                            previouslyAppliedCredits += parseFloat(invoiceTrans.auto_credit_memo);
-                        }
-                        break;
-                    }
-                }
-                
-                const paymentAmount = parseFloat(trans.payment_amount);
-                const remainingInvoiceAmount = paidInvoiceAmount - totalPreviousPayments - previouslyAppliedCredits;
-                
-                // Debug the last payment with CM (should be around index 10)
-                if (i >= 9) {
-                    console.log(`Payment with CM ${i}:`, {
-                        description: trans.description,
-                        paymentAmount,
-                        paidInvoiceAmount,
-                        totalPreviousPayments,
-                        previouslyAppliedCredits,
-                        remainingInvoiceAmount,
-                        rr_number: paymentRR
-                    });
-                }
-                
-                // Check if this payment creates a credit
-                if (paymentAmount > remainingInvoiceAmount) {
-                    const creditAmount = paymentAmount - remainingInvoiceAmount;
-                    console.log(`Creating credit from payment ${i}:`, {
-                        creditAmount,
-                        paymentAmount,
-                        remainingInvoiceAmount
-                    });
-                    standbyCredits.push({
-                        amount: creditAmount,
-                        paymentIndex: i
-                    });
-                }
-            }
-        }
-        
-        console.log('All standby credits:', standbyCredits);
-        
-        // Second pass: apply credits to eligible invoices (partial application allowed)
-        for (let i = 0; i < groupedTransactions.length; i++) {
-            const trans = groupedTransactions[i];
-            if (trans.type !== 'payment' && standbyCredits.length > 0) {
-                // Debug Invoice DODOY 6 specifically
-                if (i >= 10) {
-                    console.log(`Checking invoice ${i} (DODOY 6?):`, {
-                        description: trans.description,
-                        amount: trans.transaction_amount,
-                        rr_number: trans.rr_number,
-                        availableCredits: standbyCredits.length
-                    });
-                }
-                
-                // Look for any standby credit that comes from a payment BEFORE this invoice
-                // Process credits in order and stop after applying one credit to avoid double application
-                for (let creditIdx = 0; creditIdx < standbyCredits.length; creditIdx++) {
-                    const credit = standbyCredits[creditIdx];
-                    
-                    if (i >= 10) {
-                        console.log(`Checking credit ${creditIdx} for invoice ${i}:`, {
-                            creditAmount: credit.amount,
-                            paymentIndex: credit.paymentIndex,
-                            isPaymentBefore: credit.paymentIndex < i
-                        });
-                    }
-                    
-                    // Only proceed if: payment is before this invoice, credit has amount, and invoice doesn't already have credit
-                    if (credit.paymentIndex < i && credit.amount > 0 && !invoiceCreditMap.has(i)) {
-                        // Check if this invoice is already fully paid
-                        let isInvoiceAlreadyPaid = false;
-                        let invoiceAmount = parseFloat(trans.transaction_amount);
-                        let totalPaymentsForThisInvoice = 0;
-                        
-                        // Check all transactions after this invoice to see if it's already fully paid
-                        for (let m = i + 1; m < groupedTransactions.length; m++) {
-                            const laterTrans = groupedTransactions[m];
-                            if (laterTrans.type === 'payment' && 
-                                (laterTrans.rr_number === trans.rr_number || 
-                                 laterTrans.parent_transaction_id === trans.parent_transaction_id ||
-                                 laterTrans.parent_transaction_id === trans.id)) {
-                                totalPaymentsForThisInvoice += parseFloat(laterTrans.payment_amount);
-                            }
-                        }
-                        
-                        if (totalPaymentsForThisInvoice >= invoiceAmount) {
-                            isInvoiceAlreadyPaid = true;
-                        }
-                        
-                        if (i >= 10) {
-                            console.log(`Invoice ${i} eligibility:`, {
-                                invoiceAmount,
-                                totalPaymentsForThisInvoice,
-                                isInvoiceAlreadyPaid
-                            });
-                        }
-                        
-                        // Apply credit if invoice is eligible (not already paid and no previous credit)
-                        if (!isInvoiceAlreadyPaid) {
-                            const creditToApply = Math.min(credit.amount, invoiceAmount);
-                            if (i >= 10) {
-                                console.log(`APPLYING CREDIT TO INVOICE ${i}:`, {
-                                    creditToApply,
-                                    originalCreditAmount: credit.amount
-                                });
-                            }
-                            
-                            // Apply the credit to the invoice
-                            invoiceCreditMap.set(i, creditToApply);
-                            
-                            // Reduce the standby credit amount
-                            credit.amount = Math.max(0, credit.amount - creditToApply);
-                            
-                            // Remove credit from array if fully used
-                            if (credit.amount <= 0) {
-                                standbyCredits.splice(creditIdx, 1);
-                                if (i >= 10) {
-                                    console.log(`Credit fully used, removed from standby credits. Remaining credits: ${standbyCredits.length}`);
-                                }
-                            }
-                            
-                            // IMPORTANT: Break after applying one credit to prevent double application
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Track running balance for display
-        let runningBalance = 0;
-        
-        groupedTransactions.forEach(function(transaction, index) {
+        processedTransactions.forEach(function(transaction, index) {
             // Format the date with time if available
             let formattedDate = 'N/A';
-            if (transaction.date) {
-                const transactionDate = new Date(transaction.date);
+            if (transaction.date || transaction.payment_date) {
+                const transactionDate = new Date(transaction.date || transaction.payment_date);
                 formattedDate = transactionDate.toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 });
                 
-                // Add time if available in sort_date
+                // Add time if available
                 if (transaction.sort_date && transaction.sort_date !== transaction.date) {
                     const sortDate = new Date(transaction.sort_date);
                     const timeString = sortDate.toLocaleTimeString('en-US', {
@@ -696,30 +595,55 @@ function populateModal(data) {
                 }
             }
             
-            // Check transaction type
+            // Determine transaction type and styling
             const isPayment = transaction.type === 'payment';
+            const isAutoCredit = transaction.type === 'auto_credit';
             const hasCredit = isPayment && transaction.has_credit_memo;
-            const rowClass = isPayment ? (hasCredit ? 'table-warning' : 'table-info') : '';
+            
+            let rowClass = '';
+            let rowStyle = '';
+            
+            if (isAutoCredit) {
+                rowClass = 'table-success';
+                rowStyle = 'font-style: italic; border-left: 4px solid #28a745;';
+            } else if (isPayment) {
+                rowClass = hasCredit ? 'table-warning' : 'table-info';
+                rowStyle = hasCredit ? 
+                    'font-style: italic; background-color: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107;' : 
+                    'font-style: italic;';
+            }
             
             let amountDisplay, paidDisplay, balanceDisplay, descriptionText, statusBadge;
+            let displayBalanceOverride = null; // For special display cases
             
-            // Calculate running balance properly
-            let currentTransactionBalance;
-            
-            if (isPayment) {
-                // For payment rows
+            if (isAutoCredit) {
+                // Auto credit memo application
+                const creditAmount = parseFloat(transaction.payment_amount);
+                runningBalance -= creditAmount;
+                
+                amountDisplay = '-';
+                paidDisplay = `₱${creditAmount.toLocaleString('en-US', {minimumFractionDigits: 2})} (CM)`;
+                descriptionText = `Auto Credit from ${transaction.source_reference}`;
+                statusBadge = '<span class="badge bg-success">Credit Applied</span>';
+                // Note: Credit memo applications are not added to grandTotalPaid as they are not actual payments
+                
+            } else if (isPayment) {
+                // Regular payment
                 const paymentAmount = parseFloat(transaction.payment_amount);
-                runningBalance -= paymentAmount;
-                currentTransactionBalance = runningBalance;
                 
                 if (hasCredit) {
-                    // Reset running balance if it went negative (credit memo case)
-                    if (runningBalance < 0) {
-                        runningBalance = 0;
+                    // For payments with credit memo: show negative amount but keep running balance at 0
+                    const tempBalance = runningBalance - paymentAmount;
+                    if (tempBalance < 0) {
+                        displayBalanceOverride = tempBalance; // Show the negative amount
+                        runningBalance = 0; // But keep running balance at 0 to avoid double counting
+                    } else {
+                        runningBalance -= paymentAmount;
                     }
-                    descriptionText = transaction.description;
-                    statusBadge = '<span class="badge bg-success">Fully Paid with CM</span>';
+                    descriptionText = transaction.description || 'Payment with Credit Memo';
+                    statusBadge = '<span class="badge bg-success">Paid with CM</span>';
                 } else {
+                    runningBalance -= paymentAmount;
                     descriptionText = `Payment - ${transaction.payment_type || 'Cash'}`;
                     statusBadge = runningBalance <= 0 ? 
                         '<span class="badge bg-success">Fully Paid</span>' : 
@@ -729,68 +653,59 @@ function populateModal(data) {
                 amountDisplay = '-';
                 paidDisplay = `₱${paymentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 grandTotalPaid += paymentAmount;
+                
             } else {
-                // For original transaction rows (invoices)
+                // Invoice/Transaction
                 const originalAmount = parseFloat(transaction.transaction_amount);
                 runningBalance += originalAmount;
                 
-                // Check if this invoice should get a credit memo applied from our pre-processed map
-                const creditAmount = invoiceCreditMap.get(index);
-                if (creditAmount && creditAmount > 0) {
-                    runningBalance -= creditAmount;
-                    paidDisplay = `(-${creditAmount.toLocaleString('en-US', {minimumFractionDigits: 2})})`;;
-                    
-                    // Calculate the remaining standby credit after this application
-                    const currentStandbyCredit = standbyCredits.reduce((sum, credit) => sum + credit.amount, 0);
-                    
-                    // If invoice is fully paid by credit memo, show remaining credit as negative balance
-                    if (creditAmount >= originalAmount) {
-                        // Show the remaining total standby credit as negative balance
-                        currentTransactionBalance = -currentStandbyCredit;
-                    } else {
-                        currentTransactionBalance = runningBalance;
-                    }
+                descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
+                amountDisplay = `₱${originalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                
+                // Check if this invoice has credit memo applied to it
+                const creditMemoApplied = parseFloat(transaction.credit_memo_applied || 0);
+                if (creditMemoApplied > 0) {
+                    paidDisplay = `₱${creditMemoApplied.toLocaleString('en-US', {minimumFractionDigits: 2})} (CM)`;
+                    // Note: Credit memo applications are not added to grandTotalPaid as they are not actual payments
+                    // Subtract credit memo amount from running balance
+                    runningBalance -= creditMemoApplied;
                 } else {
                     paidDisplay = '-';
-                    currentTransactionBalance = runningBalance;
                 }
-                descriptionText = `Invoice - ${transaction.reference_number || 'N/A'}`;
                 
-                // Status badge for original transactions
-                if (transaction.status === 'Paid' || currentTransactionBalance <= 0) {
+                // Status badge for invoices
+                if (transaction.status === 'Paid' || runningBalance <= 0) {
                     statusBadge = '<span class="badge bg-success">Paid</span>';
                 } else if (transaction.is_overdue) {
                     statusBadge = '<span class="badge bg-danger">Overdue</span>';
+                } else if (transaction.status === 'Partial') {
+                    statusBadge = '<span class="badge bg-warning">Partial</span>';
                 } else {
-                    statusBadge = '<span class="badge bg-warning">Pending</span>';
+                    statusBadge = '<span class="badge bg-secondary">Pending</span>';
                 }
                 
-                amountDisplay = `₱${originalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                
-                // Add to grand totals - only for transaction types, and only once per unique transaction
+                // Add to grand totals - only for invoices, and only once per unique transaction
                 if (!processedTransactionIds.has(transaction.id)) {
                     grandTotalAmount += originalAmount;
                     processedTransactionIds.add(transaction.id);
                 }
             }
             
-            // Use the calculated running balance for display
-            // Handle negative zero display issue
-            const displayBalance = currentTransactionBalance === 0 ? 0 : currentTransactionBalance;
+            // Calculate balance display
+            const displayBalance = displayBalanceOverride !== null ? displayBalanceOverride : (runningBalance === 0 ? 0 : runningBalance);
             balanceDisplay = `₱${displayBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             
-            // Balance color
-            const balanceColor = currentTransactionBalance > 0 ? '#dc3545' : '#28a745';
-            
-            // Determine row styling
-            let rowStyle = '';
-            if (isPayment) {
-                if (hasCredit) {
-                    // Special styling for overpayment rows (payments with credit memo)
-                    rowStyle = 'font-style: italic; background-color: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107;';
-                } else {
-                    rowStyle = 'font-style: italic;';
-                }
+            // Balance color: red for positive (owed), green for zero/negative (credit/overpaid)
+            const balanceColor = displayBalance > 0 ? '#dc3545' : '#28a745';
+
+            // Determine paid column color
+            let paidColor = '#28a745'; // Default green for payments
+            if (isAutoCredit) {
+                paidColor = '#28a745'; // Green for auto credit applications
+            } else if (hasCredit) {
+                paidColor = '#0dcaf0'; // Light blue for payments with credit memo
+            } else if (!isPayment && parseFloat(transaction.credit_memo_applied || 0) > 0) {
+                paidColor = '#17a2b8'; // Teal for invoices with credit memo applied
             }
 
             const row = `
@@ -799,7 +714,7 @@ function populateModal(data) {
                     <td>${descriptionText}</td>
                     <td>${transaction.rr_number || 'N/A'}</td>
                     <td class="text-end">${amountDisplay}</td>
-                    <td class="text-end" style="color: ${hasCredit ? '#0dcaf0' : '#28a745'};">${paidDisplay}</td>
+                    <td class="text-end" style="color: ${paidColor};">${paidDisplay}</td>
                     <td class="text-end" style="color: ${balanceColor};">${balanceDisplay}</td>
                     <td>${statusBadge}</td>
                     <td>${transaction.terms || 'N/A'}</td>
@@ -807,9 +722,8 @@ function populateModal(data) {
             tbody.append(row);
         });
         
-        // Use the final running balance minus any remaining standby credits as the grand total balance
-        const finalStandbyCredit = standbyCredits.reduce((sum, credit) => sum + credit.amount, 0);
-        grandTotalBalance = runningBalance - finalStandbyCredit;
+        // Calculate final balance using correct formula: Amount - Paid = Balance
+        const grandTotalBalance = grandTotalAmount - grandTotalPaid;
         
         // Add summary row
         const summaryRow = `

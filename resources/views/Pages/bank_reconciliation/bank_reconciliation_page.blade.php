@@ -254,7 +254,7 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Type</th>
-                                <th>Supplier</th>
+                                <th>Supplier/Customer</th>
                                 <th>AP/AR Reference</th>
                                 <th>Reference</th>
                                 <th>Payment Type</th>

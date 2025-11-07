@@ -2145,6 +2145,44 @@ function initializeAmountFormatting() {
         value = value.replace(/[^0-9.,]/g, '');
         $(this).val(value);
     });
+    
+    // Payment amount fields validation - restrict to numbers, decimal points, and commas only
+    $('#cash_amount_display, #bank_payment_amount, #gcash_amount_display, #check_amount_display').on('input', function() {
+        let value = $(this).val();
+        // Remove any non-numeric characters except decimal point and comma
+        value = value.replace(/[^0-9.,]/g, '');
+        $(this).val(value);
+    });
+    
+    // Additional validation to prevent multiple decimal points
+    $('#cash_amount_display, #bank_payment_amount, #gcash_amount_display, #check_amount_display').on('keypress', function(e) {
+        let value = $(this).val();
+        let char = String.fromCharCode(e.which);
+        
+        // Allow backspace, delete, tab, escape, enter
+        if ([8, 9, 27, 13, 46].indexOf(e.which) !== -1 ||
+            // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+Z
+            (e.which === 65 && e.ctrlKey === true) ||
+            (e.which === 67 && e.ctrlKey === true) ||
+            (e.which === 86 && e.ctrlKey === true) ||
+            (e.which === 88 && e.ctrlKey === true) ||
+            (e.which === 90 && e.ctrlKey === true) ||
+            // Allow home, end, left, right, down, up
+            (e.which >= 35 && e.which <= 40)) {
+            return;
+        }
+        
+        // Ensure that it is a number, decimal point, or comma and stop the keypress
+        if ((e.shiftKey || (e.which < 48 || e.which > 57)) && 
+            e.which !== 46 && e.which !== 44) {
+            e.preventDefault();
+        }
+        
+        // Prevent multiple decimal points
+        if (char === '.' && value.indexOf('.') !== -1) {
+            e.preventDefault();
+        }
+    });
 }
 
 function getStatusBadge(status, isOverdue = false) {

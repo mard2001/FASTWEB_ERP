@@ -143,12 +143,16 @@ class SupplierCreditController extends Controller
                     
                     $totalAutoCreditMemo = $autoCreditMemoPayments->sum('payment_amount');
                     
+                    // Get actual credit memo applications from CreditMemoApplication table
+                    $actualCreditMemoApplied = \App\Models\CreditMemoApplication::where('target_ap_id', $apTransaction->id)
+                        ->sum('credit_amount');
+                    
                     // Create invoice record with auto credit memo information if applicable
                     $invoiceDescription = 'Invoice/Bill - ' . ($apTransaction->reference_number ?? 'N/A');
                     $invoicePaymentAmount = 0;
                     
-                    if ($totalAutoCreditMemo > 0) {
-                        $invoicePaymentAmount = $totalAutoCreditMemo;
+                    if ($actualCreditMemoApplied > 0) {
+                        $invoicePaymentAmount = $actualCreditMemoApplied;
                     }
                     
                     $allTransactions->push([
@@ -162,6 +166,7 @@ class SupplierCreditController extends Controller
                         'transaction_amount' => $apTransaction->total_amount,
                         'payment_amount' => $invoicePaymentAmount,
                         'auto_credit_memo' => $totalAutoCreditMemo,
+                        'credit_memo_applied' => $actualCreditMemoApplied, // Actual credit memo amount applied to this specific invoice
                         'status' => $this->getAPTransactionStatus($apTransaction),
                         'terms' => $apTransaction->terms,
                         'remarks' => $apTransaction->remarks,
@@ -174,7 +179,7 @@ class SupplierCreditController extends Controller
                     foreach ($regularPayments as $payment) {
                         // Check if this payment creates an overpayment
                         $totalRegularPayments = $regularPayments->sum('payment_amount');
-                        $invoiceBalance = $apTransaction->total_amount - $totalAutoCreditMemo;
+                        $invoiceBalance = $apTransaction->total_amount - $actualCreditMemoApplied;
                         $hasOverpayment = $totalRegularPayments > $invoiceBalance;
                         
                         // Determine if this specific payment creates the overpayment
@@ -274,6 +279,11 @@ class SupplierCreditController extends Controller
             // Calculate balance
             $balance = $totalDebt - $totalPaid;
 
+            // Get credit limit and credit balance from SupplierCredit table
+            $supplierCredit = SupplierCredit::where('supplier_code', $supplierCode)->first();
+            $creditLimit = $supplierCredit ? $supplierCredit->credit_limit : ($supplier->CreditLimit ?? 0);
+            $creditBalance = $supplierCredit ? $supplierCredit->credit_balance : (($supplier->CreditLimit ?? 0) - $balance);
+
             $result = [
                 'supplier' => [
                     'code' => $supplier->SupplierCode,
@@ -286,7 +296,9 @@ class SupplierCreditController extends Controller
                     'total_debt' => $totalDebt,
                     'total_paid' => $totalPaid,
                     'balance' => $balance,
-                    'credit_memo' => $totalCreditMemo
+                    'credit_memo' => $totalCreditMemo,
+                    'credit_limit' => $creditLimit,
+                    'credit_balance' => $creditBalance
                 ]
             ];
 

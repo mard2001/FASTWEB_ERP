@@ -63,7 +63,7 @@
         }
 
         .validation-error {
-            color: #dc3545 !important;
+            color: red !important;
             font-size: 8px !important;
             text-transform: uppercase !important;
             margin-top: 2px;
@@ -144,7 +144,7 @@
                     <div class="col-3">
                         <div class="mb-3">
                             <label for="PostalCode">Postal Code</label>
-                            <input disabled type="text" id="PostalCode" name="PostalCode" class="form-control bg-white" placeholder="Postal Code" maxlength="10">
+                            <input disabled type="text" id="PostalCode" name="PostalCode" class="form-control bg-white needField" required placeholder="Postal Code" maxlength="10">
                         </div>
                     </div>
                     <div class="col-4">
@@ -156,7 +156,7 @@
                     <div class="col-4">
                         <div class="mb-3">
                             <label for="CreditLimit">Credit Limit</label>
-                            <input disabled type="text" id="CreditLimit" name="CreditLimit" class="form-control bg-white" placeholder="0.00">
+                            <input disabled type="text" id="CreditLimit" name="CreditLimit" class="form-control bg-white needField" required placeholder="0.00">
                         </div>
                     </div>
                     <div class="col-4">

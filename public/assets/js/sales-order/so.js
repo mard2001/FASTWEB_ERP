@@ -596,11 +596,17 @@ async function ajax(endpoint, method, data, successCallback = () => { }, errorCa
 const datatables = {
     loadSOData: async () => {
         const SOHeaderData = await ajax('api/sales-order/header', 'GET', null, (response) => { // Success callback
-            jsonArr = response.data;
+            if (response && response.data) {
+                jsonArr = response.data;
+            } else {
+                console.warn("No data received from sales order header API");
+                jsonArr = [];
+            }
             // console.log(response.data);
             datatables.initSODatatable(response);
         }, (xhr, status, error) => { // Error callback
-            console.error('Error:', error);
+            console.error('Error loading sales order data:', error);
+            jsonArr = []; // Initialize as empty array on error
         });
     },
 
@@ -882,6 +888,13 @@ const initVS = {
                 // console.log(this.value);
                 var filteredData = { data:[], success: true };
                 var filterValues = this.value;
+                
+                // Check if jsonArr is defined and is an array
+                if (!jsonArr || !Array.isArray(jsonArr)) {
+                    console.warn("jsonArr is not available yet. Data may still be loading.");
+                    return;
+                }
+                
                 if(filterValues.length == 0){
                     filteredData.data = jsonArr;
                 } else{
@@ -1317,39 +1330,84 @@ const SOModal = {
         }, 200);
     },
     SOSave: async () => {
-        const user = localStorage.getItem('user');
-        const userObject = JSON.parse(user);
-        let SOData = SOModal.getData();
-        SOData.Items = itemTmpSave.map((item, index) => ({
-          ...item,
-          PRD_INDEX: index + 1,
-        }));
-
-        SOData.LastOperator = userObject.name;
-        SOData.CustomerInfo = selectedShippedTo;
-        await ajax( "api/sales-order/header", "POST", JSON.stringify({ data: SOData }),
-            (response) => {
-                if (response.success) {
-                    datatables.loadSOData();
-                    Swal.close();
-                    Swal.fire({
-                        title: "Success!",
-                        text: response.message,
-                        icon: "success",
-                    });
-                }
-            },
-            (xhr, status, error) => {
-                // Error callback
-                if (xhr.responseJSON && xhr.responseJSON.message) {
+        try {
+            // Validate that we have items to save
+            if (!itemTmpSave || itemTmpSave.length === 0) {
                 Swal.fire({
-                    title: "Opppps..",
-                    text: xhr.responseJSON.message,
+                    title: "Validation Error",
+                    text: "Cannot create sales order: No items added.",
                     icon: "error",
                 });
+                return;
+            }
+
+            // Validate each item before sending
+            for (let i = 0; i < itemTmpSave.length; i++) {
+                const item = itemTmpSave[i];
+                
+                // Check for empty or missing stock code
+                if (!item.MStockCode || item.MStockCode.trim() === '') {
+                    Swal.fire({
+                        title: "Validation Error",
+                        text: `Item #${i + 1} has no stock code. Please select a valid product.`,
+                        icon: "error",
+                    });
+                    return;
+                }
+                
+                // Check for invalid quantity
+                if (!item.QTYinPCS || item.QTYinPCS === null || item.QTYinPCS === undefined || parseFloat(item.QTYinPCS) <= 0) {
+                    Swal.fire({
+                        title: "Validation Error",
+                        text: `Item #${i + 1} (${item.MStockCode}) has invalid quantity. Please enter a valid quantity.`,
+                        icon: "error",
+                    });
+                    return;
                 }
             }
-        );
+
+            const user = localStorage.getItem('user');
+            const userObject = JSON.parse(user);
+            let SOData = SOModal.getData();
+            SOData.Items = itemTmpSave.map((item, index) => ({
+              ...item,
+              PRD_INDEX: index + 1,
+            }));
+
+            SOData.LastOperator = userObject.name;
+            SOData.CustomerInfo = selectedShippedTo;
+            
+            await ajax( "api/sales-order/header", "POST", JSON.stringify({ data: SOData }),
+                (response) => {
+                    if (response.success) {
+                        datatables.loadSOData();
+                        Swal.close();
+                        Swal.fire({
+                            title: "Success!",
+                            text: response.message,
+                            icon: "success",
+                        });
+                    }
+                },
+                (xhr, status, error) => {
+                    // Error callback
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        Swal.fire({
+                            title: "Opppps..",
+                            text: xhr.responseJSON.message,
+                            icon: "error",
+                        });
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Error in SOSave:', error);
+            Swal.fire({
+                title: "Error",
+                text: "An unexpected error occurred while saving the sales order.",
+                icon: "error",
+            });
+        }
     },
     SOUpdate: async () => {
         let updateBody = SOModal.getData();
@@ -2313,7 +2371,9 @@ function displayInventoryByUOM(qtyOnHand, productInventory, warehouse) {
     const csQty = Math.floor(qtyOnHand / ConvFactAltUom);
     
     if (csQty >= 1) {
-        showInventoryAvailability(`${csQty} CS`, 'text-success', warehouse);
+        // Also show the conversion to PCS for the CS quantity
+        const pcsForCases = csQty * ConvFactAltUom;
+        showInventoryAvailability(`${csQty} CS (${pcsForCases} PCS)`, 'text-success', warehouse);
     } else {
         // Calculate LB quantity
         const lbConvFactor = ConvFactAltUom / ConvFactOthUom;
@@ -2393,14 +2453,21 @@ function autoCalculateTotalPrice() {
     );
 }
 
-async function getProductPriceCodes() { await ajax( "api/getProductPriceCodes", "GET", null,
-      (response) => {
-        priceCodes = response.success && response.data;
-      },
-      (xhr, status, error) => {
-        // Error callback
-        console.error("Error:", error);
-      }
+async function getProductPriceCodes() {
+    await ajax("api/getProductPriceCodes", "GET", null,
+        (response) => {
+            if (response.success) {
+                priceCodes = response.data;
+            } else {
+                console.error("Failed to load product price codes:", response);
+                priceCodes = [];
+            }
+        },
+        (xhr, status, error) => {
+            // Error callback
+            console.error("Error loading product price codes:", error);
+            priceCodes = [];
+        }
     );
 }
 

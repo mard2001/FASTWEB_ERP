@@ -22,7 +22,7 @@ class SupplierRequest extends FormRequest
      */
     public function rules(): array
     {
-        $supplierCode = $this->route('supplier') ?? null;
+        $supplierCode = $this->route('vendor') ?? null;
         $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
 
         return [
@@ -38,9 +38,9 @@ class SupplierRequest extends FormRequest
             'data.ContactNo' => 'required|string|max:11',
             'data.TermsCode' => 'required|string|max:10',
             'data.CompleteAddress' => 'required|string|max:100',
-            'data.PostalCode' => 'nullable|string|max:10',
+            'data.PostalCode' => 'required|string|max:10',
             'data.PriceCode' => 'required|integer|max:99',
-            'data.CreditLimit' => 'nullable|numeric|min:0',
+            'data.CreditLimit' => 'required|numeric|min:0',
             'data.holdStatus' => 'required|string|max:1',
             'data.Region' => 'required|string|max:255',
             'data.Province' => 'required|string|max:255',
@@ -71,10 +71,12 @@ class SupplierRequest extends FormRequest
             'data.TermsCode.max' => 'Terms Code cannot exceed 10 characters.',
             'data.CompleteAddress.required' => 'Complete Address is required.',
             'data.CompleteAddress.max' => 'Complete Address cannot exceed 100 characters.',
+            'data.PostalCode.required' => 'Postal Code is required.',
             'data.PostalCode.max' => 'Postal Code cannot exceed 10 characters.',
             'data.PriceCode.required' => 'Price Code is required.',
             'data.PriceCode.integer' => 'Price Code must be a valid integer.',
             'data.PriceCode.max' => 'Price Code cannot exceed 99.',
+            'data.CreditLimit.required' => 'Credit Limit is required.',
             'data.CreditLimit.numeric' => 'Credit Limit must be a valid number.',
             'data.CreditLimit.min' => 'Credit Limit cannot be negative.',
             'data.holdStatus.required' => 'Hold Status is required.',

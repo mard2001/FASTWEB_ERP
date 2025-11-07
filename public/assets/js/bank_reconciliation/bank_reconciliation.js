@@ -29,8 +29,9 @@ $(document).ready(async function () {
             return;
         }
 
-        const bankId = $(this).attr('data-bank-id');
-        const hasReconciliation = $(this).attr('data-has-recon') === 'true';
+        const $row = $(this);
+        const bankId = $row.attr('data-bank-id');
+        const hasReconciliation = $row.attr('data-has-recon') === 'true';
 
         if (!hasReconciliation) {
             // No reconciliation yet, show message
@@ -42,8 +43,47 @@ $(document).ready(async function () {
             return;
         }
 
-        // Load and show bank details with transaction history
-        await showBankDetails(bankId);
+        // Prevent multiple clicks on the same row
+        if ($row.hasClass('loading')) {
+            return;
+        }
+
+        // Add loading state to clicked row
+        $row.addClass('loading').css({
+            'background-color': 'rgba(13, 110, 253, 0.1)',
+            'pointer-events': 'none'
+        });
+
+        // Store original content and add loading indicator
+        const originalContent = $row.html();
+        const loadingHtml = `
+            <td colspan="6" class="text-center py-2">
+                <div class="d-flex align-items-center justify-content-center">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="text-muted">Loading bank details...</span>
+                </div>
+            </td>
+        `;
+        $row.html(loadingHtml);
+
+        // Disable all row clicks temporarily
+        $("#bankReconTable tbody").css('pointer-events', 'none');
+
+        try {
+            // Load and show bank details with transaction history
+            await showBankDetails(bankId);
+        } finally {
+            // Restore row and enable clicks after loading
+            setTimeout(() => {
+                $row.html(originalContent).removeClass('loading').css({
+                    'background-color': '',
+                    'pointer-events': ''
+                });
+                $("#bankReconTable tbody").css('pointer-events', 'auto');
+            }, 300);
+        }
     });
 
     // Save beginning balance
@@ -430,7 +470,36 @@ async function saveBeginningBalance(data) {
 }
 
 async function showBankDetails(bankId) {
-    $("#bankReconTable tbody").css('pointer-events', 'none');
+    // Show modal immediately with loading content
+    $('#bankDetailsModal').modal('show');
+    
+    // Show loading animation in the transaction history table
+    const loadingContent = `
+        <tr>
+            <td colspan="10" class="text-center py-4">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="spinner-border text-primary mb-2" role="status" style="width: 2rem; height: 2rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="text-muted">Loading transaction history...</div>
+                    <small class="text-muted mt-1">Please wait while we fetch the data</small>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    $('#transactionHistoryTableBody').html(loadingContent);
+    
+    // Clear previous data while loading
+    $('#DetailsBankID').val('');
+    $('#detailsBankName').val('Loading...');
+    $('#detailsAccountName').val('Loading...');
+    $('#detailsAccountNumber').val('Loading...');
+    $('#detailsAccountType').val('Loading...');
+    $('#summaryBeginningBalance').val('Loading...');
+    $('#summaryTotalInflows').val('Loading...');
+    $('#summaryTotalOutflows').val('Loading...');
+    $('#summaryAvailableBalance').val('Loading...');
 
     await ajax('api/bank-reconciliation/' + bankId, 'GET', null, (response) => {
         if (response.success) {
@@ -452,18 +521,34 @@ async function showBankDetails(bankId) {
 
             // Load transaction history
             loadTransactionHistory(bank.transactions || []);
-
-            $('#bankDetailsModal').modal('show');
         } else {
+            // Clear loading and show error in transaction table
+            $('#transactionHistoryTableBody').html(`
+                <tr>
+                    <td colspan="10" class="text-center text-danger py-4">
+                        <i class="mdi mdi-alert-circle me-2"></i>
+                        Failed to load bank details: ${response.message}
+                    </td>
+                </tr>
+            `);
+            
             Swal.fire({
                 title: "Error",
                 text: response.message,
                 icon: "error"
             });
         }
-        $("#bankReconTable tbody").css('pointer-events', 'auto');
     }, (xhr, status, error) => {
-        $("#bankReconTable tbody").css('pointer-events', 'auto');
+        // Clear loading and show error in transaction table
+        $('#transactionHistoryTableBody').html(`
+            <tr>
+                <td colspan="10" class="text-center text-danger py-4">
+                    <i class="mdi mdi-alert-circle me-2"></i>
+                    Failed to load bank details. Please try again.
+                </td>
+            </tr>
+        `);
+        
         if (xhr.responseJSON && xhr.responseJSON.message) {
             Swal.fire({
                 title: "Error",

@@ -507,8 +507,8 @@ class AccountsReceivableController extends Controller
                 'process_by' => auth()->user()->name ?? 'System'
             ];
 
-            // Add bank_id if payment method is bank_transfer and bank_id is provided
-            if ($request->payment_method === 'bank_transfer' && $request->bank_id) {
+            // Add bank_id if payment method is bank_transfer or check and bank_id is provided
+            if (($request->payment_method === 'bank_transfer' || $request->payment_method === 'check') && $request->bank_id) {
                 $paymentData['bank_id'] = $request->bank_id;
             }
 
@@ -520,9 +520,30 @@ class AccountsReceivableController extends Controller
             // Handle check payment if enabled
             $checkId = null;
             
+            // Debug: Log all request data related to check payment
+            Log::info('AR Check Payment Debug - Request Data', [
+                'pay_by_check' => $request->pay_by_check,
+                'payment_method' => $request->payment_method,
+                'bank_id' => $request->bank_id,
+                'check_payee' => $request->check_payee,
+                'check_date' => $request->check_date,
+                'check_amount_in_words' => $request->check_amount_in_words,
+                'check_number' => $request->check_number,
+                'payment_amount' => $paymentAmount
+            ]);
+            
             // Check if pay_by_check is truthy (could be '1', 1, true, 'true', etc.)
-            if (($request->pay_by_check == '1' || $request->pay_by_check === true || $request->pay_by_check === 'true') && $request->payment_method === 'bank_transfer') {
-                Log::info('Creating check record for AR payment...');
+            $shouldCreateCheck = ($request->pay_by_check == '1' || $request->pay_by_check === true || $request->pay_by_check === 'true') && ($request->payment_method === 'bank_transfer' || $request->payment_method === 'check');
+            
+            Log::info('AR Check Payment Debug - Condition Check', [
+                'pay_by_check_value' => $request->pay_by_check,
+                'pay_by_check_type' => gettype($request->pay_by_check),
+                'payment_method' => $request->payment_method,
+                'should_create_check' => $shouldCreateCheck
+            ]);
+            
+            if ($shouldCreateCheck) {
+                Log::info('AR Check Payment Debug - Creating check record...');
                 
                 // Create check record
                 $checkData = [
@@ -537,11 +558,33 @@ class AccountsReceivableController extends Controller
                     'Remarks' => 'Payment for AR #' . $receivable->id . ($creditMemo > 0 ? ' (includes overpayment of ₱' . number_format($creditMemo, 2) . ')' : '')
                 ];
 
-                $check = Check::create($checkData);
-                $checkId = $check->CheckID;
+                Log::info('AR Check Payment Debug - Check data to create', $checkData);
 
-                // Add check_id to payment data
-                $paymentData['check_id'] = $checkId;
+                try {
+                    $check = Check::create($checkData);
+                    $checkId = $check->CheckID;
+
+                    Log::info('AR Check Payment Debug - Check created successfully', [
+                        'check_id' => $checkId,
+                        'check_object' => $check->toArray()
+                    ]);
+
+                    // Add check_id to payment data
+                    $paymentData['check_id'] = $checkId;
+                } catch (\Exception $e) {
+                    Log::error('AR Check Payment Debug - Check creation failed', [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                        'check_data' => $checkData
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to create check record: ' . $e->getMessage()
+                    ], 500);
+                }
+            } else {
+                Log::info('AR Check Payment Debug - Check creation skipped');
             }
 
             // Clean payment data before creating record

@@ -34,16 +34,34 @@ class BankReconciliationController extends Controller
                     ->orderBy('DateCreated', 'desc')
                     ->first();
                 
-                // Calculate actual total outflows from payments (real-time)
-                $actualTotalOutflows = Payment::where('bank_id', $bank->BankID)->sum('payment_amount') ?? 0;
+                // Calculate actual total outflows and inflows from payments (real-time)
+                // Include both direct bank payments and check payments associated with this bank
+                $actualTotalOutflows = Payment::where(function($query) use ($bank) {
+                        $query->where('bank_id', $bank->BankID)
+                              ->orWhereHas('check', function($checkQuery) use ($bank) {
+                                  $checkQuery->where('BankID', $bank->BankID);
+                              });
+                    })
+                    ->whereNotNull('accounts_payable_id') // AP payments are outflows
+                    ->sum('payment_amount') ?? 0;
+                    
+                $actualTotalInflows = Payment::where(function($query) use ($bank) {
+                        $query->where('bank_id', $bank->BankID)
+                              ->orWhereHas('check', function($checkQuery) use ($bank) {
+                                  $checkQuery->where('BankID', $bank->BankID);
+                              });
+                    })
+                    ->whereNotNull('accounts_receivable_id') // AR payments are inflows
+                    ->sum('payment_amount') ?? 0;
                 
                 // Calculate available balance using actual transaction data
                 $beginningBalance = $latestRecon->BeginningBalance ?? 0;
-                $totalInflows = $latestRecon->TotalInflows ?? 0;
+                $manualInflows = $latestRecon->TotalInflows ?? 0; // Manual inflows from reconciliation
+                $totalInflows = $manualInflows + $actualTotalInflows; // Manual + AR payments
                 $availableBalance = $beginningBalance + $totalInflows - $actualTotalOutflows;
                 
-                // Update the reconciliation record with actual outflows if it exists
-                if ($latestRecon && $latestRecon->TotalOutflows != $actualTotalOutflows) {
+                // Update the reconciliation record with actual flows if it exists
+                if ($latestRecon && ($latestRecon->TotalOutflows != $actualTotalOutflows)) {
                     $latestRecon->update([
                         'TotalOutflows' => $actualTotalOutflows,
                         'AvailableBalance' => $availableBalance
@@ -107,12 +125,38 @@ class BankReconciliationController extends Controller
             $latestRecon = $bank->reconciliations->first();
 
             // Get transaction history (payments made through this bank)
-            $transactions = Payment::where('bank_id', $bankId)
-                ->with(['accountsPayable.supplier', 'check'])
+            // Include both direct bank payments and check payments associated with this bank
+            $transactions = Payment::where(function($query) use ($bankId) {
+                    $query->where('bank_id', $bankId)
+                          ->orWhereHas('check', function($checkQuery) use ($bankId) {
+                              $checkQuery->where('BankID', $bankId);
+                          });
+                })
+                ->with(['accountsPayable.supplier', 'accountsReceivable.customer', 'check'])
                 ->orderBy('payment_date', 'asc')
                 ->orderBy('created_at', 'asc')
                 ->get()
                 ->map(function($payment) {
+                    // Determine if this is an AP (withdrawal) or AR (deposit) payment
+                    $isAR = !empty($payment->accounts_receivable_id);
+                    $isAP = !empty($payment->accounts_payable_id);
+                    
+                    // Set transaction type: AR payments are deposits (IN), AP payments are withdrawals (OUT)
+                    $transactionType = $isAR ? 'IN' : 'OUT';
+                    
+                    // Get supplier/customer name and reference based on payment type
+                    if ($isAR) {
+                        // Accounts Receivable - customer payment (deposit)
+                        $supplierCustomerName = $payment->accountsReceivable->customer->Name ?? 'N/A';
+                        $supplierCustomerCode = $payment->accountsReceivable->customer->Customer ?? 'N/A';
+                        $reference = $payment->accountsReceivable->reference_number ?? 'N/A';
+                    } else {
+                        // Accounts Payable - supplier payment (withdrawal)
+                        $supplierCustomerName = $payment->accountsPayable->supplier->SupplierName ?? 'N/A';
+                        $supplierCustomerCode = $payment->accountsPayable->supplier_code ?? 'N/A';
+                        $reference = $payment->accountsPayable->reference_number ?? 'N/A';
+                    }
+                    
                     return [
                         'id' => $payment->id,
                         'payment_date' => $payment->payment_date,
@@ -123,11 +167,13 @@ class BankReconciliationController extends Controller
                         'check_number' => $payment->check ? $payment->check->CheckNumber : null,
                         'check_id' => $payment->check_id,
                         'remarks' => $payment->remarks,
-                        'supplier_name' => $payment->accountsPayable->supplier->SupplierName ?? 'N/A',
-                        'supplier_code' => $payment->accountsPayable->supplier_code ?? 'N/A',
-                        'ap_reference' => $payment->accountsPayable->reference_number ?? 'N/A',
-                        'transaction_type' => 'OUT', // Payments are always outflows (Accounts Payable)
-                        'created_at' => $payment->created_at
+                        'supplier_name' => $supplierCustomerName, // Now contains both supplier and customer names
+                        'supplier_code' => $supplierCustomerCode,
+                        'ap_reference' => $reference, // Now contains both AP and AR references
+                        'transaction_type' => $transactionType, // 'IN' for AR (deposits), 'OUT' for AP (withdrawals)
+                        'created_at' => $payment->created_at,
+                        'is_receivable' => $isAR, // Flag to identify receivable payments
+                        'is_payable' => $isAP // Flag to identify payable payments
                     ];
                 })
                 ->toArray();
@@ -202,14 +248,21 @@ class BankReconciliationController extends Controller
                 return $dateCompare;
             });
 
-            // Calculate total outflows from transactions (excluding beginning balance)
+            // Calculate total outflows and inflows from transactions (excluding beginning balance)
             $totalTransactionOutflows = collect($transactions)
                 ->where('transaction_type', 'OUT')
+                ->where('is_beginning_balance', '!=', true)
+                ->sum('payment_amount');
+                
+            $totalTransactionInflows = collect($transactions)
+                ->where('transaction_type', 'IN')
+                ->where('is_beginning_balance', '!=', true)
                 ->sum('payment_amount');
 
             // Calculate available balance
             $beginningBalance = $latestRecon->BeginningBalance ?? 0;
-            $totalInflows = $latestRecon->TotalInflows ?? 0;
+            $manualInflows = $latestRecon->TotalInflows ?? 0; // Manual inflows from reconciliation
+            $totalInflows = $manualInflows + $totalTransactionInflows; // Manual + AR payments
             $availableBalance = $beginningBalance + $totalInflows - $totalTransactionOutflows;
 
             $data = [
@@ -337,12 +390,30 @@ class BankReconciliationController extends Controller
             return;
         }
 
-        // Calculate total outflows from payments
-        $totalOutflows = Payment::where('bank_id', $bankId)->sum('payment_amount') ?? 0;
+        // Calculate total outflows and inflows from payments
+        // Include both direct bank payments and check payments associated with this bank
+        $totalOutflows = Payment::where(function($query) use ($bankId) {
+                $query->where('bank_id', $bankId)
+                      ->orWhereHas('check', function($checkQuery) use ($bankId) {
+                          $checkQuery->where('BankID', $bankId);
+                      });
+            })
+            ->whereNotNull('accounts_payable_id') // AP payments are outflows
+            ->sum('payment_amount') ?? 0;
+            
+        $totalARInflows = Payment::where(function($query) use ($bankId) {
+                $query->where('bank_id', $bankId)
+                      ->orWhereHas('check', function($checkQuery) use ($bankId) {
+                          $checkQuery->where('BankID', $bankId);
+                      });
+            })
+            ->whereNotNull('accounts_receivable_id') // AR payments are inflows
+            ->sum('payment_amount') ?? 0;
 
-        // Calculate available balance: BeginningBalance + TotalInflows - TotalOutflows
+        // Calculate available balance: BeginningBalance + TotalInflows + AR Inflows - TotalOutflows
         $availableBalance = ($reconciliation->BeginningBalance ?? 0) 
                           + ($reconciliation->TotalInflows ?? 0) 
+                          + $totalARInflows
                           - $totalOutflows;
 
         // Update TotalOutflows and AvailableBalance

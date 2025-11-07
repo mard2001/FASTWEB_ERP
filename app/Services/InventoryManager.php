@@ -5,25 +5,67 @@ namespace App\Services;
 use App\Models\Inventory\InvMovements;
 use App\Models\Inventory\InvWarehouse;
 use App\Models\Inventory\InvAdjustmentLogs;
+use Illuminate\Support\Facades\Log;
 
 class InventoryManager
 {
     public function isInvEnough($productsQty)
     {
         try {
+            // Log the input data for debugging
+            Log::info('InventoryManager::isInvEnough called with data:', [
+                'productsQty' => $productsQty
+            ]);
+
             foreach ($productsQty as $prod) {
+                // First, get the inventory record
                 $res = InvWarehouse::where('StockCode', $prod['stockCode'])
                     ->where('Warehouse', $prod['warehouse'])
-                    ->where('QtyOnHand', '>=', (float)$prod['qty'])
                     ->first();
+                
                 if (!$res) {
+                    // No inventory record found for this product in this warehouse
+                    Log::warning('InventoryManager::isInvEnough - No inventory record found', [
+                        'stockCode' => $prod['stockCode'],
+                        'warehouse' => $prod['warehouse']
+                    ]);
                     return false; 
+                }
+                
+                // Convert both values to float for proper comparison
+                $qtyOnHand = (float)$res->QtyOnHand;
+                $requiredQty = (float)$prod['qty'];
+                
+                // Log the comparison for debugging
+                Log::info('InventoryManager::isInvEnough - Stock comparison', [
+                    'stockCode' => $prod['stockCode'],
+                    'warehouse' => $prod['warehouse'],
+                    'qtyOnHand' => $qtyOnHand,
+                    'requiredQty' => $requiredQty,
+                    'hasEnoughStock' => $qtyOnHand >= $requiredQty
+                ]);
+                
+                // Check if there's enough stock
+                if ($qtyOnHand < $requiredQty) {
+                    Log::warning('InventoryManager::isInvEnough - Insufficient stock', [
+                        'stockCode' => $prod['stockCode'],
+                        'warehouse' => $prod['warehouse'],
+                        'qtyOnHand' => $qtyOnHand,
+                        'requiredQty' => $requiredQty
+                    ]);
+                    return false;
                 }
             }
 
+            Log::info('InventoryManager::isInvEnough - All items have sufficient stock');
             return true; 
 
         } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error('InventoryManager::isInvEnough error: ' . $e->getMessage(), [
+                'productsQty' => $productsQty,
+                'trace' => $e->getTraceAsString()
+            ]);
             return false;  
         }
     }

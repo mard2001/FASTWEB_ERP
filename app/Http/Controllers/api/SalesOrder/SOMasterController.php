@@ -90,6 +90,31 @@ class SOMasterController extends Controller
             $data = $request->data;
             $items = Arr::pull($data, 'Items');
             
+            // Validate that we have items
+            if (empty($items)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot create sales order: No items provided.',
+                ], 400);
+            }
+            
+            // Validate each item for required fields
+            foreach ($items as $index => $item) {
+                if (empty($item['MStockCode']) || trim($item['MStockCode']) === '') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot create sales order: Item #" . ($index + 1) . " has no stock code.",
+                    ], 400);
+                }
+                
+                if (!isset($item['QTYinPCS']) || $item['QTYinPCS'] === null || $item['QTYinPCS'] === '' || (float)$item['QTYinPCS'] <= 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot create sales order: Item #" . ($index + 1) . " (" . $item['MStockCode'] . ") has invalid quantity.",
+                    ], 400);
+                }
+            }
+            
             // Validate stock availability before creating the sales order
             $checkProdArr = array_map(function ($item) use ($data) {
                 return [
@@ -737,8 +762,10 @@ class SOMasterController extends Controller
                 // Create Accounts Receivable record for completed Sales Order
                 try {
                     // Calculate total amount from SO details
+                    // BUGFIX: Use line total (MPrice) directly; do NOT multiply by QTYinPCS
+                    // MPrice already represents Quantity x Unit Price for the line
                     $totalAmount = array_sum(array_map(function($detail) {
-                        return (float)$detail['QTYinPCS'] * (float)($detail['MPrice'] ?? 0);
+                        return (float)($detail['MPrice'] ?? 0);
                     }, $details));
 
                     // Get customer information

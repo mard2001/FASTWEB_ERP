@@ -1159,12 +1159,13 @@ function setupEventHandlers() {
     $('#apRefreshBtn').on('click', function() {
         const $btn = $(this);
         const $icon = $btn.find('.mdi');
-        const $span = $btn.find('span');
+        // Target only the direct label span, not the icon span inside .btnImg
+        const $label = $btn.children('span');
         
         // Disable button and show loading state
         $btn.prop('disabled', true);
         $icon.removeClass('mdi-refresh').addClass('mdi-loading mdi-spin');
-        $span.text('Refreshing...');
+        $label.text('Refreshing...');
         
         // Show loading animation in table
         if (accountsReceivableTable) {
@@ -1200,9 +1201,9 @@ function setupEventHandlers() {
                     loadStatistics();
                     
                     // Show success message briefly
-                    $span.text('Refreshed!');
+                    $label.text('Refreshed!');
                     setTimeout(() => {
-                        $span.text('Refresh Data');
+                        $label.text('Refresh Data');
                     }, 1000);
                 }
             },
@@ -1217,7 +1218,7 @@ function setupEventHandlers() {
                 }
                 
                 Swal.fire('Error!', 'Failed to refresh accounts receivable data.', 'error');
-                $span.text('Refresh Data');
+                $label.text('Refresh Data');
             },
             complete: function() {
                 // Restore button state

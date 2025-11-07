@@ -303,26 +303,40 @@
                                 <div class="supplierSectionTitle">CREDIT SUMMARY:</div>
                                 <div style="width:100%;"><hr></div>
                             </div>
-                            <div class="row mb-3">
-                                <div class="col-12 col-sm-6 col-md-3">
+                            <div class="row mb-2">
+                                <div class="col-12 col-sm-6 col-md-4">
                                     <div class="">
                                         <label for="totalDebt" class="form-label">TOTAL DEBT</label>
                                         <input type="text" disabled id="totalDebt" name="totalDebt" class="form-control text-danger fw-bold" readonly>
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-3">
+                                <div class="col-12 col-sm-6 col-md-4">
                                     <div class="">
                                         <label for="totalPaid" class="form-label">TOTAL PAID</label>
                                         <input type="text" disabled id="totalPaid" name="totalPaid" class="form-control text-success fw-bold" readonly>
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-3">
+                                <div class="col-12 col-sm-6 col-md-4">
                                     <div class="">
                                         <label for="balanceOwed" class="form-label">BALANCE OWED</label>
                                         <input type="text" disabled id="balanceOwed" name="balanceOwed" class="form-control fw-bold" readonly>
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-3">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <div class="">
+                                        <label for="creditLimit" class="form-label">CREDIT LIMIT</label>
+                                        <input type="text" disabled id="creditLimit" name="creditLimit" class="form-control text-primary fw-bold" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <div class="">
+                                        <label for="creditBalance" class="form-label">CREDIT BALANCE</label>
+                                        <input type="text" disabled id="creditBalance" name="creditBalance" class="form-control text-warning fw-bold" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
                                     <div class="">
                                         <label for="creditMemoBalance" class="form-label">CREDIT MEMO</label>
                                         <input type="text" disabled id="creditMemoBalance" name="creditMemoBalance" class="form-control text-info fw-bold" readonly>
