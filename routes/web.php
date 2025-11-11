@@ -240,6 +240,11 @@ Route::get('/transactions/supplier-credit', function () {
     return page_view('supplier-credit/supplier_credit_page');
 })->name('supplier-credit')->middleware('check.user.status');
 
+// CUSTOMER CREDIT MODULE
+Route::get('/transactions/customer-credit', function () {
+    return page_view('customer-credit/customer_credit_page');
+})->name('customer-credit')->middleware('check.user.status');
+
 
 // WAREHOUSE MAINTENANCE MODULE
 Route::get('/master-data/warehouse', function () {

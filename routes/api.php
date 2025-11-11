@@ -50,6 +50,7 @@ use App\Http\Controllers\api\ThemeController;
 use App\Http\Controllers\api\BankController;
 use App\Http\Controllers\api\GcashController;
 use App\Http\Controllers\api\SupplierCreditController;
+use App\Http\Controllers\api\CustomerCreditController;
 
 
 Route::middleware(['auth:sanctum', 'check.user.status', DynamicDatabase::class])->group(function () {
@@ -280,6 +281,13 @@ Route::get('supplier-credit/{supplierCode}/print-statement', [\App\Http\Controll
 Route::get('supplier-credit/{supplierCode}/print-counter-receipt', [\App\Http\Controllers\api\SupplierCreditController::class, 'printCounterReceipt'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::post('supplier-credit/refresh', [\App\Http\Controllers\api\SupplierCreditController::class, 'refreshSupplierCredits'])->middleware(['auth:sanctum', 'check.user.status']);
 Route::post('supplier-credit/{supplierCode}/update', [\App\Http\Controllers\api\SupplierCreditController::class, 'updateSupplierCredit'])->middleware(['auth:sanctum', 'check.user.status']);
+
+// Customer Credit API Routes
+Route::get('customer-credit', [\App\Http\Controllers\api\CustomerCreditController::class, 'getCustomersWithCredits'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('customer-credit/{customerCode}/transactions', [\App\Http\Controllers\api\CustomerCreditController::class, 'getCustomerTransactions'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('customer-credit/{customerCode}/print-statement', [\App\Http\Controllers\api\CustomerCreditController::class, 'printStatement'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('customer-credit/{customerCode}/print-counter-receipt', [\App\Http\Controllers\api\CustomerCreditController::class, 'printCounterReceipt'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('customer-credit/refresh', [\App\Http\Controllers\api\CustomerCreditController::class, 'refreshCustomerCredits'])->middleware(['auth:sanctum', 'check.user.status']);
 
 // Route::post('/auth/register', [AuthController::class, 'register']); // Disabled - Registration handled by admin through user management
 Route::post('/auth/login', [AuthController::class, 'login']);

@@ -43,6 +43,12 @@
                         </a>
                     </li>
                     <li class="">
+                        <a href="{{ route('customer-credit') }}" class="sidebar-link">
+                            <span class="mdi mdi-ray-start-arrow"></span>
+                            <span class="ms-2 px-1">Customer Credit</span>
+                        </a>
+                    </li>
+                    <li class="">
                         <a href="{{ route('accounts-payable') }}" class="sidebar-link">
 
                             <span class="mdi mdi-ray-start-arrow"></span>

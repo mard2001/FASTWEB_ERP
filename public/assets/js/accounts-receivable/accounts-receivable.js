@@ -754,51 +754,7 @@ function setModalMode(mode, status) {
 
 // Show payment modal
 function showPaymentModal(rowData) {
-    // FIFO pre-check on frontend (UX): block payment if not the oldest unpaid for this customer
-    try {
-        const customerCode = rowData.customer_code;
-        // Assume filteredData holds the current AP rows shown in the table
-        if (Array.isArray(window.filteredData)) {
-            const sameCustomer = window.filteredData.filter(r => r.customer_code === customerCode && (parseFloat(r.balance_amount) > 0));
-            if (sameCustomer.length > 0) {
-                // Sort by date asc, then created_at asc (if available), then id asc
-                sameCustomer.sort((a, b) => {
-                    const da = new Date(a.date);
-                    const db = new Date(b.date);
-                    if (da.getTime() !== db.getTime()) return da - db;
-                    const ca = a.created_at ? new Date(a.created_at).getTime() : 0;
-                    const cb = b.created_at ? new Date(b.created_at).getTime() : 0;
-                    if (ca !== cb) return ca - cb;
-                    return (a.id || 0) - (b.id || 0);
-                });
-                const oldestUnpaid = sameCustomer[0];
-                if (oldestUnpaid && oldestUnpaid.id !== rowData.id) {
-                    Swal.fire({
-                        title: 'Payment Order Violation',
-                        html: `
-                            <div class="text-start">
-                                <p><strong>You must collect payment for older invoices first for this customer.</strong></p>
-                                <hr>
-                                <p><strong>Oldest Outstanding Invoice:</strong></p>
-                                <ul class="list-unstyled ms-3">
-                                    <li><strong>Invoice #:</strong> ${oldestUnpaid.reference_number || 'N/A'}</li>
-                                    <li><strong>Date:</strong> ${new Date(oldestUnpaid.date).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}</li>
-                                    <li><strong>Balance:</strong> ₱${parseFloat(oldestUnpaid.balance_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</li>
-                                </ul>
-                            </div>
-                        `,
-                        icon: 'warning',
-                        confirmButtonText: 'Okay',
-                        confirmButtonColor: '#f39c12',
-                        customClass: { popup: 'swal-wide' }
-                    });
-                    return; // Block opening payment modal
-                }
-            }
-        }
-    } catch (e) {
-        console.warn('FIFO pre-check failed:', e);
-    }
+    // Removed FIFO pre-check: allow paying any invoice for the customer
     $('#payment_ap_id').val(rowData.id);
     $('#payment_total_amount').text(formatCurrency(rowData.balance_amount));
     $('#payment_original_amount').text(formatCurrency(rowData.total_amount));
@@ -1412,33 +1368,7 @@ function setupEventHandlers() {
                 let errors = response?.errors;
                 let errorMessage = response?.message || 'Please check your input.';
                 
-                // Handle FIFO validation error with special styling
-                if (response?.fifo_violation && response?.older_invoice) {
-                    const olderInvoice = response.older_invoice;
-                    Swal.fire({
-                        title: 'Payment Order Violation!',
-                        html: `
-                            <div class="text-start">
-                                <p><strong>You must pay older invoices first.</strong></p>
-                                <hr>
-                                <p><strong>Older Unpaid Invoice:</strong></p>
-                                <ul class="list-unstyled ms-3">
-                                    <li><strong>Invoice #:</strong> ${olderInvoice.reference_number}</li>
-                                    <li><strong>Date:</strong> ${new Date(olderInvoice.date).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}</li>
-                                    <li><strong>Balance:</strong> ₱${parseFloat(olderInvoice.balance_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</li>
-                                </ul>
-                                <p class="text-muted small mt-3">Please settle this invoice first before proceeding with the current payment.</p>
-                            </div>
-                        `,
-                        icon: 'warning',
-                        confirmButtonText: 'Understood',
-                        confirmButtonColor: '#f39c12',
-                        customClass: {
-                            popup: 'swal-wide'
-                        }
-                    });
-                    return;
-                }
+                // Removed FIFO validation handling: backend no longer enforces payment order
                 
                 if (errors) {
                     errorMessage = Object.values(errors).flat().join('\n');

@@ -441,40 +441,9 @@ class AccountsReceivableController extends Controller
                 ], 422, [], JSON_UNESCAPED_UNICODE);
             }
 
-            // FIFO Payment Validation (per customer): enforce paying the oldest unpaid invoice first
-            $customerCode = $receivable->customer_code;
-            
-            // Get all accounts receivable for this customer with calculated balance amounts
-            $customerInvoices = AccountsReceivable::where('customer_code', $customerCode)
-                ->with('payments') // Load payments relationship for balance calculation
-                ->orderBy('date', 'asc')
-                ->orderBy('created_at', 'asc')
-                ->orderBy('id', 'asc')
-                ->get();
-            
-            // Filter to find the first unpaid invoice (balance > 0)
-            $firstUnpaid = null;
-            foreach ($customerInvoices as $invoice) {
-                $balanceAmount = $invoice->balance_amount; // This uses the accessor which calculates properly
-                if ($balanceAmount > 0) {
-                    $firstUnpaid = $invoice;
-                    break;
-                }
-            }
-
-            if ($firstUnpaid && $firstUnpaid->id !== $receivable->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment not allowed. You must collect payment for the oldest unpaid invoice first before processing newer ones.',
-                    'fifo_violation' => true,
-                    'older_invoice' => [
-                        'id' => $firstUnpaid->id,
-                        'reference_number' => $firstUnpaid->reference_number ?? $firstUnpaid->so_number,
-                        'date' => $firstUnpaid->date ? $firstUnpaid->date->format('Y-m-d') : null,
-                        'balance_amount' => $firstUnpaid->balance_amount
-                    ]
-                ], 422, [], JSON_UNESCAPED_UNICODE);
-            }
+            // Removed FIFO Payment Validation: allow paying any invoice order for this customer
+            // This change aligns AR behavior with Supplier Credit flexibility and enables
+            // auto CM application across invoices regardless of payment sequence.
 
             // Process payment amount - overpayments are now allowed
             $paymentAmount = $request->payment_amount;
@@ -624,6 +593,24 @@ class AccountsReceivableController extends Controller
             $message = 'Payment processed successfully';
             if ($creditMemo > 0) {
                 $message = 'Payment processed successfully. Overpayment of PHP ' . number_format($creditMemo, 2) . ' stored as Credit Memo.';
+
+                // Auto-apply credit memos to other outstanding invoices for this customer
+                // Mirrors the supplier/AP behavior: immediately distribute available credit
+                try {
+                    Log::info('AR payment generated credit memo, applying auto credit memos for customer', [
+                        'customer_code' => $receivable->customer_code,
+                        'credit_memo_generated' => $creditMemo,
+                        'source_reference' => $receivable->reference_number ?? $receivable->so_number ?? ('AR-' . $receivable->id)
+                    ]);
+                    // Use the internal method to apply credits for this specific customer
+                    $this->autoApplyCreditMemos($receivable->customer_code);
+                } catch (\Exception $e) {
+                    // Log any errors but do not fail the payment
+                    Log::error('Error applying AR auto credit memos after payment: ' . $e->getMessage(), [
+                        'customer_code' => $receivable->customer_code,
+                        'ar_id' => $receivable->id
+                    ]);
+                }
             }
 
             // Simplified response to avoid UTF-8 issues with complex objects
@@ -830,12 +817,179 @@ class AccountsReceivableController extends Controller
      */
     private function autoApplyCreditMemos($customerCode)
     {
-        // This would implement the logic to automatically apply credit memos
-        // Similar to the accounts payable system but for customers instead of suppliers
-        // For now, return empty result
-        return [
+        // Implements automatic application of overpayment credit memos to open AR invoices
+        // Mirrors the AP flow but uses AR fields and unified Payments table
+        $summary = [
             'applied_count' => 0,
-            'total_amount' => 0
+            'total_amount' => 0,
+            'customers_processed' => [],
         ];
+
+        try {
+            // Build base query of AR with total paid aggregation
+            $query = DB::table('tblAccountsReceivable as ar')
+                ->leftJoin('tblCustomer as c', 'ar.customer_code', '=', 'c.Customer')
+                ->leftJoin(DB::raw('(
+                    SELECT accounts_receivable_id, SUM(payment_amount) as total_paid 
+                    FROM tblPayments 
+                    WHERE accounts_receivable_id IS NOT NULL
+                    GROUP BY accounts_receivable_id
+                ) as payments'), 'ar.id', '=', 'payments.accounts_receivable_id')
+                ->select([
+                    'ar.id',
+                    'ar.date',
+                    'ar.customer_code',
+                    'ar.customer_name',
+                    'ar.so_number',
+                    'ar.reference_number',
+                    'ar.total_amount',
+                    'ar.terms',
+                    'ar.status',
+                    'ar.credit_generated',
+                    'ar.process_by',
+                    'ar.created_at',
+                    DB::raw('ISNULL(payments.total_paid, 0) as total_paid')
+                ]);
+
+            if (!empty($customerCode)) {
+                $query->where('ar.customer_code', $customerCode);
+            }
+
+            // Sort stable for sequential application
+            $records = $query->orderBy('ar.date', 'asc')
+                            ->orderBy('ar.id', 'asc')
+                            ->get();
+
+            if ($records->isEmpty()) {
+                return $summary; // Nothing to process
+            }
+
+            // Group by customer to apply credits within the same customer only
+            $byCustomer = $records->groupBy('customer_code');
+
+            foreach ($byCustomer as $custCode => $items) {
+                $sorted = $items->values();
+
+                // Build credit sources from AR records with credit_generated
+                $creditSources = [];
+                foreach ($sorted as $idx => $rec) {
+                    $creditAmount = floatval($rec->credit_generated ?? 0);
+                    if ($creditAmount > 0.0001) {
+                        // Compute used amount for this source via AUTO-CM payments tagged with the source reference
+                        $sourceRef = $rec->reference_number ?? $rec->so_number ?? ('AR-' . $rec->id);
+                        $usedAmount = Payment::whereNotNull('accounts_receivable_id')
+                            ->where('reference_number', 'AUTO-CM-' . $sourceRef)
+                            ->sum('payment_amount') ?? 0;
+
+                        $availableAmount = $creditAmount - floatval($usedAmount);
+                        if ($availableAmount > 0.0001) {
+                            $creditSources[] = [
+                                'source_index' => $idx,
+                                'source_id' => $rec->id,
+                                'source_reference' => $sourceRef,
+                                'available_amount' => $availableAmount,
+                                'original_amount' => $creditAmount,
+                            ];
+                        }
+                    }
+                }
+
+                // Apply credits sequentially: forward from source+1, then wrap to start
+                foreach ($creditSources as $creditSource) {
+                    $remaining = $creditSource['available_amount'];
+                    if ($remaining <= 0.0001) continue;
+
+                    // Forward pass
+                    for ($i = $creditSource['source_index'] + 1; $i < count($sorted) && $remaining > 0.0001; $i++) {
+                        $targetRec = $sorted[$i];
+                        // Skip if already settled
+                        if (($targetRec->status ?? '') === 'Settled') continue;
+
+                        // Compute current balance from DB to avoid stale total_paid
+                        $paid = Payment::where('accounts_receivable_id', $targetRec->id)->sum('payment_amount');
+                        $balance = floatval($targetRec->total_amount) - floatval($paid ?? 0);
+                        if ($balance <= 0.0001) continue;
+
+                        $apply = min($remaining, $balance);
+                        if ($apply > 0.0001) {
+                            // Create automatic payment
+                            $payment = Payment::create([
+                                'accounts_receivable_id' => $targetRec->id,
+                                'payment_amount' => $apply,
+                                'payment_type' => 'cash',
+                                'payment_status' => ($apply >= $balance) ? 'full' : 'partial',
+                                'payment_date' => now(),
+                                'reference_number' => 'AUTO-CM-' . $creditSource['source_reference'],
+                                'remarks' => 'Automatic credit memo application from ' . $creditSource['source_reference'],
+                                'process_by' => auth()->user()->name ?? 'System',
+                            ]);
+
+                            // Update AR status and balance fields
+                            $newBalance = max(0, $balance - $apply);
+                            $newStatus = ($newBalance <= 0.0001) ? 'Settled' : 'Outstanding';
+                            AccountsReceivable::where('id', $targetRec->id)->update([
+                                'status' => $newStatus,
+                                'current_balance' => $newBalance,
+                                'last_balance_update' => now(),
+                            ]);
+
+                            // Decrement remaining
+                            $remaining -= $apply;
+                            $summary['applied_count'] += 1;
+                            $summary['total_amount'] += $apply;
+                        }
+                    }
+
+                    // Wrap-around pass (apply to earlier invoices)
+                    for ($i = 0; $i < $creditSource['source_index'] && $remaining > 0.0001; $i++) {
+                        $targetRec = $sorted[$i];
+                        if (($targetRec->status ?? '') === 'Settled') continue;
+
+                        $paid = Payment::where('accounts_receivable_id', $targetRec->id)->sum('payment_amount');
+                        $balance = floatval($targetRec->total_amount) - floatval($paid ?? 0);
+                        if ($balance <= 0.0001) continue;
+
+                        $apply = min($remaining, $balance);
+                        if ($apply > 0.0001) {
+                            $payment = Payment::create([
+                                'accounts_receivable_id' => $targetRec->id,
+                                'payment_amount' => $apply,
+                                'payment_type' => 'cash',
+                                'payment_status' => ($apply >= $balance) ? 'full' : 'partial',
+                                'payment_date' => now(),
+                                'reference_number' => 'AUTO-CM-' . $creditSource['source_reference'],
+                                'remarks' => 'Automatic credit memo application from ' . $creditSource['source_reference'],
+                                'process_by' => auth()->user()->name ?? 'System',
+                            ]);
+
+                            $newBalance = max(0, $balance - $apply);
+                            $newStatus = ($newBalance <= 0.0001) ? 'Settled' : 'Outstanding';
+                            AccountsReceivable::where('id', $targetRec->id)->update([
+                                'status' => $newStatus,
+                                'current_balance' => $newBalance,
+                                'last_balance_update' => now(),
+                            ]);
+
+                            $remaining -= $apply;
+                            $summary['applied_count'] += 1;
+                            $summary['total_amount'] += $apply;
+                        }
+                    }
+                }
+
+                $summary['customers_processed'][] = $custCode;
+            }
+
+            // Round totals for neatness
+            $summary['total_amount'] = round($summary['total_amount'], 2);
+            return $summary;
+        } catch (\Exception $e) {
+            Log::error('AR Auto CM error: ' . $e->getMessage());
+            return [
+                'applied_count' => 0,
+                'total_amount' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 }
