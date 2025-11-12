@@ -1336,50 +1336,73 @@ function setupEventHandlers() {
             }
         }
         
-        // Show loading state
-        let submitBtn = $(this).find('button[type="submit"]');
+        // Confirm before submitting payment
+        const formEl = $(this);
+        let submitBtn = formEl.find('button[type="submit"]');
         let originalText = submitBtn.text();
-        submitBtn.prop('disabled', true).text('Processing...');
-        
-        $.ajax({
-            url: `/api/accounts-receivable/${id}/payment`,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            cache: false,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                'Accept': 'application/json; charset=utf-8'
-            },
-            beforeSend: function(xhr) {
-                // Ensure UTF-8 encoding
-                xhr.overrideMimeType('application/json; charset=utf-8');
-            },
-            success: function(response) {
-                if (response.success) {
-                    Swal.fire('Success!', response.message, 'success');
-                    $('#paymentModal').modal('hide');
-                    loadAccountsReceivableData(); // Reload data
-                }
-            },
-            error: function(xhr) {
-                let response = xhr.responseJSON;
-                let errors = response?.errors;
-                let errorMessage = response?.message || 'Please check your input.';
+
+        Swal.fire({
+            icon: 'question',
+            title: 'Confirm Payment',
+            text: 'Are you sure you want to confirm this payment?',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, confirm',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state and proceed with submission
+                submitBtn.prop('disabled', true).text('Processing...');
                 
-                // Removed FIFO validation handling: backend no longer enforces payment order
-                
-                if (errors) {
-                    errorMessage = Object.values(errors).flat().join('\n');
-                }
-                
-                Swal.fire('Error!', errorMessage, 'error');
-            },
-            complete: function() {
-                // Reset button state
-                submitBtn.prop('disabled', false).text(originalText);
+                // Show loading banner (copied from Accounts Payable implementation)
+                showPaymentLoadingBanner();
+                // Disable submit button inside modal to prevent double submission
+                $('#paymentModal button[type="submit"]').prop('disabled', true);
+
+                $.ajax({
+                    url: `/api/accounts-receivable/${id}/payment`,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    cache: false,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                        'Accept': 'application/json; charset=utf-8'
+                    },
+                    beforeSend: function(xhr) {
+                        // Ensure UTF-8 encoding
+                        xhr.overrideMimeType('application/json; charset=utf-8');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire('Success!', response.message, 'success');
+                            $('#paymentModal').modal('hide');
+                            loadAccountsReceivableData(); // Reload data
+                        }
+                    },
+                    error: function(xhr) {
+                        let response = xhr.responseJSON;
+                        let errors = response?.errors;
+                        let errorMessage = response?.message || 'Please check your input.';
+
+                        // Removed FIFO validation handling: backend no longer enforces payment order
+
+                        if (errors) {
+                            errorMessage = Object.values(errors).flat().join('\n');
+                        }
+
+                        Swal.fire('Error!', errorMessage, 'error');
+                    },
+                    complete: function() {
+                        // Reset button state
+                        submitBtn.prop('disabled', false).text(originalText);
+                        $('#paymentModal button[type="submit"]').prop('disabled', false);
+                        // Hide loading banner
+                        hidePaymentLoadingBanner();
+                    }
+                });
             }
+            // If cancelled, do nothing and keep the form untouched
         });
     });
 
@@ -1768,6 +1791,119 @@ function setupEventHandlers() {
     });
 
     // Hover styles are now handled in initAccountsPayableDataTable()
+}
+
+// Loading banner functions for payment submission (copied from Accounts Payable)
+function showPaymentLoadingBanner() {
+    // Remove any existing loading banner
+    hidePaymentLoadingBanner();
+    
+    // Create loading banner HTML
+    const loadingHTML = `
+        <div id="paymentLoadingBanner" class="payment-loading-overlay">
+            <div class="payment-loading-content">
+                <div class="payment-loading-spinner"></div>
+                <div class="payment-loading-text">
+                    <h4>Processing Payment...</h4>
+                    <p>Please wait while we process your payment request.</p>
+                    <div class="payment-loading-dots">
+                        <span>.</span><span>.</span><span>.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add to body
+    $('body').append(loadingHTML);
+    
+    // Add loading styles if not already present
+    if (!$('#payment-loading-styles').length) {
+        const loadingStyles = `
+            <style id="payment-loading-styles">
+                .payment-loading-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.7);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                    backdrop-filter: blur(3px);
+                }
+                
+                .payment-loading-content {
+                    background: white;
+                    padding: 40px;
+                    border-radius: 15px;
+                    text-align: center;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                    max-width: 400px;
+                    width: 90%;
+                }
+                
+                .payment-loading-spinner {
+                    width: 60px;
+                    height: 60px;
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #007bff;
+                    border-radius: 50%;
+                    animation: payment-spin 1s linear infinite;
+                    margin: 0 auto 20px auto;
+                }
+                
+                @keyframes payment-spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                
+                .payment-loading-text h4 {
+                    color: #333;
+                    margin: 0 0 10px 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                }
+                
+                .payment-loading-text p {
+                    color: #666;
+                    margin: 0 0 15px 0;
+                    font-size: 16px;
+                }
+                
+                .payment-loading-dots {
+                    font-size: 20px;
+                    color: #007bff;
+                }
+                
+                .payment-loading-dots span {
+                    animation: payment-blink 1.4s infinite both;
+                }
+                
+                .payment-loading-dots span:nth-child(2) {
+                    animation-delay: 0.2s;
+                }
+                
+                .payment-loading-dots span:nth-child(3) {
+                    animation-delay: 0.4s;
+                }
+                
+                @keyframes payment-blink {
+                    0%, 80%, 100% { opacity: 0; }
+                    40% { opacity: 1; }
+                }
+            </style>
+        `;
+        $('head').append(loadingStyles);
+    }
+}
+
+function hidePaymentLoadingBanner() {
+    $('#paymentLoadingBanner').fadeOut(300, function() {
+        $(this).remove();
+    });
 }
 
 // Helper functions

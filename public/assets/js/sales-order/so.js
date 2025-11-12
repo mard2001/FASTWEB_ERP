@@ -25,6 +25,7 @@ var priceCache = new Map();
 var inventoryCache = new Map();
 var debounceTimer = null;
 var currentStockCodeRequest = null;
+var isStockCodeLoading = false;
 
 // FOR THE MEANTIME
 selectedVendor = {
@@ -1028,7 +1029,14 @@ const initVS = {
         if (warehouse) {
             endpoint = `api/inv/transfer/warehouse/inventory/${warehouse}`;
         }
-        
+        isStockCodeLoading = true;
+        if (document.querySelector("#StockCode")?.virtualSelect) {
+            document.querySelector("#StockCode").disable();
+            document.querySelector("#StockCode").reset();
+        } else {
+            $('#StockCode').css('pointer-events', 'none').text('Loading stock codes...');
+        }
+
         await ajax(endpoint, "GET", null,
           (response) => {
             let products;
@@ -1051,6 +1059,8 @@ const initVS = {
             }
 
             // Initialize VirtualSelect
+            $('#StockCode').empty();
+            $('#StockCode').css('pointer-events', '');
             VirtualSelect.init({
                 ele: "#StockCode", // Attach to the element
                 options: newData, // Provide options
@@ -1064,7 +1074,12 @@ const initVS = {
                 additionalToggleButtonClasses: 'rounded ModalFieldCustomVS',
             });
 
-            $("#StockCode").on("afterClose", async function () {
+            isStockCodeLoading = false;
+            if (document.querySelector("#StockCode")?.virtualSelect) {
+                document.querySelector("#StockCode").enable();
+            }
+
+            $("#StockCode").off('afterClose').on("afterClose", async function () {
                 if (this.value) {
                     const stockCode = this.value;
                     var findProduct = products.find(
@@ -1090,7 +1105,7 @@ const initVS = {
                 }
             });
 
-            $("#StockCode").on("reset", function () {
+            $("#StockCode").off('reset').on("reset", function () {
                 $("#Decription").val("");
                 $("#PricePerUnit").val("");
                 clearInventoryAvailability();
@@ -1099,6 +1114,8 @@ const initVS = {
           (xhr, status, error) => {
             // Error callback
             console.error("Error:", error);
+            isStockCodeLoading = false;
+            $('#StockCode').css('pointer-events', '').text('Failed to load stock codes');
           }
         );
     },
@@ -1584,6 +1601,20 @@ const SOItemsModal = {
         } else {
             initVS.bigDataVS();
         }
+
+        $('#StockCode').off('click.loadingGuard').on('click.loadingGuard', function(e){
+            if (isStockCodeLoading) {
+                e.preventDefault();
+                e.stopPropagation();
+                Swal.fire({
+                    title: 'Loading…',
+                    text: 'Stock codes are loading. Please wait.',
+                    icon: 'info',
+                    timer: 900,
+                    showConfirmButton: false
+                });
+            }
+        });
         
         $('#itemModal').modal('show');
     },

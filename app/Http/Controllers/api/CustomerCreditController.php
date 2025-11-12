@@ -565,21 +565,7 @@ class CustomerCreditController extends Controller
 
             $user = auth()->user();
             $totalRecords = $transactions->count();
-            return response()->json([
-                'success' => true,
-                'message' => 'Customer statement data prepared',
-                'data' => [
-                    'customer' => [
-                        'code' => $customer->Customer,
-                        'name' => $customer->Name,
-                        'contact_person' => $customer->ContactPerson ?? '-',
-                        'contact_number' => $customer->ContactNo ?? '-',
-                    ],
-                    'transactions' => $transactions,
-                    'user' => $user ? ['name' => $user->name] : null,
-                    'total_records' => $totalRecords,
-                ]
-            ]);
+            return view('Pages.Printing.customer_statement_print', compact('customer', 'transactions', 'user', 'totalRecords'));
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -702,7 +688,7 @@ class CustomerCreditController extends Controller
                     if ($item['paid'] > 0) {
                         $initialBalance -= $item['paid'];
                     }
-                    $invoiceBalances[$item['rr_number']] = $initialBalance;
+                    $invoiceBalances[$item['so_number']] = $initialBalance;
                 }
             }
             
@@ -715,9 +701,9 @@ class CustomerCreditController extends Controller
                     // Update status based on individual invoice balance
                     if ($item['paid'] > 0) {
                         // Has auto credit memo applied
-                        $transactionArray[$index]['status'] = $invoiceBalances[$item['rr_number']] > 0 ? 'Credit Applied' : 'Fully Paid';
+                        $transactionArray[$index]['status'] = $invoiceBalances[$item['so_number']] > 0 ? 'Credit Applied' : 'Fully Paid';
                     } else {
-                        $transactionArray[$index]['status'] = $invoiceBalances[$item['rr_number']] > 0 ? 'Pending' : 'Paid';
+                        $transactionArray[$index]['status'] = $invoiceBalances[$item['so_number']] > 0 ? 'Pending' : 'Paid';
                     }
                 } elseif ($item['type'] === 'payment') {
                     // For payments, subtract from the specific invoice and show the remaining balance
@@ -725,7 +711,7 @@ class CustomerCreditController extends Controller
                     $transactionArray[$index]['balance'] = $invoiceBalances[$item['so_number']];
                     
                     // Update status based on individual invoice balance
-                    $transactionArray[$index]['status'] = $invoiceBalances[$item['rr_number']] <= 0 ? 'Fully Paid' : 'Partial Payment';
+                    $transactionArray[$index]['status'] = $invoiceBalances[$item['so_number']] <= 0 ? 'Fully Paid' : 'Partial Payment';
                 } elseif ($item['type'] === 'credit_memo') {
                     // Credit memos show negative balance (credit available)
                     $transactionArray[$index]['balance'] = -$item['credit_memo'];
@@ -739,22 +725,8 @@ class CustomerCreditController extends Controller
 
             $user = auth()->user();
             $totalRecords = $pendingTransactions->count();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Customer counter receipt data prepared',
-                'data' => [
-                    'customer' => [
-                        'code' => $customer->Customer,
-                        'name' => $customer->Name,
-                        'contact_person' => $customer->ContactPerson ?? '-',
-                        'contact_number' => $customer->ContactNo ?? '-',
-                    ],
-                    'transactions' => $pendingTransactions,
-                    'user' => $user ? ['name' => $user->name] : null,
-                    'total_records' => $totalRecords,
-                ]
-            ]);
+            // Always pass the collection, even if empty - the template will handle the display
+            return view('Pages.Printing.customer_counter_receipt_print', compact('customer', 'pendingTransactions', 'user', 'totalRecords'));
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

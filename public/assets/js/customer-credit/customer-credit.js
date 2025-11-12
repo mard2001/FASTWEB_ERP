@@ -625,6 +625,7 @@ function populateModal(data) {
                 rowClass = 'table-success';
                 rowStyle = 'font-style: italic; border-left: 4px solid #28a745;';
             } else if (isPayment) {
+                // Default styling for payments; may be overridden inside payment branch
                 rowClass = hasCredit ? 'table-warning' : 'table-info';
                 rowStyle = hasCredit ? 
                     'font-style: italic; background-color: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107;' : 
@@ -648,25 +649,44 @@ function populateModal(data) {
             } else if (isPayment) {
                 // Regular payment
                 const paymentAmount = parseFloat(transaction.payment_amount);
-                if (hasCredit) {
-                    // Mirror supplier logic: show negative balance when payment causes overpayment
-                    const tempBalance = cumulativeBalance - paymentAmount;
+                const EPS = 1e-6;
+                const tempBalance = cumulativeBalance - paymentAmount;
+
+                // Treat payments that push balance below zero as CM-involved, even if backend flag is missing
+                const paidWithCM = hasCredit || (tempBalance < -EPS);
+
+                if (paidWithCM) {
+                    // Ensure row is visually highlighted as CM-related
+                    rowClass = 'table-warning';
+                    rowStyle = 'font-style: italic; background-color: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107;';
+
+                    // Show negative overage on this row and clamp cumulative to 0
                     if (tempBalance < 0) {
-                        displayBalanceOverride = tempBalance; // show negative overage on this row
-                        cumulativeBalance = 0; // keep cumulative at 0 to prevent double counting
+                        displayBalanceOverride = tempBalance;
+                        cumulativeBalance = 0;
                     } else {
                         cumulativeBalance -= paymentAmount;
                     }
-                    descriptionText = transaction.description || 'Payment with Credit Memo';
-                    // Use yellow badge per AR UX expectation
+
+                    // Prefer backend description; otherwise append with CM
+                    const backendDesc = transaction.description || '';
+                    if (backendDesc && backendDesc.toLowerCase().includes('with cm')) {
+                        descriptionText = backendDesc;
+                    } else {
+                        descriptionText = `Payment - ${transaction.payment_type || 'Cash'} with CM`;
+                    }
                     statusBadge = '<span class="badge bg-warning">Paid with CM</span>';
                 } else {
+                    // Non-CM payment styling
+                    rowClass = 'table-info';
+                    rowStyle = 'font-style: italic;';
+
                     cumulativeBalance -= paymentAmount;
                     descriptionText = `Payment - ${transaction.payment_type || 'Cash'}`;
                     // Defer to backend status when available; fallback based on balance
                     const isFullyPaid = (transaction.status && transaction.status.toLowerCase().includes('fully')) || cumulativeBalance <= 0;
-                    statusBadge = isFullyPaid ? 
-                        '<span class="badge bg-success">Fully Paid</span>' : 
+                    statusBadge = isFullyPaid ?
+                        '<span class="badge bg-success">Fully Paid</span>' :
                         '<span class="badge bg-info">Payment Made</span>';
                 }
 
