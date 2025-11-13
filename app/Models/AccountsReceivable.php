@@ -65,6 +65,22 @@ class AccountsReceivable extends Model
     }
 
     /**
+     * AR credit memo applications where this AR is the source (generated credit).
+     */
+    public function arCreditMemoApplicationsAsSource()
+    {
+        return $this->hasMany(\App\Models\ARCreditMemoApplication::class, 'source_ar_id', 'id');
+    }
+
+    /**
+     * AR credit memo applications where this AR is the target (received credit).
+     */
+    public function arCreditMemoApplicationsAsTarget()
+    {
+        return $this->hasMany(\App\Models\ARCreditMemoApplication::class, 'target_ar_id', 'id');
+    }
+
+    /**
      * Get the balance amount (calculated field based on total payments)
      */
     public function getBalanceAmountAttribute()

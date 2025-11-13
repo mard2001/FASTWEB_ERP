@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Event;
 use App\Events\Inventory\InventoryMovement;
 use App\Events\Inventory\InventoryWarehouse;
 use App\Models\AccountsReceivable;
+use App\Models\Payment;
+use App\Models\ARCreditMemoApplication;
 
 class SOMasterController extends Controller
 {
@@ -772,7 +774,7 @@ class SOMasterController extends Controller
                     $customer = Customer::where('Customer', $data->Customer)->first();
                     
                     // Create the accounts receivable record
-                    AccountsReceivable::create([
+                    $newAR = AccountsReceivable::create([
                         'date' => now()->format('Y-m-d'),
                         'customer_code' => $data->Customer,
                         'customer_name' => $customer ? $customer->Name : $data->CustomerName,
@@ -784,6 +786,90 @@ class SOMasterController extends Controller
                         'remarks' => 'Auto-generated from completed Sales Order',
                         'process_by' => $request->lastOperator ?? 'system'
                     ]);
+
+                    // Mirror AP RR flow: apply available customer credit memos to THIS new invoice
+                    try {
+                        // Build target reference for descriptive notes/remarks
+                        $targetRef = $newAR->reference_number ?? $newAR->so_number ?? ('AR-' . $newAR->id);
+
+                        // Determine current balance of the new AR
+                        $paidOnNew = Payment::where('accounts_receivable_id', $newAR->id)->sum('payment_amount');
+                        $newArBalance = max(0, floatval($newAR->total_amount) - floatval($paidOnNew ?? 0));
+
+                        if ($newArBalance > 0.0001) {
+                            // Fetch all AR records for this customer that generated credits
+                            $creditRecords = AccountsReceivable::where('customer_code', $newAR->customer_code)
+                                ->where(function($q) {
+                                    $q->whereNotNull('credit_generated')
+                                      ->where('credit_generated', '>', 0);
+                                })
+                                ->orderBy('date', 'asc')
+                                ->orderBy('id', 'asc')
+                                ->get(['id', 'reference_number', 'so_number', 'credit_generated']);
+
+                            foreach ($creditRecords as $src) {
+                                if ($newArBalance <= 0.0001) break;
+
+                                $sourceRef = $src->reference_number ?? $src->so_number ?? ('AR-' . $src->id);
+                                // Compute already used amount for this source
+                                $usedAmount = Payment::whereNotNull('accounts_receivable_id')
+                                    ->where('reference_number', 'AUTO-CM-' . $sourceRef)
+                                    ->sum('payment_amount') ?? 0;
+
+                                $available = floatval($src->credit_generated ?? 0) - floatval($usedAmount);
+                                if ($available <= 0.0001) continue;
+
+                                $apply = min($available, $newArBalance);
+                                if ($apply > 0.0001) {
+                                    // Create automatic payment toward the new invoice
+                                    Payment::create([
+                                        'accounts_receivable_id' => $newAR->id,
+                                        'payment_amount' => $apply,
+                                        'payment_type' => 'cash',
+                                        'payment_status' => ($apply >= $newArBalance) ? 'full' : 'partial',
+                                        'payment_date' => now(),
+                                        'reference_number' => 'AUTO-CM-' . $sourceRef,
+                                        'remarks' => 'Automatic credit memo application from ' . $sourceRef . ' to new invoice ' . $targetRef,
+                                        'process_by' => $request->lastOperator ?? (auth()->user()->name ?? 'System'),
+                                    ]);
+
+                                    // Record AR credit memo application entry (new invoice case)
+                                    try {
+                                        ARCreditMemoApplication::create([
+                                            'source_ar_id' => $src->id,
+                                            'target_ar_id' => $newAR->id,
+                                            'credit_amount' => $apply,
+                                            'application_date' => now(),
+                                            'created_by' => auth()->id(),
+                                            'notes' => 'Automatic credit memo application from ' . $sourceRef . ' to new invoice ' . $targetRef,
+                                            'status' => 'Applied',
+                                        ]);
+                                    } catch (\Exception $e) {
+                                        Log::warning('Failed to record AR CM application (new invoice)', [
+                                            'error' => $e->getMessage(),
+                                            'source_ar_id' => $src->id,
+                                            'target_ar_id' => $newAR->id,
+                                            'amount' => $apply,
+                                        ]);
+                                    }
+
+                                    // Update running balance and status of the new AR
+                                    $newArBalance = max(0, $newArBalance - $apply);
+                                    $newStatus = ($newArBalance <= 0.0001) ? 'Settled' : 'Outstanding';
+                                    $newAR->status = $newStatus;
+                                    $newAR->current_balance = $newArBalance;
+                                    $newAR->last_balance_update = now();
+                                    $newAR->save();
+                                }
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // Do not fail SO completion if auto-apply fails; just log
+                        Log::error('Error applying AR auto credit memos to new invoice: ' . $e->getMessage(), [
+                            'customer_code' => $data->Customer ?? null,
+                            'ar_id' => isset($newAR) ? $newAR->id : null,
+                        ]);
+                    }
                 } catch (\Exception $arException) {
                     // Log the error but don't fail the SO completion
                     Log::error('Failed to create Accounts Receivable for SO ' . $data->SalesOrder . ': ' . $arException->getMessage());

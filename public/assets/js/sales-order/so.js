@@ -23,9 +23,13 @@ var warehouseData = [];
 // Cache and debouncing variables
 var priceCache = new Map();
 var inventoryCache = new Map();
-var debounceTimer = null;
-var currentStockCodeRequest = null;
-var isStockCodeLoading = false;
+  var debounceTimer = null;
+  var currentStockCodeRequest = null;
+  var isStockCodeLoading = false;
+  // Holds a stock code that should be applied after VirtualSelect reinitializes
+  var pendingStockCodeSelection = null;
+  // Tracks whether the item modal is in edit mode vs add-new mode
+  var isItemEditingFlow = false;
 
 // FOR THE MEANTIME
 selectedVendor = {
@@ -414,6 +418,8 @@ $(document).ready(async function () {
 
         $(".UOMField").addClass("d-none");
         $("#itemSave").text("Save Item");
+        // Ensure we are in add-new item flow
+        isItemEditingFlow = false;
         SOItemsModal.show();
 
         $("#itemEdit").hide();
@@ -559,16 +565,11 @@ $(document).ready(async function () {
         $("#IBQuantity").val("");
         $("#PCQuantity").val("");
 
+        // Enter edit-item flow and request that the stock code remains selected after VS reload
+        isItemEditingFlow = true;
+        pendingStockCodeSelection = itemStockCode;
+
         SOItemsModal.show();
-
-        const select = document.querySelector("#StockCode");
-
-        // Set value programmatically
-        select.setValue(itemStockCode);
-
-        // Manually trigger the `afterClose` event
-        const event = new CustomEvent("afterClose");
-        select.dispatchEvent(event);
     });
 
 });
@@ -1110,6 +1111,37 @@ const initVS = {
                 $("#PricePerUnit").val("");
                 clearInventoryAvailability();
             });
+
+            // If an edit action requested to keep a specific stock code selected,
+            // apply the selection AFTER VirtualSelect is ready. If the item is
+            // not available in the warehouse's product list, fallback to loading
+            // the general product list and try again.
+            if (pendingStockCodeSelection) {
+                const desired = pendingStockCodeSelection;
+                const existsInCurrent = Array.isArray(products) && products.some(p => p.StockCode === desired);
+                if (existsInCurrent) {
+                    const select = document.querySelector("#StockCode");
+                    if (select?.virtualSelect) {
+                        select.setValue(desired);
+                        const event = new CustomEvent("afterClose");
+                        select.dispatchEvent(event);
+                        pendingStockCodeSelection = null;
+                    }
+                } else if (warehouse) {
+                    Swal.fire({
+                        title: 'Not in warehouse',
+                        text: 'Item not found in selected warehouse. Showing all products.',
+                        icon: 'info',
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
+                    // Try again with all products; keep pendingStockCodeSelection intact
+                    initVS.bigDataVS();
+                } else {
+                    // No warehouse filter and still not found; clear pending to avoid loops
+                    pendingStockCodeSelection = null;
+                }
+            }
           },
           (xhr, status, error) => {
             // Error callback
@@ -1253,12 +1285,12 @@ const SOModal = {
         return $("#modalFields").valid();
     },
     show: () => {
-        // Clear validation states and error messages before showing modal
-        if ($("#modalFields").data('validator')) {
-            $("#modalFields").validate().resetForm();
-            $("#modalFields").find('.is-invalid').removeClass('is-invalid');
-            $("#modalFields").find('.invalid-feedback').remove();
-            $("#modalFields").find('.error').removeClass('error');
+        // Clear validation states and error messages on the item modal
+        if ($("#itemModalFields").data('validator')) {
+            $("#itemModalFields").validate().resetForm();
+            $("#itemModalFields").find('.is-invalid').removeClass('is-invalid');
+            $("#itemModalFields").find('.invalid-feedback').remove();
+            $("#itemModalFields").find('.error').removeClass('error');
         }
         $('#salesOrderMainModal').modal('show');
     },
@@ -2339,6 +2371,15 @@ function handlePriceResponse(response, stockCode, products) {
         console.log(productConFact);
 
         $("#PricePerUnit").val(response.response.UNITPRICE);
+
+        // Ensure any prior validation errors are cleared after auto-population
+        if ($("#itemModalFields").data('validator')) {
+            $("#itemModalFields").validate().resetForm();
+            $("#itemModalFields").find('.is-invalid').removeClass('is-invalid');
+            $("#itemModalFields").find('.invalid-feedback').remove();
+            $("#itemModalFields").find('.error').removeClass('error');
+        }
+
         $("#itemSave").prop("disabled", false);
 
         // Fetch and display inventory availability with debouncing
@@ -2347,11 +2388,13 @@ function handlePriceResponse(response, stockCode, products) {
         const isAlreadyExist = itemTmpSave.find(
             (item) => item.MStockCode == stockCode
         );
-        
-        if (isAlreadyExist) {
+
+        // Only auto-populate quantities when explicitly in edit-item flow.
+        if (isItemEditingFlow && isAlreadyExist) {
             selectedItem = isAlreadyExist;
             SOItemsModal.itemEditMode(uoms, isAlreadyExist);
         } else {
+            // Add-new flow: keep quantities blank and ensure Save Item
             if ($("#itemSave").text().toLowerCase() == "update item") {
                 $("#itemSave").text("Save Item");
             }

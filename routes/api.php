@@ -51,6 +51,7 @@ use App\Http\Controllers\api\BankController;
 use App\Http\Controllers\api\GcashController;
 use App\Http\Controllers\api\SupplierCreditController;
 use App\Http\Controllers\api\CustomerCreditController;
+use App\Http\Controllers\api\AccountsReceivable\ARCreditMemoApplicationController;
 
 
 Route::middleware(['auth:sanctum', 'check.user.status', DynamicDatabase::class])->group(function () {
@@ -151,6 +152,11 @@ Route::middleware(['auth:sanctum', 'check.user.status'])->group(function () {
 
         Route::apiResource('/v2/countsheet', CountController::class);
         Route::post('/v2/countsheet/confirm/{headerID}', [CountController::class, 'confirm']);
+    });
+
+    // Accounts Receivable - Credit Memo Applications
+    Route::prefix('ar')->group(function () {
+        Route::get('/credit-memos', [ARCreditMemoApplicationController::class, 'index']);
     });
 
     Route::prefix('inv')->group(function () {

@@ -912,6 +912,9 @@ class AccountsReceivableController extends Controller
 
                         $apply = min($remaining, $balance);
                         if ($apply > 0.0001) {
+                            // Build target reference for descriptive notes/remarks
+                            $targetRef = $targetRec->reference_number ?? $targetRec->so_number ?? ('AR-' . $targetRec->id);
+
                             // Create automatic payment
                             $payment = Payment::create([
                                 'accounts_receivable_id' => $targetRec->id,
@@ -920,9 +923,29 @@ class AccountsReceivableController extends Controller
                                 'payment_status' => ($apply >= $balance) ? 'full' : 'partial',
                                 'payment_date' => now(),
                                 'reference_number' => 'AUTO-CM-' . $creditSource['source_reference'],
-                                'remarks' => 'Automatic credit memo application from ' . $creditSource['source_reference'],
+                                'remarks' => 'Sequential automatic credit memo application from ' . $creditSource['source_reference'] . ' to ' . $targetRef,
                                 'process_by' => auth()->user()->name ?? 'System',
                             ]);
+
+                            // Record AR credit memo application entry
+                            try {
+                                \App\Models\ARCreditMemoApplication::create([
+                                    'source_ar_id' => $creditSource['source_id'],
+                                    'target_ar_id' => $targetRec->id,
+                                    'credit_amount' => $apply,
+                                    'application_date' => now(),
+                                    'created_by' => auth()->id(),
+                                    'notes' => 'Sequential automatic credit memo application from ' . $creditSource['source_reference'] . ' to ' . $targetRef,
+                                    'status' => 'Applied',
+                                ]);
+                            } catch (\Exception $e) {
+                                Log::warning('Failed to record AR CM application', [
+                                    'error' => $e->getMessage(),
+                                    'source_ar_id' => $creditSource['source_id'],
+                                    'target_ar_id' => $targetRec->id,
+                                    'amount' => $apply,
+                                ]);
+                            }
 
                             // Update AR status and balance fields
                             $newBalance = max(0, $balance - $apply);
@@ -951,6 +974,9 @@ class AccountsReceivableController extends Controller
 
                         $apply = min($remaining, $balance);
                         if ($apply > 0.0001) {
+                            // Build target reference for descriptive notes/remarks
+                            $targetRef = $targetRec->reference_number ?? $targetRec->so_number ?? ('AR-' . $targetRec->id);
+
                             $payment = Payment::create([
                                 'accounts_receivable_id' => $targetRec->id,
                                 'payment_amount' => $apply,
@@ -958,9 +984,29 @@ class AccountsReceivableController extends Controller
                                 'payment_status' => ($apply >= $balance) ? 'full' : 'partial',
                                 'payment_date' => now(),
                                 'reference_number' => 'AUTO-CM-' . $creditSource['source_reference'],
-                                'remarks' => 'Automatic credit memo application from ' . $creditSource['source_reference'],
+                                'remarks' => 'Wrap-around automatic credit memo application from ' . $creditSource['source_reference'] . ' to ' . $targetRef,
                                 'process_by' => auth()->user()->name ?? 'System',
                             ]);
+
+                            // Record AR credit memo application entry (wrap pass)
+                            try {
+                                \App\Models\ARCreditMemoApplication::create([
+                                    'source_ar_id' => $creditSource['source_id'],
+                                    'target_ar_id' => $targetRec->id,
+                                    'credit_amount' => $apply,
+                                    'application_date' => now(),
+                                    'created_by' => auth()->id(),
+                                    'notes' => 'Wrap-around automatic credit memo application from ' . $creditSource['source_reference'] . ' to ' . $targetRef,
+                                    'status' => 'Applied',
+                                ]);
+                            } catch (\Exception $e) {
+                                Log::warning('Failed to record AR CM application (wrap)', [
+                                    'error' => $e->getMessage(),
+                                    'source_ar_id' => $creditSource['source_id'],
+                                    'target_ar_id' => $targetRec->id,
+                                    'amount' => $apply,
+                                ]);
+                            }
 
                             $newBalance = max(0, $balance - $apply);
                             $newStatus = ($newBalance <= 0.0001) ? 'Settled' : 'Outstanding';
