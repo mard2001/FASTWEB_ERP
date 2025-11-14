@@ -4,8 +4,8 @@
             <i class="fa-solid fa-bars"></i>
         </button>
         <div class="sidebar-logo">
-            <img src="{{ asset('assets/resources/ERP_header3t.png') }}" alt="FASET ERP" style="height: 65px;">
-
+            <img src="{{ asset('assets/resources/ERP_header4t.svg') }}" alt="FASET ERP" style="height: 40px;">
+                
             {{-- <a href="#">FAST ERP </a> --}}
         </div>
     </div>

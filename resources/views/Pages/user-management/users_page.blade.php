@@ -24,10 +24,6 @@
             <div class="VSLabel">STATUS</div>
             <div id="userStatus_VS" class="VSSelect"></div>
         </div>
-        <div class="mb-1 mx-3" style="width: 250px;">
-            <div class="VSLabel">SEARCH USER</div>
-            <input type="text" class="form-control" id="searchUser" placeholder="Search by name or email">
-        </div>
     </div>
 </div>
 @endsection

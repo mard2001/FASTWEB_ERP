@@ -21,10 +21,6 @@
             </div>
         </div>
         <div class="mb-1 whMoverangeDiv">
-            <label class="form-label">SUPPLIER/CUSTOMER</label>
-            <div id="supplierFilter_VS" class="VSSelect"></div>
-        </div>
-        <div class="mb-1 whMoverangeDiv">
             <label class="form-label">PAYMENT STATUS</label>
             <div id="paymentStatusFilter_VS" class="VSSelect"></div>
         </div>

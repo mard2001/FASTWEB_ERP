@@ -85,77 +85,8 @@
             </div>
         </div>
         <div class="mb-1 whMoverangeDiv">
-            <label class="form-label">SO NUMBER</label>
-            <div id="dateRange" style="background: var(--background-color, #fff); cursor: pointer; padding: 8px 12px; border-radius: 0.375rem; width: 100%">
-                <input type="text" id="soNumberFilter" placeholder="Enter SO number">
-            </div>
-        </div>
-        <div class="mb-1 whMoverangeDiv">
-            <label class="form-label">CUSTOMER</label>
-            <div id="customerFilter_VS" class="VSSelect"></div>
-        </div>
-        <div class="mb-1 whMoverangeDiv">
             <label class="form-label">STATUS</label>
             <div id="statusFilter_VS" class="VSSelect"></div>
-        </div>
-    </div>
-</div>
-@endsection
-
-@section('mini_dashboard_chart')
-<div class="">
-    <div class="row gx-2 mb-1">
-        <div class="col-sm-12 col-md-3">
-            <div class="containerStyle">
-                <div class="d-flex mx-3 stockIn">
-                    <div class="iconDiv align-middle">
-                        <span class='mdi mdi-currency-php'></span>
-                    </div>
-                    <div class="contentDiv">
-                        <span class="contentTitle">Total Outstanding</span>
-                        <p class="contentValue" id="total-outstanding">₱--- Outstanding</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-12 col-md-3">
-            <div class="containerStyle">
-                <div class="d-flex mx-3 stockOut">
-                    <div class="iconDiv align-middle">
-                        <span class='mdi mdi-check'></span>
-                    </div>
-                    <div class="contentDiv">
-                        <span class="contentTitle">Total Settled</span>
-                        <p class="contentValue" id="total-invoices">₱--- Settled</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-12 col-md-3">
-            <div class="containerStyle">
-                <div class="d-flex mx-3 totalProfit">
-                    <div class="iconDiv align-middle">
-                        <span class='mdi mdi-clock-alert'></span>
-                    </div>
-                    <div class="contentDiv">
-                        <span class="contentTitle">Overdue Amount</span>
-                        <p class="contentValue" id="total-credit">₱--- Overdue</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-12 col-md-3">
-            <div class="containerStyle">
-                <div class="d-flex mx-3 availableStock">
-                    <div class="iconDiv align-middle">
-                        <span class='mdi mdi-format-list-numbered'></span>
-                    </div>
-                    <div class="contentDiv">
-                        <span class="contentTitle">Total Records</span>
-                        <p class="contentValue" id="total-records">--- Records</p>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
