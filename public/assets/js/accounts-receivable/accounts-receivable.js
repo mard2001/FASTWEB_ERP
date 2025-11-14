@@ -687,12 +687,17 @@ function fillAccountsReceivableModal(data) {
     $('#balance_amount').val(formatNumberWithCommas(balanceAmount));
     
     $('#remarks').val(data.remarks || '');
-    
+
     // Calculate and set Total Paid (Total Amount - Balance Amount)
     const totalAmount = parseFloat(data.total_amount || 0);
     const balanceAmountForCalculation = parseFloat(balanceAmount || 0);
     const totalPaid = totalAmount - balanceAmountForCalculation;
     $('#total_paid').val(formatNumberWithCommas(totalPaid.toFixed(2)));
+
+    // Set Credit Memo amount; default to 0.00 if none
+    const creditMemoRaw = (data.CreditMemo !== undefined ? data.CreditMemo : data.credit_memo);
+    const creditMemoAmount = parseFloat(creditMemoRaw || 0);
+    $('#credit_memo').val(formatNumberWithCommas(creditMemoAmount.toFixed(2)));
     
     // Control balance amount visibility based on status
     const status = data.status || '';
@@ -809,6 +814,8 @@ function showPaymentModal(rowData) {
     resetGcashFields();
     resetCashFields();
     resetCheckFields();
+    $('#pay_by_check').prop('checked', false).prop('disabled', true);
+    $('label[for="pay_by_check"]').html('Pay by Check <small class="text-muted">(Select a bank first)</small>');
     
     // Load banks data and populate dropdown
     loadBanksDataForModal();
@@ -831,8 +838,6 @@ function resetCheckFields() {
     $('#check_number').val('');
     $('#check_amount_display').val('');
     $('#check_amount_in_words').val('');
-    $('#pay_by_check').prop('checked', false).prop('disabled', true);
-    $('label[for="pay_by_check"]').html('Pay by Check');
     $('#checkDetailsSection').hide();
 }
 

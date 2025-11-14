@@ -209,7 +209,13 @@
             color: var(--danger-color, #dc3545);
             font-weight: 600;
         }
-        
+
+        /* Read-only field styling in AP modal */
+        #accountsPayableModal .form-control[readonly],
+        #accountsPayableModal .form-select[readonly] {
+            background-color: #f8f9fa !important;
+            cursor: not-allowed;
+        }
         .amount-zero {
             color: var(--muted-color, #6c757d);
             font-weight: 500;
@@ -260,7 +266,7 @@
             overflow: hidden;
             background: #ffffff;
             width: 550px !important;
-            height: 606px !important;
+            height: 540px !important;
             max-height: 606px !important;
         }
 
@@ -642,7 +648,7 @@
                         <div class="col-12 col-sm-6 col-md-6">
                             <div class="">
                                 <label for="date" class="form-label">DATE <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="date" name="date" required>
+                                <input type="date" class="form-control" id="date" name="date" required readonly>
                             </div>
                         </div>
                     </div>
@@ -660,13 +666,13 @@
                         <div class="col-12 col-sm-6">
                             <div class="mb-1">
                                 <label for="rr_number" class="form-label">RR NUMBER</label>
-                                <input type="text" class="form-control" id="rr_number" name="rr_number">
+                                <input type="text" class="form-control" id="rr_number" name="rr_number" readonly>
                             </div>
                         </div>
                         <div class="col-12 col-sm-6">
                             <div class="mb-1">
                                 <label for="reference_number" class="form-label">REFERENCE NUMBER</label>
-                                <input type="text" class="form-control" id="reference_number" name="reference_number">
+                                <input type="text" class="form-control" id="reference_number" name="reference_number" readonly>
                             </div>
                         </div>
                     </div>
@@ -674,7 +680,7 @@
                         <div class="col-12 col-sm-6">
                             <div class="">
                                 <label for="terms" class="form-label">TERMS</label>
-                                <input type="text" class="form-control" id="terms" name="terms">
+                                <input type="text" class="form-control" id="terms" name="terms" readonly>
                             </div>
                         </div>
                     </div>
@@ -692,7 +698,7 @@
                         <div class="col-12 col-sm-6 col-md-6">
                             <div class="">
                                 <label for="total_amount" class="form-label">TOTAL AMOUNT <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control text-end fw-bold" id="total_amount" name="total_amount" required>
+                                <input type="text" class="form-control text-end fw-bold" id="total_amount" name="total_amount" required readonly>
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-md-6" id="balance_amount_container">
@@ -721,24 +727,6 @@
                             <div class="">
                                 <label for="status" class="form-label">STATUS</label>
                                 <input type="text" class="form-control" id="status" name="status" readonly>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Additional Information Section -->
-                    <div class="mb-1">
-                        <div class="d-flex align-items-center">
-                            <div class="apheaderSectionTitle">ADDITIONAL INFORMATION</div>
-                            <div class="flex-grow-1 ms-3">
-                                <hr class="section-divider">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-1">
-                        <div class="col-12">
-                            <div class="">
-                                <label for="remarks" class="form-label">REMARKS</label>
-                                <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="Enter any additional notes or remarks..."></textarea>
                             </div>
                         </div>
                     </div>

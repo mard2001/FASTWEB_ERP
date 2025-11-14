@@ -851,6 +851,8 @@ function showPaymentModal(rowData) {
     resetGcashFields();
     resetCashFields();
     resetCheckFields();
+    $('#pay_by_check').prop('checked', false).prop('disabled', true);
+    $('label[for="pay_by_check"]').html('Pay by Check <small class="text-muted">(Select a bank first)</small>');
     
     // Load banks data and populate dropdown
     loadBanksDataForModal();
@@ -985,8 +987,6 @@ function resetCheckFields() {
     $('#check_number').val('');
     $('#check_amount_display').val('');
     $('#check_amount_in_words').val('');
-    $('#pay_by_check').prop('checked', false).prop('disabled', true);
-    $('label[for="pay_by_check"]').html('Pay by Check');
     $('#checkDetailsSection').hide();
 }
 
