@@ -261,32 +261,42 @@ function populateGcashDropdown() {
 
 // Initialize Virtual Select filters
 function initializeFilters() {
-    // Initialize Status filter
-    VirtualSelect.init({
-        ele: '#statusFilter_VS',
-        options: [
-            { label: 'All Status', value: '' },
-            { label: 'Outstanding', value: 'Outstanding' },
-            { label: 'Partial', value: 'Partial' },
-            { label: 'Settled', value: 'Settled' },
-            { label: 'Overdue', value: 'overdue' }
-        ],
-        placeholder: 'Select Status',
-        search: false,
-        multiple: false
-    });
+    const statusFilterElement = document.querySelector('#statusFilter_VS');
 
-    // Store the element reference (VirtualSelect attaches methods to the DOM node)
-    statusFilterVS = document.querySelector('#statusFilter_VS');
+    if (statusFilterElement) {
+        try {
+            VirtualSelect.init({
+                ele: '#statusFilter_VS',
+                options: [
+                    { label: 'All Status', value: '' },
+                    { label: 'Outstanding', value: 'Outstanding' },
+                    { label: 'Partial', value: 'Partial' },
+                    { label: 'Settled', value: 'Settled' },
+                    { label: 'Overdue', value: 'overdue' }
+                ],
+                placeholder: 'Select Status',
+                search: false,
+                multiple: false
+            });
 
-    // Set up event listeners for filters
-    $('#soNumberFilter').on('change keyup', function() {
-        applyFilters();
-    });
+            statusFilterVS = statusFilterElement;
 
-    document.querySelector('#statusFilter_VS').addEventListener('change', function() {
-        applyFilters();
-    });
+            statusFilterElement.addEventListener('change', function() {
+                applyFilters();
+            });
+        } catch (error) {
+            console.error('Error initializing status filter:', error);
+        }
+    } else {
+        statusFilterVS = null;
+    }
+
+    const soNumberInput = $('#soNumberFilter');
+    if (soNumberInput.length) {
+        soNumberInput.on('change keyup', function() {
+            applyFilters();
+        });
+    }
 }
 
 // Load accounts receivable data

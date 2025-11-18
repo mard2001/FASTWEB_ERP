@@ -20,18 +20,6 @@
             <div class="VSLabel">DATE TO</div>
             <input type="date" class="form-control" id="dateTo">
         </div>
-        <div class="mb-1 mx-3" style="width: 200px;">
-            <div class="VSLabel">ACTIVITY TYPE</div>
-            <div id="activityType_VS" class="VSSelect"></div>
-        </div>
-        <div class="mb-1 mx-3" style="width: 250px;">
-            <div class="VSLabel">MODULE</div>
-            <div id="subjectType_VS" class="VSSelect"></div>
-        </div>
-        <div class="mb-1 mx-3" style="width: 200px;">
-            <div class="VSLabel">USER NAME</div>
-            <input type="text" class="form-control" id="userName" placeholder="Enter user name">
-        </div>
     </div>
 </div>
 @endsection

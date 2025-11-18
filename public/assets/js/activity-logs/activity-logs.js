@@ -815,9 +815,12 @@ $(document).ready(function() {
         $('.container-fluid').prepend(message);
     }
 
-    // Show alert message
     function showAlert(message, type = 'info') {
-        const alertClass = type === 'error' ? 'alert-danger' : `alert-${type}`;
+        if (type === 'error') {
+            console.error(message);
+            return;
+        }
+        const alertClass = `alert-${type}`;
         const alert = `
             <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
                 ${message}
@@ -825,8 +828,6 @@ $(document).ready(function() {
             </div>
         `;
         $('.container-fluid').prepend(alert);
-        
-        // Auto dismiss after 5 seconds
         setTimeout(function() {
             $('.alert').fadeOut();
         }, 5000);
