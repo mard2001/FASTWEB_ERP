@@ -546,6 +546,37 @@ class AccountsPayableController extends Controller
 
             $payment = Payment::create($paymentData);
 
+            try {
+                activity('accounts_payable')
+                    ->performedOn($accountsPayable)
+                    ->causedBy(auth()->user())
+                    ->withProperties([
+                        'ip' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'url' => request()->fullUrl(),
+                        'method' => request()->method(),
+                        'ap_id' => $accountsPayable->id,
+                        'ap_reference' => $accountsPayable->reference_number,
+                        'rr_number' => $accountsPayable->rr_number,
+                        'supplier_code' => $accountsPayable->supplier_code,
+                        'supplier_name' => $accountsPayable->supplier_name,
+                        'payment_id' => $payment->id,
+                        'payment_amount' => $paymentAmount,
+                        'actual_payment_amount' => $actualPaymentAmount,
+                        'payment_type' => $request->payment_type,
+                        'payment_status' => $paymentStatus,
+                        'reference_number' => $request->reference_number,
+                        'remarks' => $request->remarks,
+                        'bank_id' => $paymentData['bank_id'] ?? null,
+                        'gcash_id' => $paymentData['gcash_id'] ?? null,
+                        'check_id' => $checkId,
+                        'credit_memo_generated' => $creditMemo
+                    ])
+                    ->event('payment_made')
+                    ->log('Payment of ₱' . number_format($paymentAmount, 2) . ' recorded for AP #' . $accountsPayable->id . ' (' . ($accountsPayable->reference_number ?? 'N/A') . ')');
+            } catch (\Throwable $e) {
+            }
+
             // Calculate new balance after payment
             // For balance calculation, we need to account for the fact that overpayments 
             // are stored as credit memos, not applied to the balance
@@ -656,14 +687,7 @@ class AccountsPayableController extends Controller
                 Log::error('Error applying auto credit memos after payment: ' . $e->getMessage());
             }
 
-            // Update supplier credit data after successful payment
-            try {
-                SupplierCredit::updateSupplierCredit($accountsPayable->supplier_code);
-                Log::info('Supplier credit updated for supplier: ' . $accountsPayable->supplier_code);
-            } catch (Exception $e) {
-                // Log the error but don't fail the payment
-                Log::error('Error updating supplier credit after payment: ' . $e->getMessage());
-            }
+            // Supplier credit will be updated via AccountsPayableObserver on model events
 
             return response()->json($responseData, 200);
 

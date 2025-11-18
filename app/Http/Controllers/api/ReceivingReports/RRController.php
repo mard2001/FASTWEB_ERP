@@ -678,18 +678,7 @@ class RRController extends Controller
             Log::error('Error creating SupplierRunningBalance entry for invoice: ' . $e->getMessage());
         }
 
-        // Update supplier credit data after creating AP record
-        try {
-            if ($supplierCode) {
-                SupplierCredit::updateSupplierCredit(trim($supplierCode));
-                Log::info('Supplier credit updated after AP creation for supplier: ' . trim($supplierCode));
-            }
-        } catch (\Exception $e) {
-            Log::error('Error updating supplier credit after AP creation: ' . $e->getMessage(), [
-                'supplier_code' => $supplierCode,
-                'ap_id' => $accountsPayable->id
-            ]);
-        }
+        // Supplier credit will be updated via AccountsPayableObserver on model events
 
         Log::info("Successfully created Accounts Payable record", [
             'ap_id' => $accountsPayable->id,

@@ -522,6 +522,26 @@ class SupplierCreditController extends Controller
 
             $user = auth()->user();
             $totalRecords = $transactions->count();
+
+            try {
+                $supplierCredit = \App\Models\SupplierCredit::where('supplier_code', $supplierCode)->first();
+                activity('suppliercredit')
+                    ->performedOn($supplierCredit ?: new \App\Models\SupplierCredit(['supplier_code' => $supplierCode]))
+                    ->causedBy($user)
+                    ->withProperties([
+                        'ip' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'url' => request()->fullUrl(),
+                        'method' => request()->method(),
+                        'supplier_code' => $supplier->SupplierCode,
+                        'supplier_name' => $supplier->SupplierName,
+                        'total_records' => $totalRecords
+                    ])
+                    ->event('printed')
+                    ->log('Printed Statement of Account for ' . $supplier->SupplierName . ' (' . $supplier->SupplierCode . ')');
+            } catch (\Throwable $e) {
+            }
+
             return view('Pages.Printing.supplier_statement_print', compact('supplier', 'transactions', 'user', 'totalRecords'));
         } catch (\Exception $e) {
             return response()->json([
@@ -699,8 +719,26 @@ class SupplierCreditController extends Controller
 
             $user = auth()->user();
             $totalRecords = $pendingTransactions->count();
-            
-            // Always pass the collection, even if empty - the template will handle the display
+
+            try {
+                $supplierCredit = \App\Models\SupplierCredit::where('supplier_code', $supplierCode)->first();
+                activity('suppliercredit')
+                    ->performedOn($supplierCredit ?: new \App\Models\SupplierCredit(['supplier_code' => $supplierCode]))
+                    ->causedBy($user)
+                    ->withProperties([
+                        'ip' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'url' => request()->fullUrl(),
+                        'method' => request()->method(),
+                        'supplier_code' => $supplier->SupplierCode,
+                        'supplier_name' => $supplier->SupplierName,
+                        'total_records' => $totalRecords
+                    ])
+                    ->event('printed')
+                    ->log('Printed Counter Receipt for ' . $supplier->SupplierName . ' (' . $supplier->SupplierCode . ')');
+            } catch (\Throwable $e) {
+            }
+
             return view('Pages.Printing.supplier_counter_receipt_print', compact('supplier', 'pendingTransactions', 'user', 'totalRecords'));
         } catch (\Exception $e) {
             return response()->json([

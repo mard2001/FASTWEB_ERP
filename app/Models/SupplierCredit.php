@@ -172,21 +172,21 @@ class SupplierCredit extends Model
             ORDER BY s.SupplierName
         ");
 
-        // Clear existing data and insert fresh data
-        self::truncate();
-        
-        foreach ($suppliersData as $data) {
-            self::create([
-                'supplier_code' => $data->SupplierCode,
-                'supplier_name' => $data->SupplierName,
-                'total_credit' => $data->total_credit,
-                'total_paid' => $data->total_paid,
-                'balance' => $data->balance,
-                'credit_limit' => $data->credit_limit,
-                'credit_balance' => $data->credit_balance,
-                'last_updated' => now()
-            ]);
-        }
+        static::withoutEvents(function () use ($suppliersData) {
+            self::truncate();
+            foreach ($suppliersData as $data) {
+                self::create([
+                    'supplier_code' => $data->SupplierCode,
+                    'supplier_name' => $data->SupplierName,
+                    'total_credit' => $data->total_credit,
+                    'total_paid' => $data->total_paid,
+                    'balance' => $data->balance,
+                    'credit_limit' => $data->credit_limit,
+                    'credit_balance' => $data->credit_balance,
+                    'last_updated' => now()
+                ]);
+            }
+        });
         
         return count($suppliersData);
     }
