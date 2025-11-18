@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Traits\ActivityLoggable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Contracts\Activity;
 
 class PO extends Model
 {
@@ -18,7 +19,7 @@ class PO extends Model
     const UPDATED_AT = null;
 
     protected $table = 'tblPOHeader';
-    // protected $primaryKey = 'PONumber';
+    protected $primaryKey = 'PONumber';
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -81,6 +82,11 @@ class PO extends Model
             'SupplierCode',
             'SupplierName',
             'orderPlacer',
+            'FOB',
+            'deliveryAddress',
+            'subTotal',
+            'totalDiscount',
+            'totalTax',
             'totalCost',
             'POStatus',
             'ConfirmedBy',
@@ -101,6 +107,18 @@ class PO extends Model
         ];
 
         return $descriptions[$eventName] ?? "{$eventName} Purchase Order #{$this->PONumber}";
+    }
+
+    public function tapActivity(Activity $activity, string $eventName)
+    {
+        $key = $this->getKey();
+        if (is_string($key)) {
+            $activity->subject_id = null;
+            $props = $activity->properties ? (array) $activity->properties : [];
+            $props['subject_id'] = $key;
+            $props['subject_type'] = 'App\\Models\\Orders\\PO';
+            $activity->properties = $props;
+        }
     }
 
     public function POItems()

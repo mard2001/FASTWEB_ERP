@@ -194,7 +194,7 @@ $(document).ready(function() {
                                     return '<span style="font-size:10px; color:var(--text-color-muted, #808080);">Activity</span>';
                                 }
                                 const badgeClass = getActivityBadgeClass(data);
-                                return `<span class="${badgeClass}">${capitalizeFirst(data)}</span>`;
+                                return `<span class="${badgeClass}">${formatEventLabel(data)}</span>`;
                             }
                         },
                         { 
@@ -208,6 +208,10 @@ $(document).ready(function() {
                                 // If no subject_type but it's a sales order activity, show Sales Orders
                                 if (!data && row.log_name === 'sales_order') {
                                     return 'Sales Orders';
+                                }
+                                // If no subject_type but it's a purchase order activity, show Purchase Orders
+                                if (!data && row.log_name === 'purchase_order') {
+                                    return 'Purchase Orders';
                                 }
                                 // If no subject_type but it's an inventory adjustment activity, show Stock Adjustment
                                 if (!data && row.log_name === 'inventory_adjustment') {
@@ -438,8 +442,13 @@ $(document).ready(function() {
             'updated': 'statusBadge3',      // Orange - warning/updated  
             'deleted': 'statusBadge2',      // Red - danger/deleted
             'confirmed': 'statusBadge1',    // Green - success/confirmed
+            'printed': 'statusBadge4',      // Blue - printed
             'login': 'statusBadge4',        // Blue - info/login
             'logout': 'statusBadge3',       // Orange - warning/logout
+            'item_added': 'statusBadge4',   // Blue - item added
+            'items_added': 'statusBadge4',  // Blue - items added
+            'item_removed': 'statusBadge2', // Red - item removed
+            'items_removed': 'statusBadge2', // Red - items removed
             
             // Stock Transfer specific activities
             'transferred': 'statusBadge4',    // Blue - Stock Transferred
@@ -530,6 +539,14 @@ $(document).ready(function() {
             return 'Unknown';
         }
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function formatEventLabel(str) {
+        if (!str || str === null || str === undefined) {
+            return 'Unknown';
+        }
+        const normalized = String(str).replace(/_/g, ' ').trim();
+        return normalized.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
     }
 
     // Detect Stock Transfer event type from description
@@ -969,7 +986,7 @@ $(document).ready(function() {
                             </tr>
                             <tr>
                                 <td style="white-space: nowrap;">Activity Type:</td>
-                                <th class="px-2"><span class="${getActivityBadgeClass(activity.event || properties.event)}">${capitalizeFirst(activity.event || properties.event || 'Unknown')}</span></th>
+                                <th class="px-2"><span class="${getActivityBadgeClass(activity.event || properties.event)}">${formatEventLabel(activity.event || properties.event || 'Unknown')}</span></th>
                             </tr>
                         </tbody>
                     </table>
@@ -1033,9 +1050,161 @@ $(document).ready(function() {
             `;
         }
 
-        // Show changes for update events (for both salesman and customer activities)
+        // Show item-added section
         const eventType = activity.event || properties.event;
-        if (eventType === 'updated' && (Object.keys(old).length > 0 || Object.keys(attributes).length > 0)) {
+        const items = properties.items;
+        if (eventType === 'items_added' && Array.isArray(items) && items.length) {
+            let rows = '';
+            let total = 0;
+            items.forEach(it => {
+                const code = it.StockCode || '-';
+                const name = it.Decription || it.Description || '-';
+                const priceStr = it.TotalPrice !== undefined && it.TotalPrice !== null ? String(it.TotalPrice) : '';
+                const price = priceStr ? formatCurrencyAmount(priceStr) : '<em class="text-muted">empty</em>';
+                total += parseFloat((it.TotalPrice ?? 0)) || 0;
+                rows += `
+                    <tr>
+                        <td><strong>${code}</strong></td>
+                        <td>${name}</td>
+                        <td class="text-end"><strong>${price}</strong></td>
+                    </tr>
+                `;
+            });
+            const totalDisplay = properties.items_total !== undefined && properties.items_total !== null
+                ? formatCurrencyAmount(String(properties.items_total))
+                : formatCurrencyAmount(String(total));
+            detailsHTML += `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="text-primary">Items Added</h6>
+                        <table class="table table-sm table-bordered" style="font-size: 12px">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th class="text-end">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-end">
+                            <span class="me-2">Total Price:</span>
+                            <strong>${totalDisplay}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (eventType === 'items_removed' && Array.isArray(items) && items.length) {
+            let rows = '';
+            let total = 0;
+            items.forEach(it => {
+                const code = it.StockCode || '-';
+                const name = it.Decription || it.Description || '-';
+                const priceStr = it.TotalPrice !== undefined && it.TotalPrice !== null ? String(it.TotalPrice) : '';
+                const price = priceStr ? formatCurrencyAmount(priceStr) : '<em class="text-muted">empty</em>';
+                total += parseFloat((it.TotalPrice ?? 0)) || 0;
+                rows += `
+                    <tr>
+                        <td><strong>${code}</strong></td>
+                        <td>${name}</td>
+                        <td class="text-end"><strong>${price}</strong></td>
+                    </tr>
+                `;
+            });
+            const totalDisplay = properties.items_total !== undefined && properties.items_total !== null
+                ? formatCurrencyAmount(String(properties.items_total))
+                : formatCurrencyAmount(String(total));
+            detailsHTML += `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="text-primary">Items Removed</h6>
+                        <table class="table table-sm table-bordered" style="font-size: 12px">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th class="text-end">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-end">
+                            <span class="me-2">Total Price:</span>
+                            <strong>${totalDisplay}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (eventType === 'item_added' && attributes) {
+            const code = attributes.StockCode || '-';
+            const name = attributes.Decription || attributes.Description || '-';
+            const priceStr = attributes.TotalPrice !== undefined && attributes.TotalPrice !== null ? String(attributes.TotalPrice) : '';
+            const price = priceStr ? formatCurrencyAmount(priceStr) : '<em class="text-muted">empty</em>';
+            detailsHTML += `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="text-primary">Item Added</h6>
+                        <table class="table table-sm table-bordered" style="font-size: 12px">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th class="text-end">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>${code}</strong></td>
+                                    <td>${name}</td>
+                                    <td class="text-end"><strong>${price}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-end">
+                            <span class="me-2">Total Price:</span>
+                            <strong>${price}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (eventType === 'deleted' && properties && properties.deleted_data) {
+            const it = properties.deleted_data || {};
+            const code = it.StockCode || '-';
+            const name = it.Decription || it.Description || '-';
+            const priceStr = it.TotalPrice !== undefined && it.TotalPrice !== null ? String(it.TotalPrice) : '';
+            const price = priceStr ? formatCurrencyAmount(priceStr) : '<em class="text-muted">empty</em>';
+            detailsHTML += `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="text-primary">Item Removed</h6>
+                        <table class="table table-sm table-bordered" style="font-size: 12px">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th class="text-end">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>${code}</strong></td>
+                                    <td>${name}</td>
+                                    <td class="text-end"><strong>${price}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-end">
+                            <span class="me-2">Total Price:</span>
+                            <strong>${price}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (eventType === 'updated' && (Object.keys(old).length > 0 || Object.keys(attributes).length > 0)) {
             detailsHTML += `
                 <div class="row mt-3">
                     <div class="col-12">
@@ -1111,6 +1280,7 @@ $(document).ready(function() {
                 'ShippingCountry': 'Shipping Country',
                 
                 // Product fields
+                'Decription': 'Product Name',
                 'StockCode': 'Product Code',
                 'Description': 'Product Description',
                 'LongDesc': 'Long Description',
@@ -1177,6 +1347,7 @@ $(document).ready(function() {
                 'TaxStatus': 'Tax Status',
                 'SpecialInstruction': 'Special Instruction',
                 'ShipTo': 'Ship To',
+                'deliveryAddress': 'Ship To',
                 'FOB': 'F.O.B',
                 'Fob': 'F.O.B',
                 'DeliveryNote': 'Delivery Note',
@@ -1228,8 +1399,11 @@ $(document).ready(function() {
                 const oldValueStr = (oldValue === null || oldValue === undefined) ? '' : String(oldValue).trim();
                 const newValueStr = (newValue === null || newValue === undefined) ? '' : String(newValue).trim();
                 
-                // Only show if there's an actual change
-                if (oldValueStr !== newValueStr) {
+                const oldNum = parseFloat(oldValueStr.replace(/,/g, ''));
+                const newNum = parseFloat(newValueStr.replace(/,/g, ''));
+                const bothNumeric = !isNaN(oldNum) && !isNaN(newNum);
+                const numericEqual = bothNumeric && Math.abs(oldNum - newNum) < 1e-6;
+                if (oldValueStr !== newValueStr && !numericEqual) {
                     hasChanges = true;
                     
                     // Use mapped field name or format the original field name
@@ -1270,16 +1444,16 @@ $(document).ready(function() {
                                           'Total', 'Subtotal', 'NetAmount', 'GrossAmount', 'Balance', 'Total_paid', 
                                           'Credit_balance', 'Debit_balance', 'Outstanding_balance', 'Paid_amount', 
                                           'Due_amount', 'Remaining_balance', 'Payment_amount', 'Invoice_amount',
-                                          'Total_amount', 'Grand_total', 'Final_amount', 'Net_total'];
+                                          'Total_amount', 'Grand_total', 'Final_amount', 'Net_total', 'totalCost', 'subTotal', 'totalDiscount', 'totalTax'];
                     
                     const percentageFields = ['MinPricePct', 'DiscountPercent', 'TaxPercent', 'CommissionPercent'];
                     
-                    if (currencyFields.includes(key) && (oldValueStr || newValueStr)) {
-                        if (oldValueStr && !isNaN(oldValueStr)) {
-                            formattedOldValue = formatCurrencyAmount(oldValueStr);
+                    if ((currencyFields.includes(key) || bothNumeric) && (oldValueStr || newValueStr)) {
+                        if (oldValueStr && !isNaN(oldNum)) {
+                            formattedOldValue = formatCurrencyAmount(String(oldNum));
                         }
-                        if (newValueStr && !isNaN(newValueStr)) {
-                            formattedNewValue = formatCurrencyAmount(newValueStr);
+                        if (newValueStr && !isNaN(newNum)) {
+                            formattedNewValue = formatCurrencyAmount(String(newNum));
                         }
                     } else if (percentageFields.includes(key) && (oldValueStr || newValueStr)) {
                         if (oldValueStr && !isNaN(oldValueStr)) {

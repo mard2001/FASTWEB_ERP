@@ -247,8 +247,9 @@ class POController
     public function POConfirm(string $poid)
     {
         try {
-
-            $data = PO::find($poid);
+            $data = is_numeric($poid)
+                ? PO::where('id', (int)$poid)->first()
+                : PO::where('PONumber', $poid)->first();
 
             if (!$data) {
                 return response()->json([

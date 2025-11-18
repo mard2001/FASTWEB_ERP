@@ -96,31 +96,7 @@ class POController
                 $items = Arr::pull($data, 'Items');
                 $po = PO::create($data);
                 $po->POItems()->createMany($items);
-                
-                // Log creation activity
-                try {
-                    activity('purchase_order')
-                        ->performedOn($po)
-                        ->withProperties([
-                            'ip' => $request->ip(),
-                            'user_agent' => $request->userAgent(),
-                            'url' => $request->fullUrl(),
-                            'method' => $request->method(),
-                            'po_number' => $po->PONumber,
-                            'supplier_code' => $po->SupplierCode,
-                            'supplier_name' => $po->SupplierName,
-                            'order_placer' => $po->orderPlacer,
-                            'action_type' => 'create',
-                            'subject_type' => 'App\\Models\\Orders\\PO',
-                            'subject_id' => $po->PONumber,
-                            'event' => 'created',
-                            'po_data' => $data
-                        ])
-                        ->event('created')
-                        ->log("Created Purchase Order #{$po->PONumber}");
-                } catch (\Exception $e) {
-                    Log::warning('PO creation activity logging failed: ' . $e->getMessage());
-                }
+
             });
 
 
@@ -145,8 +121,10 @@ class POController
     {
         $response = array();
         try {
-
-            $data = PO::with('POItems')->findOrFail($id);
+            $query = PO::with('POItems');
+            $data = is_numeric($id)
+                ? $query->where('id', (int)$id)->firstOrFail()
+                : $query->where('PONumber', $id)->firstOrFail();
             $response = [
                 'message' => 'Purchase orders retrieved successfully',
                 'data' => $data,
@@ -170,7 +148,10 @@ class POController
     {
         try {
             $data = $request['data'];
-            $found = PO::findOrFail($id);
+            unset($data['subTotal'], $data['totalDiscount'], $data['totalTax'], $data['totalCost']);
+            $found = is_numeric($id)
+                ? PO::where('id', (int)$id)->firstOrFail()
+                : PO::where('PONumber', $id)->firstOrFail();
 
             if ($found->POStatus == null) {
                 // Store original data for activity logging
@@ -180,66 +161,74 @@ class POController
                 if ($found->isDirty()) {
                     $found->EditedBy = $request->user()->name ?? $request->user()->email ?? 'Admin';
                     $found->DateUpdated = now();
-                    
-                    // Get only the fields that were actually changed (dirty fields)
-                    $changes = $found->getDirty();
-                    $oldValues = [];
-                    $newValues = [];
-                    
-                    // Only include fields that were actually changed
-                    foreach ($changes as $field => $newValue) {
-                        // Skip system fields that shouldn't appear in Changes Made
-                        if (!in_array($field, ['EditedBy', 'DateUpdated'])) {
-                            $oldValues[$field] = $originalData[$field] ?? null;
-                            $newValues[$field] = $newValue;
-                        }
-                    }
-                    
-                    // Save the model (this will trigger automatic activity logging)
                     $found->save();
-                    
-                    // Log additional manual activity with old/new values ONLY for changed fields
-                    if (!empty($oldValues) && !empty($newValues)) {
-                        try {
-                            activity('purchase_order')
-                                ->performedOn($found)
-                                ->withProperties([
-                                    'ip' => $request->ip(),
-                                    'user_agent' => $request->userAgent(),
-                                    'url' => $request->fullUrl(),
-                                    'method' => $request->method(),
-                                    'po_number' => $found->PONumber,
-                                    'supplier_code' => $found->SupplierCode,
-                                    'supplier_name' => $found->SupplierName,
-                                    'order_placer' => $found->orderPlacer,
-                                    'action_type' => 'update',
-                                    'subject_type' => 'App\\Models\\Orders\\PO',
-                                    'subject_id' => $found->PONumber,
-                                    'event' => 'updated',
-                                    'old' => $oldValues,         // Only changed fields
-                                    'attributes' => $newValues   // Only changed fields
-                                ])
-                                ->event('updated')
-                                ->log("Updated Purchase Order #{$found->PONumber}");
-                        } catch (\Exception $e) {
-                            // Log activity failed, but don't block the update
-                            Log::warning('PO activity logging failed: ' . $e->getMessage());
-                        }
-                    }
                 }
 
                 // Get current item stock codes from the request
                 $newStockCodes = collect($data['Items'])->pluck('StockCode')->toArray();
                 
-                // Delete items that are no longer in the updated list
+                // Delete items that are no longer in the updated list and collect them for logging
+                $removedItemsModels = $found->POItems()->whereNotIn('StockCode', $newStockCodes)->get();
+                $removedItems = $removedItemsModels->map(function($it){
+                    return [
+                        'StockCode' => $it->StockCode,
+                        'Decription' => $it->Decription,
+                        'TotalPrice' => $it->TotalPrice,
+                    ];
+                })->values()->toArray();
                 $found->POItems()->whereNotIn('StockCode', $newStockCodes)->delete();
                 
                 // Update or create items from the request
+                // Collect newly added items for a single aggregated activity log
+                request()->attributes->set('collect_po_item_logs', true);
+                $addedItems = [];
                 foreach ($data['Items'] as $item) {
-                    $found->POItems()->updateOrCreate(
-                        ['StockCode' => $item['StockCode']], // Search condition
-                        $item // Data to update or create
+                    $existingItem = $found->POItems()->where('StockCode', $item['StockCode'])->first();
+                    $saved = $found->POItems()->updateOrCreate(
+                        ['StockCode' => $item['StockCode']],
+                        $item
                     );
+                    if (!$existingItem) {
+                        $addedItems[] = [
+                            'StockCode' => $saved->StockCode,
+                            'Decription' => $saved->Decription,
+                            'TotalPrice' => $saved->TotalPrice,
+                        ];
+                    }
+                }
+
+                if (!empty($addedItems)) {
+                    $itemsTotal = array_sum(array_map(function($it){
+                        return (float)($it['TotalPrice'] ?? 0);
+                    }, $addedItems));
+                    activity('purchase_order')
+                        ->withProperties([
+                            'po_number' => $found->PONumber,
+                            'subject_type' => 'App\\Models\\Orders\\PO',
+                            'subject_id' => $found->PONumber,
+                            'event' => 'items_added',
+                            'items' => $addedItems,
+                            'items_total' => $itemsTotal,
+                        ])
+                        ->event('items_added')
+                        ->log("Added items to Purchase Order #{$found->PONumber}");
+                }
+
+                if (!empty($removedItems)) {
+                    $removedTotal = array_sum(array_map(function($it){
+                        return (float)($it['TotalPrice'] ?? 0);
+                    }, $removedItems));
+                    activity('purchase_order')
+                        ->withProperties([
+                            'po_number' => $found->PONumber,
+                            'subject_type' => 'App\\Models\\Orders\\PO',
+                            'subject_id' => $found->PONumber,
+                            'event' => 'items_removed',
+                            'items' => $removedItems,
+                            'items_total' => $removedTotal,
+                        ])
+                        ->event('items_removed')
+                        ->log("Removed items from Purchase Order #{$found->PONumber}");
                 }
 
                 return response()->json([
@@ -267,8 +256,9 @@ class POController
     public function destroy(Request $request, string $id)
     {
         try {
-
-            $data = PO::find($id);
+            $data = is_numeric($id)
+                ? PO::where('id', (int)$id)->first()
+                : PO::where('PONumber', $id)->first();
 
             if (!$data) {
 
@@ -287,6 +277,7 @@ class POController
 
                 // Log deletion activity
                 try {
+                    if (false) {
                     activity('purchase_order')
                         ->withProperties([
                             'ip' => $request->ip(),
@@ -305,6 +296,7 @@ class POController
                         ])
                         ->event('deleted')
                         ->log("Deleted Purchase Order #{$poData['PONumber']}");
+                    }
                 } catch (\Exception $e) {
                     Log::warning('PO deletion activity logging failed: ' . $e->getMessage());
                 }
@@ -332,8 +324,9 @@ class POController
     public function POConfirm(Request $request, string $poid)
     {
         try {
-
-            $data = PO::find($poid);
+            $data = is_numeric($poid)
+                ? PO::where('id', (int)$poid)->first()
+                : PO::where('PONumber', $poid)->first();
 
             if (!$data) {
                 return response()->json([
@@ -357,25 +350,24 @@ class POController
 
             // Log activity as Confirmed (event: confirmed)
             try {
-                activity('purchase_order')
-                    ->performedOn($data)
-                    ->withProperties([
-                        'ip' => $request->ip(),
-                        'user_agent' => $request->userAgent(),
-                        'url' => $request->fullUrl(),
-                        'method' => $request->method(),
-                        'po_number' => $data->PONumber,
-                        'supplier_code' => $data->SupplierCode,
-                        'supplier_name' => $data->SupplierName,
-                        'order_placer' => $data->orderPlacer,
-                        'confirmed_by' => $request->user()->name ?? $request->user()->email ?? 'Admin',
-                        'action_type' => 'confirm',
-                        'subject_type' => 'App\\Models\\Orders\\PO',
-                        'subject_id' => $data->PONumber,
-                        'event' => 'confirmed'
-                    ])
-                    ->event('confirmed')
-                    ->log("Confirmed Purchase Order #{$data->PONumber}");
+                    activity('purchase_order')
+                        ->withProperties([
+                            'ip' => $request->ip(),
+                            'user_agent' => $request->userAgent(),
+                            'url' => $request->fullUrl(),
+                            'method' => $request->method(),
+                            'po_number' => $data->PONumber,
+                            'supplier_code' => $data->SupplierCode,
+                            'supplier_name' => $data->SupplierName,
+                            'order_placer' => $data->orderPlacer,
+                            'confirmed_by' => $request->user()->name ?? $request->user()->email ?? 'Admin',
+                            'action_type' => 'confirm',
+                            'subject_type' => 'App\\Models\\Orders\\PO',
+                            'subject_id' => $data->PONumber,
+                            'event' => 'confirmed'
+                        ])
+                        ->event('confirmed')
+                        ->log("Confirmed Purchase Order #{$data->PONumber}");
             } catch (\Exception $e) {
                 Log::warning('PO confirmation activity logging failed: ' . $e->getMessage());
             }
@@ -400,6 +392,28 @@ class POController
             $data->SupplierCode = trim($data->SupplierCode);
             $data->posupplier = $data->posupplier->toArray();
             $data->POItems = $data->POItems->toArray();
+
+            try {
+                activity('purchase_order')
+                    ->withProperties([
+                        'ip' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'url' => request()->fullUrl(),
+                        'method' => request()->method(),
+                        'po_number' => $data->PONumber,
+                        'supplier_code' => $data->SupplierCode,
+                        'supplier_name' => $data->SupplierName,
+                        'order_placer' => $data->orderPlacer,
+                        'action_type' => 'print',
+                        'subject_type' => 'App\\Models\\Orders\\PO',
+                        'subject_id' => $data->PONumber,
+                        'event' => 'printed'
+                    ])
+                    ->event('printed')
+                    ->log("Printed Purchase Order #{$data->PONumber}");
+            } catch (\Exception $e) {
+                // Silent fail on logging; should not block PDF rendering
+            }
 
             return view('Pages.PurchaseOrder-PDF', ['po' => $data]); // Pass the user to the view
         } catch (\Exception $e) {
