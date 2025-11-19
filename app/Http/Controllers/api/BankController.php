@@ -74,10 +74,11 @@ class BankController extends Controller
                 ], 409);
             }
             
-            Bank::create($data);
+            $bank = Bank::create($data);
             
-            // Log the activity
             activity('bank')
+                ->performedOn($bank)
+                ->causedBy($request->user())
                 ->withProperties([
                     'ip' => $request->ip(),
                     'user_agent' => $request->header('User-Agent'),
@@ -87,10 +88,9 @@ class BankController extends Controller
                     'account_name' => $data['AccountName'],
                     'account_number' => $data['AccountNumber'],
                     'status' => $data['Status'],
-                    'subject_type' => 'App\\Models\\Bank',
-                    'event' => 'created',
                     'attributes' => $data
                 ])
+                ->event('created')
                 ->log("Created new bank '{$data['BankName']}' - Account: {$data['AccountName']} ({$data['AccountNumber']})");
             
             return response()->json([
@@ -196,8 +196,9 @@ class BankController extends Controller
 
             $found->update($data);
 
-            // Log the activity
             activity('bank')
+                ->performedOn($found)
+                ->causedBy($request->user())
                 ->withProperties([
                     'ip' => $request->ip(),
                     'user_agent' => $request->header('User-Agent'),
@@ -207,12 +208,10 @@ class BankController extends Controller
                     'bank_name' => $data['BankName'],
                     'account_name' => $data['AccountName'],
                     'account_number' => $data['AccountNumber'],
-                    'subject_type' => 'App\\Models\\Bank',
-                    'subject_id' => $id,
-                    'event' => 'updated',
                     'attributes' => $data,
                     'old' => $oldData
                 ])
+                ->event('updated')
                 ->log("Updated bank '{$data['BankName']}' - Account: {$data['AccountName']} ({$data['AccountNumber']})");
                         $response = [
                 'message' => 'Bank details updated successfully!',
@@ -256,8 +255,9 @@ class BankController extends Controller
             
             $data = Bank::where('BankID', $id)->delete();
 
-            // Log the activity
             activity('bank')
+                ->performedOn($bank)
+                ->causedBy(request()->user())
                 ->withProperties([
                     'ip' => request()->ip(),
                     'user_agent' => request()->header('User-Agent'),
@@ -266,11 +266,9 @@ class BankController extends Controller
                     'bank_id' => $id,
                     'bank_name' => $bankData['BankName'],
                     'account_number' => $bankData['AccountNumber'],
-                    'subject_type' => 'App\\Models\\Bank',
-                    'subject_id' => $id,
-                    'event' => 'deleted',
                     'old' => $bankData
                 ])
+                ->event('deleted')
                 ->log("Deleted bank '{$bankData['BankName']}' - Account: {$bankData['AccountNumber']}");
 
             $response = [

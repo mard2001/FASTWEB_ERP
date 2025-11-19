@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\ActivityLoggable;
+use Spatie\Activitylog\Models\Activity;
 
 class ManualTransaction extends Model
 {
@@ -63,5 +64,12 @@ class ManualTransaction extends Model
         ];
 
         return $descriptions[$eventName] ?? "{$eventName} manual transaction";
+    }
+
+    public function tapActivity(Activity $activity, string $eventName)
+    {
+        if ($eventName === 'created') {
+            $activity->event = $this->TransactionType === 'IN' ? 'Manual Deposit' : 'Manual Withdrawal';
+        }
     }
 }

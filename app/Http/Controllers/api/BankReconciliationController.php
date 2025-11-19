@@ -60,13 +60,7 @@ class BankReconciliationController extends Controller
                 $totalInflows = $manualInflows + $actualTotalInflows; // Manual + AR payments
                 $availableBalance = $beginningBalance + $totalInflows - $actualTotalOutflows;
                 
-                // Update the reconciliation record with actual flows if it exists
-                if ($latestRecon && ($latestRecon->TotalOutflows != $actualTotalOutflows)) {
-                    $latestRecon->update([
-                        'TotalOutflows' => $actualTotalOutflows,
-                        'AvailableBalance' => $availableBalance
-                    ]);
-                }
+                // Do not persist recalculated totals during read operations
                 
                 return [
                     'BankID' => $bank->BankID,

@@ -77,10 +77,11 @@ class BankReconciliation extends Model
     {
         $bankName = $this->bank ? $this->bank->BankName : 'Unknown Bank';
         $amount = $this->BeginningBalance ? '₱' . number_format($this->BeginningBalance, 2) : '';
+        $available = '₱' . number_format($this->AvailableBalance ?? $this->calculateAvailableBalance(), 2);
         
         $descriptions = [
             'created' => "Set beginning balance for '{$bankName}': {$amount}",
-            'updated' => "Updated beginning balance for '{$bankName}': {$amount}", 
+            'updated' => "Updated balance for '{$bankName}': {$available}", 
             'deleted' => "Deleted bank reconciliation for '{$bankName}'",
         ];
 

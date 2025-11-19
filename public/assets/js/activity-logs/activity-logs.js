@@ -449,6 +449,11 @@ $(document).ready(function() {
             'items_added': 'statusBadge4',  // Blue - items added
             'item_removed': 'statusBadge2', // Red - item removed
             'items_removed': 'statusBadge2', // Red - items removed
+
+            // Bank reconciliation specific activities
+            'Manual Withdrawal': 'statusBadge2', // Red
+            'AP Withdrawal': 'statusBadge2',     // Red
+            'Manual Deposit': 'statusBadge4',    // Blue
             
             // Stock Transfer specific activities
             'transferred': 'statusBadge4',    // Blue - Stock Transferred
@@ -1413,7 +1418,6 @@ $(document).ready(function() {
                     const displayOldValue = oldValueStr || '<em class="text-muted">empty</em>';
                     const displayNewValue = newValueStr || '<em class="text-muted">empty</em>';
                     
-                    // Special formatting for certain field types
                     let formattedOldValue = displayOldValue;
                     let formattedNewValue = displayNewValue;
                     
@@ -1437,7 +1441,8 @@ $(document).ready(function() {
                         if (newValueStr) formattedNewValue = statusMap[newValue] || newValue;
                     }
                     
-                    // Format currency values with proper comma separation
+                    const identifierFields = ['AccountNumber', 'CardNumber', 'CheckNumber'];
+                    if (!identifierFields.includes(key)) {
                     const currencyFields = ['CreditLimit', 'LabourCost', 'MaterialCost', 'FixOverhead', 'VariableOverhead', 
                                           'TotalMerchandise', 'DiscountValue', 'FreightValue', 'MiscChargeValue', 'TaxValue', 
                                           'OrderValue', 'ExchangeRate', 'Amount', 'Price', 'UnitPrice', 'Cost', 'Value', 
@@ -1550,6 +1555,7 @@ $(document).ready(function() {
                                 formattedNewValue = parseFloat(newValueStr).toLocaleString('en-US');
                             }
                         }
+                    }
                     }
                     
                     detailsHTML += `

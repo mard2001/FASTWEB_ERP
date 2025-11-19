@@ -111,20 +111,7 @@ $(document).ready(async function () {
         }
     });
 
-    // Update beginning balance from details modal
-    $("#updateBeginningBalanceBtn").on("click", async function () {
-        const bankId = parseInt($('#DetailsBankID').val());
-        const bank = jsonArr.find(b => b.BankID === bankId);
-        
-        if (bank) {
-            openBeginningBalanceModal(bank.BankID, bank.BankName, bank.AccountName, {
-                BeginningBalance: bank.BeginningBalance,
-                ReconciliationDate: bank.LastReconciliationDate,
-                Notes: bank.Notes
-            });
-            // Don't hide the bank details modal
-        }
-    });
+    // Removed update beginning balance button from details modal
 
     // Manual Deposit button
     $("#manualDepositBtn").on("click", function () {

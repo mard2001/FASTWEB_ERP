@@ -577,6 +577,46 @@ class AccountsPayableController extends Controller
             } catch (\Throwable $e) {
             }
 
+            // Log to bank reconciliation when payment is via bank or bank check
+            try {
+                $affectedBankId = $paymentData['bank_id'] ?? null;
+                if (!$affectedBankId && $checkId) {
+                    $check = Check::find($checkId);
+                    $affectedBankId = $check ? $check->BankID : null;
+                }
+
+                if ($affectedBankId) {
+                    $bank = \App\Models\Bank::find($affectedBankId);
+                    $bankName = $bank ? $bank->BankName : 'Unknown Bank';
+                    $paymentTypeDisplay = ($request->payment_type === 'bank' && $checkId) ? 'Bank Check' : 'Bank';
+                    $reconciliation = \App\Models\BankReconciliation::where('BankID', $affectedBankId)
+                        ->orderBy('DateCreated', 'desc')
+                        ->first();
+
+                    activity('bank_reconciliation')
+                        ->performedOn($reconciliation ?: $bank)
+                        ->causedBy(auth()->user())
+                        ->withProperties([
+                            'ip' => request()->ip(),
+                            'user_agent' => request()->userAgent(),
+                            'url' => request()->fullUrl(),
+                            'method' => request()->method(),
+                            'ap_id' => $accountsPayable->id,
+                            'ap_reference' => $accountsPayable->reference_number,
+                            'supplier_code' => $accountsPayable->supplier_code,
+                            'supplier_name' => $accountsPayable->supplier_name,
+                            'payment_id' => $payment->id,
+                            'payment_amount' => $paymentAmount,
+                            'payment_type' => $paymentTypeDisplay,
+                            'bank_id' => $affectedBankId,
+                            'check_id' => $checkId,
+                        ])
+                        ->event('AP Withdrawal')
+                        ->log('Withdrawal of ₱' . number_format($paymentAmount, 2) . ' via ' . $paymentTypeDisplay . ' for AP #' . $accountsPayable->id . ' on \'' . $bankName . '\'');
+                }
+            } catch (\Throwable $e) {
+            }
+
             // Calculate new balance after payment
             // For balance calculation, we need to account for the fact that overpayments 
             // are stored as credit memos, not applied to the balance
