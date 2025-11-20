@@ -92,13 +92,41 @@ class POController
         try {
             $data = $request->data;
 
-            DB::transaction(function () use ($data, $request) {
+            // Suppress per-item logging during creation; we'll aggregate into a single record
+            request()->attributes->set('collect_po_item_logs', true);
+
+            $po = DB::transaction(function () use ($data) {
                 $items = Arr::pull($data, 'Items');
                 $po = PO::create($data);
                 $po->POItems()->createMany($items);
-
+                $po->load('POItems');
+                return $po;
             });
 
+            // Build aggregated items payload
+            $itemsPayload = $po->POItems->map(function($it){
+                return [
+                    'StockCode' => $it->StockCode,
+                    'Decription' => $it->Decription,
+                    'TotalPrice' => $it->TotalPrice,
+                ];
+            })->values()->toArray();
+            $itemsTotal = array_sum(array_map(function($it){
+                return (float)($it['TotalPrice'] ?? 0);
+            }, $itemsPayload));
+
+            // Log a single aggregated 'items_added' record for creation
+            activity('purchase_order')
+                ->withProperties([
+                    'po_number' => $po->PONumber,
+                    'subject_type' => 'App\\Models\\Orders\\PO',
+                    'subject_id' => $po->PONumber,
+                    'event' => 'items_added',
+                    'items' => $itemsPayload,
+                    'items_total' => $itemsTotal,
+                ])
+                ->event('items_added')
+                ->log("Added items to Purchase Order #{$po->PONumber}");
 
             return response()->json([
                 'success' => true,
@@ -197,6 +225,7 @@ class POController
                     }
                 }
 
+                // Aggregated items_added and items_removed logs
                 if (!empty($addedItems)) {
                     $itemsTotal = array_sum(array_map(function($it){
                         return (float)($it['TotalPrice'] ?? 0);

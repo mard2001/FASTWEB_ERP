@@ -17,6 +17,7 @@ use App\Events\Inventory\InventoryWarehouse;
 use App\Models\AccountsReceivable;
 use App\Models\Payment;
 use App\Models\ARCreditMemoApplication;
+use App\Models\CustomerCredit;
 
 class SOMasterController extends Controller
 {
@@ -175,6 +176,35 @@ class SOMasterController extends Controller
                     'event' => 'created'
                 ])
                 ->log("Created new sales order #{$so->SalesOrder} for customer {$data['CustomerInfo']['Contact']} with " . count($items) . " items");
+
+            // Aggregated Items Added record for Sales Order creation
+            try {
+                $createdItems = $so->sodetails()->get(['MStockCode','MStockDes','MPrice']);
+                $itemsPayload = $createdItems->map(function($it){
+                    return [
+                        'StockCode' => $it->MStockCode,
+                        'Decription' => $it->MStockDes,
+                        'TotalPrice' => (float)$it->MPrice,
+                    ];
+                })->values()->toArray();
+                $itemsTotal = array_sum(array_map(function($it){
+                    return (float)($it['TotalPrice'] ?? 0);
+                }, $itemsPayload));
+
+                activity('sales_order')
+                    ->withProperties([
+                        'sales_order_number' => $so->SalesOrder,
+                        'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                        'subject_id' => $so->SalesOrder,
+                        'event' => 'items_added',
+                        'items' => $itemsPayload,
+                        'items_total' => $itemsTotal,
+                    ])
+                    ->event('items_added')
+                    ->log("Added items to Sales Order #{$so->SalesOrder}");
+            } catch (\Exception $e) {
+                // Silent fail; do not block order creation
+            }
 
             return response()->json([
                 'success' => true,
@@ -410,25 +440,77 @@ class SOMasterController extends Controller
                 ->delete();
         }
 
-        // Log the activity
-        activity('sales_order')
-            ->withProperties([
-                'ip' => $request->ip(),
-                'user_agent' => $request->header('User-Agent'),
-                'url' => $request->fullUrl(),
-                'method' => $request->method(),
-                'sales_order_number' => $salesOrderId,
-                'customer_name' => $customerDetails->Contact,
-                'updated_items' => count($commonItems),
-                'new_items' => count($newItems),
-                'deleted_items' => count($deletedItems),
-                'warehouse' => $request->data['Warehouse'],
-                'branch' => $request->data['Branch'],
-                'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
-                'subject_id' => $salesOrderId,
-                'event' => 'updated'
-            ])
-            ->log("Updated sales order #{$salesOrderId} - modified " . count($commonItems) . " items, added " . count($newItems) . " items, removed " . count($deletedItems) . " items");
+        // Aggregated logs for items added and removed
+        if (!empty($newItems)) {
+            $addedPayload = array_map(function($it){
+                return [
+                    'StockCode' => $it['MStockCode'] ?? null,
+                    'Decription' => $it['MStockDes'] ?? null,
+                    'TotalPrice' => (float)($it['MPrice'] ?? 0),
+                ];
+            }, $newItems);
+            $addedTotal = array_sum(array_map(function($it){
+                return (float)($it['TotalPrice'] ?? 0);
+            }, $addedPayload));
+
+            activity('sales_order')
+                ->withProperties([
+                    'sales_order_number' => $salesOrderId,
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $salesOrderId,
+                    'event' => 'items_added',
+                    'items' => array_values($addedPayload),
+                    'items_total' => $addedTotal,
+                ])
+                ->event('items_added')
+                ->log("Added items to Sales Order #{$salesOrderId}");
+        }
+
+        if (!empty($deletedItems)) {
+            $removedPayload = array_map(function($it){
+                return [
+                    'StockCode' => $it['MStockCode'] ?? null,
+                    'Decription' => $it['MStockDes'] ?? null,
+                    'TotalPrice' => (float)($it['MPrice'] ?? 0),
+                ];
+            }, $deletedItems);
+            $removedTotal = array_sum(array_map(function($it){
+                return (float)($it['TotalPrice'] ?? 0);
+            }, $removedPayload));
+
+            activity('sales_order')
+                ->withProperties([
+                    'sales_order_number' => $salesOrderId,
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $salesOrderId,
+                    'event' => 'items_removed',
+                    'items' => array_values($removedPayload),
+                    'items_total' => $removedTotal,
+                ])
+                ->event('items_removed')
+                ->log("Removed items from Sales Order #{$salesOrderId}");
+        }
+
+        if (empty($newItems) && empty($deletedItems)) {
+            activity('sales_order')
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'sales_order_number' => $salesOrderId,
+                    'customer_name' => $customerDetails->Contact,
+                    'updated_items' => count($commonItems),
+                    'new_items' => count($newItems),
+                    'deleted_items' => count($deletedItems),
+                    'warehouse' => $request->data['Warehouse'],
+                    'branch' => $request->data['Branch'],
+                    'subject_type' => 'App\\Models\\SalesOrder\\SOMaster',
+                    'subject_id' => $salesOrderId,
+                    'event' => 'updated'
+                ])
+                ->log("Updated sales order #{$salesOrderId} - modified " . count($commonItems) . " items, added " . count($newItems) . " items, removed " . count($deletedItems) . " items");
+        }
 
         return response()->json([
             'success' => true,
@@ -786,6 +868,12 @@ class SOMasterController extends Controller
                         'remarks' => 'Auto-generated from completed Sales Order',
                         'process_by' => $request->lastOperator ?? 'system'
                     ]);
+
+                    try {
+                        CustomerCredit::updateCustomerCredit($data->Customer);
+                    } catch (\Throwable $e) {
+                    }
+
 
                     // Mirror AP RR flow: apply available customer credit memos to THIS new invoice
                     try {

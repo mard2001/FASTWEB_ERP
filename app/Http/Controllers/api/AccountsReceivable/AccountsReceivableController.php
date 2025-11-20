@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Bank;
 use App\Models\Check;
 use App\Models\Customer\Customer;
+use App\Models\CustomerCredit;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -568,6 +569,74 @@ class AccountsReceivableController extends Controller
 
             $payment = Payment::create($paymentData);
 
+            try {
+                activity('accounts_receivable')
+                    ->performedOn($receivable)
+                    ->causedBy(auth()->user())
+                    ->withProperties([
+                        'ip' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'url' => request()->fullUrl(),
+                        'method' => request()->method(),
+                        'ar_id' => $receivable->id,
+                        'customer_code' => $receivable->customer_code,
+                        'customer_name' => $receivable->customer_name,
+                        'so_number' => $receivable->so_number,
+                        'reference_number' => $receivable->reference_number,
+                        'payment_amount' => $paymentAmount,
+                        'payment_type' => $request->payment_method,
+                        'payment_status' => $paymentStatus,
+                        'remarks' => $request->remarks,
+                        'bank_id' => $paymentData['bank_id'] ?? null,
+                        'gcash_id' => $paymentData['gcash_id'] ?? null,
+                        'check_id' => $checkId
+                    ])
+                    ->event('payment_made')
+                    ->log('Payment of ₱' . number_format($paymentAmount, 2) . ' recorded for AR #' . $receivable->id . ' (' . ($receivable->reference_number ?? $receivable->so_number ?? 'N/A') . ')');
+            } catch (\Throwable $e) {
+            }
+
+            // Log to bank reconciliation when payment is via bank or bank check (deposit)
+            try {
+                $affectedBankId = $paymentData['bank_id'] ?? null;
+                if (!$affectedBankId && $checkId) {
+                    $check = Check::find($checkId);
+                    $affectedBankId = $check ? $check->BankID : null;
+                }
+
+                if ($affectedBankId) {
+                    $bank = \App\Models\Bank::find($affectedBankId);
+                    $bankName = $bank ? $bank->BankName : 'Unknown Bank';
+                    $paymentTypeDisplay = ($request->payment_method === 'check' || $checkId) ? 'Bank Check' : 'Bank';
+                    $reconciliation = \App\Models\BankReconciliation::where('BankID', $affectedBankId)
+                        ->orderBy('DateCreated', 'desc')
+                        ->first();
+
+                    activity('bank_reconciliation')
+                        ->performedOn($reconciliation ?: $bank)
+                        ->causedBy(auth()->user())
+                        ->withProperties([
+                            'ip' => request()->ip(),
+                            'user_agent' => request()->userAgent(),
+                            'url' => request()->fullUrl(),
+                            'method' => request()->method(),
+                            'ar_id' => $receivable->id,
+                            'ar_reference' => $receivable->reference_number,
+                            'customer_code' => $receivable->customer_code,
+                            'customer_name' => $receivable->customer_name,
+                            'payment_id' => $payment->id,
+                            'payment_amount' => $paymentAmount,
+                            'payment_type' => $paymentTypeDisplay,
+                            'bank_id' => $affectedBankId,
+                            'check_id' => $checkId,
+                        ])
+                        ->event('AR Deposit')
+                        ->log('Deposit of ₱' . number_format($paymentAmount, 2) . ' via ' . $paymentTypeDisplay . ' for AR #' . $receivable->id . ' on \'' . $bankName . '\'');
+                }
+            } catch (\Throwable $e) {
+            }
+
+
             // Update receivable status and balance
             if ($newBalance <= 0 || $paymentStatus === 'full') {
                 $receivable->status = 'Settled';
@@ -587,7 +656,12 @@ class AccountsReceivableController extends Controller
                 $receivable->credit_generated = ($receivable->credit_generated ?? 0) + $creditMemo;
             }
             
-            $receivable->save();
+            $receivable->saveQuietly();
+
+            try {
+                CustomerCredit::updateCustomerCredit($receivable->customer_code);
+            } catch (\Throwable $e) {
+            }
 
             // Prepare response message (avoid peso symbol for UTF-8 safety)
             $message = 'Payment processed successfully';

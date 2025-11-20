@@ -172,11 +172,13 @@ class CustomerCredit extends Model
             ORDER BY c.Name
         ");
 
-        // Clear existing data and insert fresh data
-        self::truncate();
+        // Clear existing data and insert fresh data WITHOUT triggering model events/logs
+        DB::table('tblCustomerCredits')->truncate();
 
+        $rows = [];
+        $now = now();
         foreach ($customersData as $data) {
-            self::create([
+            $rows[] = [
                 'customer_code' => $data->CustomerCode,
                 'customer_name' => $data->CustomerName,
                 'total_credit' => $data->total_credit,
@@ -184,8 +186,13 @@ class CustomerCredit extends Model
                 'balance' => $data->balance,
                 'credit_limit' => $data->credit_limit,
                 'credit_balance' => $data->credit_balance,
-                'last_updated' => now()
-            ]);
+                'last_updated' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        if (!empty($rows)) {
+            DB::table('tblCustomerCredits')->insert($rows);
         }
 
         return count($customersData);

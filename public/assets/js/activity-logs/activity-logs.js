@@ -193,6 +193,13 @@ $(document).ready(function() {
                                     }
                                     return '<span style="font-size:10px; color:var(--text-color-muted, #808080);">Activity</span>';
                                 }
+                                // Special case: Sales Order Suspense should be red
+                                if (row.log_name === 'sales_order' && data === 'status_changed') {
+                                    const props = row.properties || {};
+                                    if ((props.status_description === 'Suspense Order') || (props.new_status === 'S')) {
+                                        return `<span class="statusBadge2">Suspense</span>`;
+                                    }
+                                }
                                 const badgeClass = getActivityBadgeClass(data);
                                 return `<span class="${badgeClass}">${formatEventLabel(data)}</span>`;
                             }
@@ -454,6 +461,7 @@ $(document).ready(function() {
             'Manual Withdrawal': 'statusBadge2', // Red
             'AP Withdrawal': 'statusBadge2',     // Red
             'Manual Deposit': 'statusBadge4',    // Blue
+            'AR Deposit': 'statusBadge4',        // Blue
             
             // Stock Transfer specific activities
             'transferred': 'statusBadge4',    // Blue - Stock Transferred
@@ -465,7 +473,7 @@ $(document).ready(function() {
             'so_available': 'statusBadge1',   // Green - Available
             'so_unavailable': 'statusBadge3', // Orange - Not Available
             'so_restocked': 'statusBadge1',   // Green - Restocked
-            'so_suspense': 'statusBadge3',    // Orange - Suspense
+            'so_suspense': 'statusBadge2',    // Red - Suspense
             'so_invoice': 'statusBadge4',     // Blue - To Invoice
             'so_completed': 'statusBadge1',   // Green - Completed
             'so_deleted': 'statusBadge2',     // Red - Deleted
@@ -1057,8 +1065,9 @@ $(document).ready(function() {
 
         // Show item-added section
         const eventType = activity.event || properties.event;
-        const items = properties.items;
-        if (eventType === 'items_added' && Array.isArray(items) && items.length) {
+        const itemsRaw = properties.items;
+        const items = Array.isArray(itemsRaw) ? itemsRaw : (itemsRaw && typeof itemsRaw === 'object' ? Object.values(itemsRaw) : []);
+        if (eventType === 'items_added' && items.length) {
             let rows = '';
             let total = 0;
             items.forEach(it => {
@@ -1101,7 +1110,7 @@ $(document).ready(function() {
                     </div>
                 </div>
             `;
-        } else if (eventType === 'items_removed' && Array.isArray(items) && items.length) {
+        } else if (eventType === 'items_removed' && items.length) {
             let rows = '';
             let total = 0;
             items.forEach(it => {

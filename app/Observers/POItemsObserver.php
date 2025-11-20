@@ -29,6 +29,9 @@ class POItemsObserver
 
     public function updated(POItems $poItem)
     {
+        if (request()->attributes->get('collect_po_item_logs')) {
+            return;
+        }
         $poItem->POHeader->updateTotalCost();
 
         try {

@@ -565,6 +565,24 @@ class CustomerCreditController extends Controller
 
             $user = auth()->user();
             $totalRecords = $transactions->count();
+            try {
+                $customerCredit = CustomerCredit::where('customer_code', $customerCode)->first();
+                activity('customercredit')
+                    ->performedOn($customerCredit ?: new CustomerCredit(['customer_code' => $customerCode]))
+                    ->causedBy($user)
+                    ->withProperties([
+                        'ip' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'url' => request()->fullUrl(),
+                        'method' => request()->method(),
+                        'customer_code' => $customer->Customer,
+                        'customer_name' => $customer->Name,
+                        'total_records' => $totalRecords
+                    ])
+                    ->event('printed')
+                    ->log('Printed Statement of Account for ' . $customer->Name . ' (' . $customer->Customer . ')');
+            } catch (\Throwable $e) {
+            }
             return view('Pages.Printing.customer_statement_print', compact('customer', 'transactions', 'user', 'totalRecords'));
         } catch (\Exception $e) {
             return response()->json([
@@ -725,7 +743,24 @@ class CustomerCreditController extends Controller
 
             $user = auth()->user();
             $totalRecords = $pendingTransactions->count();
-            // Always pass the collection, even if empty - the template will handle the display
+            try {
+                $customerCredit = CustomerCredit::where('customer_code', $customerCode)->first();
+                activity('customercredit')
+                    ->performedOn($customerCredit ?: new CustomerCredit(['customer_code' => $customerCode]))
+                    ->causedBy($user)
+                    ->withProperties([
+                        'ip' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'url' => request()->fullUrl(),
+                        'method' => request()->method(),
+                        'customer_code' => $customer->Customer,
+                        'customer_name' => $customer->Name,
+                        'total_records' => $totalRecords
+                    ])
+                    ->event('printed')
+                    ->log('Printed Counter Receipt for ' . $customer->Name . ' (' . $customer->Customer . ')');
+            } catch (\Throwable $e) {
+            }
             return view('Pages.Printing.customer_counter_receipt_print', compact('customer', 'pendingTransactions', 'user', 'totalRecords'));
         } catch (\Exception $e) {
             return response()->json([
