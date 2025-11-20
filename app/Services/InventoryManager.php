@@ -252,7 +252,7 @@ class InventoryManager
                     'NEW_QTY' => $productData['TrnQty'],
                     'ADJUSTED_QTY' => (float)$productData['TrnQty'] - (float)$productData['ActualQty'],
                     'ADJUSTMENT_TYPE' => $headerDetails['Type'],
-                    'REASON' => '',
+                    'REASON' => $headerDetails['Reason'] ?? $headerDetails['AdjustmentReason'] ?? $headerDetails['Type'] ?? '',
                     'HANDLED_BY' => $headerDetails['LastOperator']
                 ]);
             }

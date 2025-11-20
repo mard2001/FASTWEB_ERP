@@ -133,6 +133,23 @@ $(document).ready(async function () {
         select.dispatchEvent(event);
     });
 
+    $(document).on("click", ".itemDeleteIcon", async function () {
+        const row = $(this).closest("tr");
+        const itemStockCode = row.find("td:first").text().trim();
+        Swal.fire({
+            title: "Are you sure?",
+            text: "Do you want to remove the item?",
+            icon: "question",
+            showDenyButton: true,
+            confirmButtonText: "Yes, Remove",
+            denyButtonText: `Cancel`,
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                SAdjitemsModal.itemTmpDelete(itemStockCode);
+            }
+        });
+    });
+
     $("#itemCloseBtn").on("click", function () {
         let valid = false;
         const data = SAdjitemsModal.getData();
@@ -397,13 +414,14 @@ const datatables = {
         }));
         
         // Initialize the items datatable with the filtered data
-        datatables.initSAdjItemsDatatable(formattedItems);
+        datatables.initSAdjItemsDatatable(formattedItems, false);
     },
 
-    initSAdjItemsDatatable: (datas) => {
+    initSAdjItemsDatatable: (datas, enableActions = true) => {
         if (ItemsTH) {
             ItemsTH.clear().draw();
             datas && ItemsTH.rows.add(datas).draw();
+            ItemsTH.column(6).visible(enableActions);
         } else {
             ItemsTH = $('#itemTables').DataTable({
                 dom: "rt<'d-flex justify-content-between' ip>",
@@ -477,6 +495,7 @@ const datatables = {
             });
             // Move search input to #searchContainer
             $('#searchBar').html('<input type="text" id="customItemSearchBox" placeholder="Search...">');
+            ItemsTH.column(6).visible(enableActions);
 
             // Custom search event
             $('#customItemSearchBox').on('keyup', function() {
@@ -789,6 +808,23 @@ const SAdjModal = {
         $('#modalFields #REFERENCE').prop('disabled', true);
         $('#modalFields #ENTRY_DATE').prop('disabled', true);
         $('#addItems').prop('disabled', !enable);
+
+        const whVS = document.querySelector('#VSWarehouse');
+        const adjVS = document.querySelector('#VSAdjType');
+        try {
+            if (enable) {
+                whVS && whVS.enable && whVS.enable();
+                adjVS && adjVS.enable && adjVS.enable();
+                $('#VSWarehouse .vscomp-toggle-button, #VSAdjType .vscomp-toggle-button').css('pointer-events', 'auto');
+            } else {
+                whVS && whVS.disable && whVS.disable();
+                adjVS && adjVS.disable && adjVS.disable();
+                $('#VSWarehouse .vscomp-toggle-button, #VSAdjType .vscomp-toggle-button').css('pointer-events', 'none');
+            }
+        } catch (e) {
+            // Fallback: ensure non-interactive state via pointer-events
+            $('#VSWarehouse .vscomp-toggle-button, #VSAdjType .vscomp-toggle-button').css('pointer-events', enable ? 'auto' : 'none');
+        }
     },
     getData: () => {
         return {
@@ -1045,13 +1081,18 @@ const SAdjitemsModal = {
         getItem.PriceUom = getItem.OrderUom;
         getItem.StockingUom = getItem.OrderUom;
         getItem.TrnQty = totalInPieces;
+        // Populate modal table numeric columns
+        const prev = parseFloat(getItem.ActualQty ?? 0) || 0;
+        const next = parseFloat(getItem.TrnQty ?? 0) || 0;
+        getItem.PREV_QTY = prev;
+        getItem.NEW_QTY = next;
+        getItem.ADJUSTED_QTY = next - prev;
         return getItem;
     },
-    itemTmpDelete: (skuCode) => {
+    itemTmpDelete: (stockCode) => {
         itemTmpSave = itemTmpSave.filter(
-          (item) => item.StockCode != skuCode.text()
+          (item) => item.StockCode != stockCode
         );
-
         datatables.initSAdjItemsDatatable(itemTmpSave);
     },
 }

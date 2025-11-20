@@ -1063,10 +1063,102 @@ $(document).ready(function() {
             `;
         }
 
-        // Show item-added section
         const eventType = activity.event || properties.event;
+        const logName = activity.log_name || '';
         const itemsRaw = properties.items;
         const items = Array.isArray(itemsRaw) ? itemsRaw : (itemsRaw && typeof itemsRaw === 'object' ? Object.values(itemsRaw) : []);
+
+        if (logName === 'stock_transfer') {
+            const transferredRaw = properties.items_transferred;
+            const transferred = Array.isArray(transferredRaw) ? transferredRaw : [];
+            if (transferred.length) {
+                detailsHTML += `
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="text-primary">Items Transferred</h6>
+                            <table class="table table-sm table-bordered" style="font-size: 12px">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Item Code</th>
+                                        <th>Item Name</th>
+                                        <th>Warehouse</th>
+                                        <th class="text-end">Quantity (PC)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+                transferred.forEach(function(it){
+                    const code = it.stock_code || '-';
+                    const name = it.description || '-';
+                    const wh = `${(properties.origin_warehouse || '-')}->${(properties.destination_warehouse || '-')}`;
+                    const qty = (it.quantity !== undefined && it.quantity !== null && !isNaN(parseFloat(it.quantity))) ? parseFloat(it.quantity).toLocaleString('en-US') : '<em class="text-muted">empty</em>';
+                    detailsHTML += `
+                        <tr>
+                            <td><strong>${code}</strong></td>
+                            <td>${name}</td>
+                            <td>${wh}</td>
+                            <td class="text-end"><strong>${qty}</strong></td>
+                        </tr>
+                    `;
+                });
+                detailsHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        if (logName === 'inventory_adjustment') {
+            const adjustedRaw = properties.items_adjusted;
+            const adjusted = Array.isArray(adjustedRaw) ? adjustedRaw : [];
+            if (adjusted.length) {
+                detailsHTML += `
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="text-primary">Items Adjusted</h6>
+                            <table class="table table-sm table-bordered" style="font-size: 12px">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Item Code</th>
+                                        <th>Item Name</th>
+                                        <th class="text-end">Old Qty</th>
+                                        <th class="text-end">New Qty</th>
+                                        <th class="text-end">Adjusted</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+                adjusted.forEach(function(it){
+                    const code = it.stock_code || '-';
+                    const name = it.description || '-';
+                    const oldQty = (it.old_qty !== undefined && it.old_qty !== null && !isNaN(parseFloat(it.old_qty))) ? parseFloat(it.old_qty).toLocaleString('en-US') : '<em class="text-muted">empty</em>';
+                    const newQty = (it.new_qty !== undefined && it.new_qty !== null && !isNaN(parseFloat(it.new_qty))) ? parseFloat(it.new_qty).toLocaleString('en-US') : '<em class="text-muted">empty</em>';
+                    const adjQty = (it.adjusted_qty !== undefined && it.adjusted_qty !== null && !isNaN(parseFloat(it.adjusted_qty))) ? parseFloat(it.adjusted_qty).toLocaleString('en-US') : '<em class="text-muted">empty</em>';
+                    const reason = it.reason || it.adjustment_type || '<em class="text-muted">empty</em>';
+                    detailsHTML += `
+                        <tr>
+                            <td><strong>${code}</strong></td>
+                            <td>${name}</td>
+                            <td class="text-end">${oldQty}</td>
+                            <td class="text-end"><strong>${newQty}</strong></td>
+                            <td class="text-end">${adjQty}</td>
+                            <td>${reason}</td>
+                        </tr>
+                    `;
+                });
+                detailsHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Show item-added section
         if (eventType === 'items_added' && items.length) {
             let rows = '';
             let total = 0;

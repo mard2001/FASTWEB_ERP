@@ -682,6 +682,23 @@ public function getSKUMovement(string $StockCode, string $Warehouse)
                 $InventoryManager->InvMovement($mainDetails,  $item, 'I', 'A');
             }
 
+            $adjustmentItems = InvAdjustmentLogs::where('REFERENCE', $ref)
+                ->with('productdetails')
+                ->orderBy('ENTRY_DATE', 'asc')
+                ->get();
+
+            $itemsAdjusted = $adjustmentItems->map(function($log){
+                return [
+                    'stock_code' => $log->STOCKCODE,
+                    'description' => optional($log->productdetails)->Description ?? '',
+                    'old_qty' => (int) floor($log->PREV_QTY ?? 0),
+                    'new_qty' => (int) floor($log->NEW_QTY ?? 0),
+                    'adjusted_qty' => (int) floor($log->ADJUSTED_QTY ?? 0),
+                    'reason' => $log->REASON ?? '',
+                    'adjustment_type' => $log->ADJUSTMENT_TYPE ?? ''
+                ];
+            })->toArray();
+
             // Log the activity
             activity('inventory_adjustment')
                 ->withProperties([
@@ -695,13 +712,7 @@ public function getSKUMovement(string $StockCode, string $Warehouse)
                     'adjustment_date' => $mainDetails['EntryDate'] ?? date('Y-m-d'),
                     'total_items' => count($items),
                     'operator' => $mainDetails['LastOperator'] ?? 'System',
-                    'items_adjusted' => array_map(function($item) {
-                        return [
-                            'stock_code' => $item['StockCode'],
-                            'quantity' => $item['TrnQty'],
-                            'description' => $item['Description'] ?? ''
-                        ];
-                    }, $items),
+                    'items_adjusted' => $itemsAdjusted,
                     'subject_type' => 'App\\Models\\Inventory\\InvAdjustmentLogs',
                     'subject_id' => $ref,
                     'event' => 'created'

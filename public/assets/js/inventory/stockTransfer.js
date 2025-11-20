@@ -618,6 +618,14 @@ const initVS = {
                         console.log("findProduct",findProduct);
                         $("#Decription").val(findProduct.productdetails.Description);
 
+                        var availability = findProduct.runningBal || {};
+                        var parts = [];
+                        if (availability.inCS != null) { parts.push(`CS: ${availability.inCS}`); }
+                        if (availability.inIB != null) { parts.push(`IB: ${availability.inIB}`); }
+                        if (availability.inPC != null) { parts.push(`PC: ${availability.inPC}`); }
+                        var availabilityText = parts.length ? parts.join(" | ") : "No availability";
+                        $("#inventoryAvailabilityInput").val(availabilityText);
+
                         var uomColumn = ["StockUom", "AlternateUom", "OtherUom"];
 
                         var uoms = uomColumn.map((item) => {
@@ -631,7 +639,6 @@ const initVS = {
                             (item, index, self) =>
                                 index === self.findIndex((other) => other.value === item.value)
                         );
-
 
                         if (!$(".UOMField").hasClass("d-none")) {
                             $(".UOMField").addClass("d-none");
@@ -663,6 +670,7 @@ const initVS = {
                         }
                     } else {
                         $("#PricePerUnit").val("");
+                        $("#inventoryAvailabilityInput").val("");
                         $("#itemSave").prop("disabled", true);
 
                         Swal.fire({
@@ -676,6 +684,7 @@ const initVS = {
                 $("#StockCode").on("reset", function () {
                     $("#Decription").val("");
                     $("#PricePerUnit").val("");
+                    $("#inventoryAvailabilityInput").val("");
                 });
 
             }
