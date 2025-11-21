@@ -106,13 +106,24 @@ class GcashReconciliationController extends Controller
                 ->first();
 
             // Get transaction history (payments made through this gcash account)
-            // Note: Adjust this based on your payment system structure
+            // Include both AP and AR payments and determine direction per record
             $transactions = Payment::where('gcash_id', $gcashId)
-                ->with(['accountsPayable.supplier'])
+                ->with(['accountsPayable.supplier', 'accountsReceivable'])
                 ->orderBy('payment_date', 'asc')
                 ->orderBy('created_at', 'asc')
                 ->get()
                 ->map(function($payment) {
+                    $isArPayment = !is_null($payment->accounts_receivable_id);
+                    $transactionType = $isArPayment ? 'IN' : 'OUT';
+                    $supplierName = $isArPayment 
+                        ? ($payment->accountsReceivable->customer_name ?? 'N/A') 
+                        : ($payment->accountsPayable->supplier->SupplierName ?? 'N/A');
+                    $supplierCode = $isArPayment 
+                        ? ($payment->accountsReceivable->customer_code ?? 'N/A') 
+                        : ($payment->accountsPayable->supplier_code ?? 'N/A');
+                    $refForColumn = $isArPayment 
+                        ? ($payment->accountsReceivable->reference_number ?? $payment->accountsReceivable->so_number ?? 'N/A') 
+                        : ($payment->accountsPayable->reference_number ?? 'N/A');
                     return [
                         'id' => $payment->id,
                         'payment_date' => $payment->payment_date,
@@ -121,10 +132,10 @@ class GcashReconciliationController extends Controller
                         'payment_status' => $payment->payment_status,
                         'reference_number' => $payment->reference_number,
                         'remarks' => $payment->remarks,
-                        'supplier_name' => $payment->accountsPayable->supplier->SupplierName ?? 'N/A',
-                        'supplier_code' => $payment->accountsPayable->supplier_code ?? 'N/A',
-                        'ap_reference' => $payment->accountsPayable->reference_number ?? 'N/A',
-                        'transaction_type' => 'OUT', // Payments are always outflows (Accounts Payable)
+                        'supplier_name' => $supplierName,
+                        'supplier_code' => $supplierCode,
+                        'ap_reference' => $refForColumn,
+                        'transaction_type' => $transactionType,
                         'created_at' => $payment->created_at
                     ];
                 })
@@ -196,14 +207,21 @@ class GcashReconciliationController extends Controller
                 return $dateCompare;
             });
 
-            // Calculate total outflows from transactions (excluding beginning balance)
+            // Calculate total outflows and inflows from transactions (excluding beginning balance)
             $totalTransactionOutflows = collect($transactions)
                 ->where('transaction_type', 'OUT')
+                ->where('is_beginning_balance', '!=', true)
                 ->sum('payment_amount');
 
-            // Calculate available balance
+            $totalTransactionInflows = collect($transactions)
+                ->where('transaction_type', 'IN')
+                ->where('is_beginning_balance', '!=', true)
+                ->sum('payment_amount');
+
+            // Calculate available balance (manual inflows + AR inflows - AP outflows)
             $beginningBalance = $latestRecon->BeginningBalance ?? 0;
-            $totalInflows = $latestRecon->TotalInflows ?? 0;
+            $manualInflows = $latestRecon->TotalInflows ?? 0;
+            $totalInflows = $manualInflows + $totalTransactionInflows;
             $availableBalance = $beginningBalance + $totalInflows - $totalTransactionOutflows;
 
             $data = [
@@ -311,8 +329,8 @@ class GcashReconciliationController extends Controller
                         'user_agent' => $request->header('User-Agent'),
                         'account_name' => $gcash->AccountName,
                         'beginning_balance' => $data['BeginningBalance'],
-                        'event' => 'created',
                     ])
+                    ->event('created')
                     ->log("Set beginning balance for Gcash '{$gcash->AccountName}': {$data['BeginningBalance']}");
             }
 
@@ -410,23 +428,28 @@ class GcashReconciliationController extends Controller
                 ->first();
 
             if ($reconciliation) {
+                $prevInflows = $reconciliation->TotalInflows ?? 0;
+                $prevOutflows = $reconciliation->TotalOutflows ?? 0;
+                $prevAvailable = $reconciliation->AvailableBalance; // Accessor computes if null
+
                 if ($data['TransactionType'] === 'IN') {
-                    // Deposit: increase TotalInflows
-                    $newTotalInflows = ($reconciliation->TotalInflows ?? 0) + $data['Amount'];
-                    $reconciliation->TotalInflows = $newTotalInflows;
+                    $reconciliation->TotalInflows = $prevInflows + $data['Amount'];
                 } else {
-                    // Withdrawal: increase TotalOutflows
-                    $newTotalOutflows = ($reconciliation->TotalOutflows ?? 0) + $data['Amount'];
-                    $reconciliation->TotalOutflows = $newTotalOutflows;
+                    $reconciliation->TotalOutflows = $prevOutflows + $data['Amount'];
                 }
 
                 // Recalculate available balance
                 $reconciliation->AvailableBalance = $reconciliation->calculateAvailableBalance();
                 $reconciliation->save();
+
+                $newInflows = $reconciliation->TotalInflows ?? 0;
+                $newOutflows = $reconciliation->TotalOutflows ?? 0;
+                $newAvailable = $reconciliation->AvailableBalance;            
             }
 
-            // Log activity
+            // Log manual transaction with proper event
             $transactionTypeLabel = $data['TransactionType'] === 'IN' ? 'deposit' : 'withdrawal';
+            $manualEvent = $data['TransactionType'] === 'IN' ? 'Manual Deposit' : 'Manual Withdrawal';
             activity('gcash_reconciliation')
                 ->withProperties([
                     'ip' => $request->ip(),
@@ -435,9 +458,34 @@ class GcashReconciliationController extends Controller
                     'transaction_type' => $data['TransactionType'],
                     'amount' => $data['Amount'],
                     'reference' => $data['ReferenceNumber'] ?? 'N/A',
-                    'event' => 'manual_transaction_created',
                 ])
+                ->performedOn($manualTransaction)
+                ->event($manualEvent)
                 ->log("Created manual {$transactionTypeLabel} for Gcash '{$gcash->AccountName}': ₱" . number_format($data['Amount'], 2));
+
+            // Log reconciliation balance update
+            if ($reconciliation) {
+                activity('gcash_reconciliation')
+                    ->withProperties([
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->header('User-Agent'),
+                        'account_name' => $gcash->AccountName,
+                        'available_balance' => $newAvailable,
+                        'attributes' => [
+                            'TotalInflows' => $newInflows,
+                            'TotalOutflows' => $newOutflows,
+                            'AvailableBalance' => $newAvailable,
+                        ],
+                        'old' => [
+                            'TotalInflows' => $prevInflows,
+                            'TotalOutflows' => $prevOutflows,
+                            'AvailableBalance' => $prevAvailable,
+                        ],
+                    ])
+                    ->performedOn($reconciliation)
+                    ->event('updated')
+                    ->log("Updated balance for '{$gcash->AccountName}': ₱" . number_format($newAvailable, 2));
+            }
 
             return response()->json([
                 'success' => true,

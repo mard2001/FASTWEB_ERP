@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api\AccountsPayable;
 use App\Http\Controllers\Controller;
 use App\Models\AccountsPayable;
 use App\Models\Payment;
+use App\Models\Gcash;
 use App\Models\Check;
 use App\Models\SupplierCredit;
 use Illuminate\Http\Request;
@@ -575,6 +576,32 @@ class AccountsPayableController extends Controller
                     ->event('payment_made')
                     ->log('Payment of ₱' . number_format($paymentAmount, 2) . ' recorded for AP #' . $accountsPayable->id . ' (' . ($accountsPayable->reference_number ?? 'N/A') . ')');
             } catch (\Throwable $e) {
+            }
+
+            if ($request->payment_type === 'gcash' && $request->gcash_id) {
+                try {
+                    $gcash = Gcash::find($request->gcash_id);
+                    $gcashAccountName = $gcash?->AccountName ?? 'GCash Account';
+
+                    activity('gcash_reconciliation')
+                        ->causedBy(auth()->user())
+                        ->withProperties([
+                            'ip' => request()->ip(),
+                            'user_agent' => request()->userAgent(),
+                            'account_name' => $gcashAccountName,
+                            'transaction_type' => 'OUT',
+                            'amount' => $paymentAmount,
+                            'ap_reference' => $accountsPayable->reference_number ?? 'N/A',
+                            'supplier_code' => $accountsPayable->supplier_code ?? 'N/A',
+                            'supplier_name' => $accountsPayable->supplier_name ?? 'N/A',
+                            'reference' => $request->reference_number ?? 'N/A',
+                            'payment_id' => $payment->id,
+                            'gcash_id' => $request->gcash_id,
+                        ])
+                        ->event('AP Withdrawal')
+                        ->log("AP payment via GCash '{$gcashAccountName}': ₱" . number_format($paymentAmount, 2) . " for AP '" . ($accountsPayable->reference_number ?? 'N/A') . "' to supplier '" . ($accountsPayable->supplier_name ?? 'N/A') . "'");
+                } catch (\Throwable $e) {
+                }
             }
 
             // Log to bank reconciliation when payment is via bank or bank check

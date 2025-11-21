@@ -70,20 +70,6 @@ $(document).ready(async function () {
         }
     });
 
-    // Update beginning balance from details modal
-    $("#updateBeginningBalanceBtn").on("click", async function () {
-        const gcashId = parseInt($('#DetailsGcashID').val());
-        const gcash = jsonArr.find(g => g.GcashID === gcashId);
-        
-        if (gcash) {
-            openBeginningBalanceModal(gcash.GcashID, gcash.AccountName, {
-                BeginningBalance: gcash.BeginningBalance,
-                ReconciliationDate: gcash.LastReconciliationDate,
-                Notes: gcash.Notes
-            });
-            // Don't hide the gcash details modal
-        }
-    });
 
     // Manual Deposit button
     $("#manualDepositBtn").on("click", function () {

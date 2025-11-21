@@ -31,7 +31,9 @@ class SupplierObserver
     {
         try {
             if ($supplier->SupplierCode) {
-                SupplierCredit::updateSupplierCredit(trim($supplier->SupplierCode));
+                SupplierCredit::withoutEvents(function () use ($supplier) {
+                    SupplierCredit::updateSupplierCredit(trim($supplier->SupplierCode));
+                });
                 Log::info('SupplierCredit updated via observer for new/updated supplier: ' . trim($supplier->SupplierCode), [
                     'supplier_name' => $supplier->SupplierName,
                     'event' => 'supplier_observer'

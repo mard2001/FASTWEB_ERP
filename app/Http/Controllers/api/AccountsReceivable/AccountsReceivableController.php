@@ -7,6 +7,7 @@ use App\Models\AccountsReceivable;
 use App\Models\Payment;
 use App\Models\Bank;
 use App\Models\Check;
+use App\Models\Gcash;
 use App\Models\Customer\Customer;
 use App\Models\CustomerCredit;
 use Illuminate\Http\Request;
@@ -594,6 +595,32 @@ class AccountsReceivableController extends Controller
                     ->event('payment_made')
                     ->log('Payment of ₱' . number_format($paymentAmount, 2) . ' recorded for AR #' . $receivable->id . ' (' . ($receivable->reference_number ?? $receivable->so_number ?? 'N/A') . ')');
             } catch (\Throwable $e) {
+            }
+
+            if ($request->payment_method === 'gcash' && $request->gcash_id) {
+                try {
+                    $gcash = Gcash::find($request->gcash_id);
+                    $gcashAccountName = $gcash?->AccountName ?? 'GCash Account';
+
+                    activity('gcash_reconciliation')
+                        ->causedBy(auth()->user())
+                        ->withProperties([
+                            'ip' => request()->ip(),
+                            'user_agent' => request()->userAgent(),
+                            'account_name' => $gcashAccountName,
+                            'transaction_type' => 'IN',
+                            'amount' => $paymentAmount,
+                            'ar_reference' => $receivable->reference_number ?? $receivable->so_number ?? 'N/A',
+                            'customer_code' => $receivable->customer_code ?? 'N/A',
+                            'customer_name' => $receivable->customer_name ?? 'N/A',
+                            'reference' => $request->reference_number ?? 'N/A',
+                            'payment_id' => $payment->id,
+                            'gcash_id' => $request->gcash_id,
+                        ])
+                        ->event('AR Deposit')
+                        ->log("AR payment via GCash '{$gcashAccountName}': ₱" . number_format($paymentAmount, 2) . " for AR '" . ($receivable->reference_number ?? $receivable->so_number ?? 'N/A') . "' from customer '" . ($receivable->customer_name ?? 'N/A') . "'");
+                } catch (\Throwable $e) {
+                }
             }
 
             // Log to bank reconciliation when payment is via bank or bank check (deposit)

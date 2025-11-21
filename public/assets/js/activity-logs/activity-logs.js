@@ -117,8 +117,22 @@ $(document).ready(function() {
                             data: 'event', 
                             title: 'Activity',
                             render: function (data, type, row) {
+                                let props = {};
+                                try {
+                                    if (typeof row.properties === 'string') {
+                                        props = JSON.parse(row.properties || '{}');
+                                    } else if (typeof row.properties === 'object' && row.properties !== null) {
+                                        props = row.properties;
+                                    }
+                                } catch (e) {
+                                    props = {};
+                                }
                                 // If no event, try to detect from description for Sales Orders
                                 if (!data || data === null || data === undefined || data === '') {
+                                    if (props.event) {
+                                        const badgeClass = getActivityBadgeClass(props.event);
+                                        return `<span class="${badgeClass}">${formatEventLabel(props.event)}</span>`;
+                                    }
                                     // Check if this is a stock transfer activity
                                     if (row.log_name === 'stock_transfer' && row.description) {
                                         const detectedEvent = detectStockTransferEvent(row.description);
@@ -191,6 +205,20 @@ $(document).ready(function() {
                                             return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
                                         }
                                     }
+                                    if (row.log_name === 'gcash' && row.description) {
+                                        const detectedEvent = detectGcashEvent(row.description);
+                                        if (detectedEvent) {
+                                            const badgeClass = getActivityBadgeClass(detectedEvent.event);
+                                            return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
+                                        }
+                                    }
+                                    if (row.log_name === 'gcash_reconciliation' && row.description) {
+                                        const detectedEvent = detectGcashReconEvent(row.description);
+                                        if (detectedEvent) {
+                                            const badgeClass = getActivityBadgeClass(detectedEvent.event);
+                                            return `<span class="${badgeClass}">${detectedEvent.label}</span>`;
+                                        }
+                                    }
                                     return '<span style="font-size:10px; color:var(--text-color-muted, #808080);">Activity</span>';
                                 }
                                 // Special case: Sales Order Suspense should be red
@@ -243,6 +271,12 @@ $(document).ready(function() {
                                 // If no subject_type but it's a warehouse activity, show Warehouses
                                 if (!data && row.log_name === 'warehouse') {
                                     return 'Warehouses';
+                                }
+                                if (!data && row.log_name === 'gcash') {
+                                    return 'GCash';
+                                }
+                                if (!data && row.log_name === 'gcash_reconciliation') {
+                                    return 'GCash Reconciliation';
                                 }
                                 if (!data) return '<span style="font-size:10px; color:var(--text-color-muted, #808080);">---</span>';
                                 return getModuleName(data);
@@ -541,7 +575,10 @@ $(document).ready(function() {
             'App\\Models\\Inventory\\CSHeader': 'Stock Count',
             'App\\Models\\Warehouse\\Warehouse': 'Warehouses',
             'App\\Models\\Salesman\\Salesperson': 'Salesman Management',
-            'App\\Models\\ReceivingReports\\ReceivingRHeader': 'Receiving Report'
+            'App\\Models\\ReceivingReports\\ReceivingRHeader': 'Receiving Report',
+            'App\\Models\\Gcash': 'GCash',
+            'App\\Models\\GcashReconciliation': 'GCash Reconciliation',
+            'App\\Models\\GcashManualTransaction': 'GCash Manual Transaction'
         };
         return moduleMap[subjectType] || (subjectType ? subjectType.split('\\').pop() : '---');
     }
@@ -716,6 +753,36 @@ $(document).ready(function() {
         
         // Default for salesman activities
         return { event: 'salesman_activity', label: 'Salesman Activity' };
+    }
+
+    function detectGcashEvent(description) {
+        if (!description) return null;
+        const desc = description.toLowerCase();
+        if (desc.includes('created new gcash')) {
+            return { event: 'created', label: 'Created' };
+        }
+        if (desc.includes('updated gcash')) {
+            return { event: 'updated', label: 'Updated' };
+        }
+        if (desc.includes('deleted gcash')) {
+            return { event: 'deleted', label: 'Deleted' };
+        }
+        return null;
+    }
+
+    function detectGcashReconEvent(description) {
+        if (!description) return null;
+        const desc = description.toLowerCase();
+        if (desc.includes('created manual') && desc.includes('withdrawal')) {
+            return { event: 'Manual Withdrawal', label: 'Manual Withdrawal' };
+        }
+        if (desc.includes('created manual') && desc.includes('deposit')) {
+            return { event: 'Manual Deposit', label: 'Manual Deposit' };
+        }
+        if (desc.includes('beginning balance')) {
+            return { event: 'created', label: 'Created' };
+        }
+        return null;
     }
 
     // Detect supplier events from description
@@ -1277,7 +1344,7 @@ $(document).ready(function() {
                     </div>
                 </div>
             `;
-        } else if (eventType === 'deleted' && properties && properties.deleted_data) {
+        } else if (eventType === 'deleted' && logName !== 'salesman' && properties && properties.deleted_data) {
             const it = properties.deleted_data || {};
             const code = it.StockCode || '-';
             const name = it.Decription || it.Description || '-';
@@ -1327,6 +1394,7 @@ $(document).ready(function() {
             `;
             
             let hasChanges = false;
+            const excludedCustomerFields = (logName === 'customer_maintenance') ? ['ShortName'] : [];
             
             // Field name mappings for better display (for salesman, customer, and product fields)
             const fieldNameMappings = {
@@ -1384,6 +1452,10 @@ $(document).ready(function() {
                 'ShippingProvince': 'Shipping Province',
                 'ShippingZipCode': 'Shipping Zip Code',
                 'ShippingCountry': 'Shipping Country',
+                'SoldToAddr1': 'Home Adress',
+                'SoldToAddr2': 'City/Municipality',
+                'SoldToAddr3': 'Province',
+                'SoldToAddr4': 'Barangay',
                 
                 // Product fields
                 'Decription': 'Product Name',
@@ -1494,6 +1566,9 @@ $(document).ready(function() {
             };
             
             for (const [key, newValue] of Object.entries(attributes)) {
+                if (excludedCustomerFields.includes(key)) {
+                    continue;
+                }
                 const oldValue = old[key];
                 
                 // Skip timestamps and irrelevant fields
@@ -1543,6 +1618,7 @@ $(document).ready(function() {
                     }
                     
                     const identifierFields = ['AccountNumber', 'CardNumber', 'CheckNumber'];
+                    const nonNumericFormatFields = ['TelNo','Telephone','ContactNo','ContactHP','FaxNo','SoldPostalCode','BillingZipCode','ShippingZipCode','ZipCode','PostalCode'];
                     if (!identifierFields.includes(key)) {
                     const currencyFields = ['CreditLimit', 'LabourCost', 'MaterialCost', 'FixOverhead', 'VariableOverhead', 
                                           'TotalMerchandise', 'DiscountValue', 'FreightValue', 'MiscChargeValue', 'TaxValue', 
@@ -1553,8 +1629,12 @@ $(document).ready(function() {
                                           'Total_amount', 'Grand_total', 'Final_amount', 'Net_total', 'totalCost', 'subTotal', 'totalDiscount', 'totalTax'];
                     
                     const percentageFields = ['MinPricePct', 'DiscountPercent', 'TaxPercent', 'CommissionPercent'];
+                    const monetaryKeywords = ['total', 'amount', 'balance', 'paid', 'due', 'cost', 'price', 'value', 'payment', 'credit', 'debit'];
+                    const isMonetaryField = monetaryKeywords.some(keyword => 
+                        key.toLowerCase().includes(keyword.toLowerCase())
+                    );
                     
-                    if ((currencyFields.includes(key) || bothNumeric) && (oldValueStr || newValueStr)) {
+                    if (!nonNumericFormatFields.includes(key) && (currencyFields.includes(key) || isMonetaryField) && (oldValueStr || newValueStr)) {
                         if (oldValueStr && !isNaN(oldNum)) {
                             formattedOldValue = formatCurrencyAmount(String(oldNum));
                         }
@@ -1627,12 +1707,12 @@ $(document).ready(function() {
                     );
                     
                     // Check if field name suggests it's a monetary value
-                    const monetaryKeywords = ['total', 'amount', 'balance', 'paid', 'due', 'cost', 'price', 'value', 'payment', 'credit', 'debit'];
                     const isMomentaryField = monetaryKeywords.some(keyword => 
                         key.toLowerCase().includes(keyword.toLowerCase())
                     );
                     
                     if (!shouldSkipGeneralFormatting && 
+                        !nonNumericFormatFields.includes(key) &&
                         !currencyFields.includes(key) && 
                         !percentageFields.includes(key) && 
                         !numericFieldsWithUnits.includes(key) &&

@@ -230,7 +230,7 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Type</th>
-                                <th>Supplier</th>
+                                <th>Supplier/Customer</th>
                                 <th>AP/AR Reference</th>
                                 <th>Reference</th>
                                 <th>Payment Type</th>
@@ -258,7 +258,6 @@
                 <button type="button" class="btn btn-sm btn-danger" id="manualWithdrawBtn">
                     <i class="mdi mdi-minus-circle"></i> Manual Withdraw
                 </button>
-                <button type="button" class="btn btn-sm btn-primary" id="updateBeginningBalanceBtn">Update Beginning Balance</button>
             </div>
             <div>
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
