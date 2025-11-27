@@ -432,18 +432,22 @@
                         </td>
                         <td class="text-end">₱{{ number_format($row['balance'] ?? 0,2) }}</td>
                         <td class="text-center">
-                            @if(($row['status'] ?? '') === 'Credit Available')
-                                <span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Credit Available</span>
-                            @elseif(($row['status'] ?? '') === 'Credit Applied')
-                                <span style="background-color: #6f42c1; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Credit Applied</span>
-                            @elseif(($row['status'] ?? '') === 'Pending' && ($row['is_overdue'] ?? false))
-                                <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Overdue</span>
-                            @elseif(str_contains(strtolower($row['status'] ?? ''), 'partial'))
-                                <span style="background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Partial</span>
-                            @elseif(($row['status'] ?? '') === 'Paid' || ($row['status'] ?? '') === 'Fully Paid')
-                                <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Paid</span>
+                            @php
+                                $balanceVal = $row['balance'] ?? 0;
+                                $isPaymentRow = ($row['type'] ?? '') === 'payment';
+                                $desc = $row['description'] ?? '';
+                                $isAutoCM = $isPaymentRow && isset($row['reference_number']) && strpos($row['reference_number'], 'AUTO-CM-') === 0;
+                                $hasCMIndicators = ($row['type'] ?? '') === 'credit_memo' || str_contains($desc, 'with CM') || str_contains($desc, 'CM Applied') || $isAutoCM || ($hasAutoCreditMemo ?? false) || ($hasCreditMemo ?? false);
+                                $isFullyPaid = $balanceVal <= 0;
+                            @endphp
+                            @if($isPaymentRow && $hasCMIndicators)
+                                <span style="background-color: #ffc107; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Paid with CM</span>
+                            @elseif($isFullyPaid)
+                                <span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Fully Paid</span>
+                            @elseif($isPaymentRow)
+                                <span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Payment Made</span>
                             @else
-                                <span style="background-color: #007bff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">{{ $row['status'] ?? 'Pending' }}</span>
+                                <span style="background-color: #007bff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Pending</span>
                             @endif
                         </td>
                         <td class="text-center">{{ $row['terms'] ?? 'N/A' }}</td>
