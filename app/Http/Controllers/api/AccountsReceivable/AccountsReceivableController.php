@@ -669,8 +669,6 @@ class AccountsReceivableController extends Controller
                 $receivable->status = 'Settled';
                 $receivable->current_balance = 0; // Ensure balance is exactly 0 for settled items
             } else {
-                // AR system keeps status as 'Outstanding' for partial payments
-                // The payment tracking is handled by the CustomerPayment history
                 $receivable->status = 'Outstanding';
                 $receivable->current_balance = $newBalance;
             }

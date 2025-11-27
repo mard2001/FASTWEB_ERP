@@ -72,6 +72,13 @@
             break-inside: avoid;
         }
 
+        .page-divider {
+            border-top: 2px solid #000 !important;
+            margin-top: 8px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
         .footerText {
             width: 100%;
             text-align: center;
@@ -311,10 +318,11 @@
     </style>
 
     <body>
+        <div id="screenContainer">
         @php
             $totalRecords = $pendingTransactions->count();
-            $regularPageSize = 25;
-            $lastPageMaxSize = 15;
+            $regularPageSize = 10;
+            $lastPageMaxSize = 10;
             
             // Calculate custom pagination
             $chunks = collect();
@@ -671,11 +679,47 @@
                 </div>
             @endif
         @endforeach
+        </div>
+        <div id="printContainer"></div>
     </body>
 
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
     <script>
+        (function(){
+            var s = document.createElement('style');
+            s.textContent = '#printContainer{display:none;}@media print{#screenContainer{display:none !important;}#printContainer{display:block !important;}}';
+            document.head.appendChild(s);
+        })();
+
+        function buildPrintPages(){
+            var container = document.getElementById('printContainer');
+            if(!container) return;
+            var headerEl = document.querySelector('header');
+            var headerHtml = headerEl ? headerEl.outerHTML : '';
+            var theadEl = document.querySelector('.statement-table thead');
+            var theadHtml = theadEl ? theadEl.outerHTML : '';
+            var footerSectionEl = Array.from(document.querySelectorAll('.footer-section')).pop();
+            var footerTotalsHtml = footerSectionEl ? footerSectionEl.outerHTML : '';
+            var allRows = Array.from(document.querySelectorAll('.statement-table tbody tr'));
+            var rows = allRows.filter(function(r){ return r.style.display !== 'none'; });
+            var pageSize = 10;
+            var html = '';
+            if(rows.length === 0){
+                html = '<div>' + headerHtml + '<table class="table statement-table table-bordered">' + theadHtml + '<tbody></tbody></table>' + footerTotalsHtml + '</div>';
+                container.innerHTML = html;
+                return;
+            }
+            for(var i=0;i<rows.length;i+=pageSize){
+                var pageRows = rows.slice(i,i+pageSize);
+                var rowsHtml = pageRows.map(function(r){return r.outerHTML;}).join('');
+                var isLast = (i + pageSize) >= rows.length;
+                html += '<div>' + headerHtml + '<table class="table statement-table table-bordered">' + theadHtml + '<tbody>' + rowsHtml + '</tbody></table>' + (isLast ? footerTotalsHtml : '<div class="page-divider"></div>') + '</div>' + (isLast ? '' : '<div class="page-break"></div>');
+            }
+            container.innerHTML = html;
+        }
+
+        window.onbeforeprint = function(){ buildPrintPages(); };
         // Store original transactions data for filtering
         let allTableRows = [];
         let currentFilter = 'all';

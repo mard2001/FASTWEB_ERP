@@ -271,7 +271,7 @@ function initializeFilters() {
                     { label: 'All Status', value: '' },
                     { label: 'Outstanding', value: 'Outstanding' },
                     { label: 'Partial', value: 'Partial' },
-                    { label: 'Settled', value: 'Settled' },
+                    { label: 'Fully Paid', value: 'Settled' },
                     { label: 'Overdue', value: 'overdue' }
                 ],
                 placeholder: 'Select Status',
@@ -430,7 +430,7 @@ function initAccountsReceivableDataTable() {
                 title: 'Status',
                 render: function(data, type, row) {
                     if (type === 'display') {
-                        return getStatusBadge(data, row.is_overdue);
+                        return getStatusBadge(data, row.is_overdue, row.total_amount, row.balance_amount);
                     }
                     return data;
                 }
@@ -480,11 +480,12 @@ function initAccountsReceivableDataTable() {
             $row.addClass('clickable-row').attr('data-id', data.id);
             
             // Add status-based classes efficiently
-            if (data.status === 'Outstanding' && data.is_overdue) {
+            const isPartial = (parseFloat(data.balance_amount) > 0) && (parseFloat(data.balance_amount) < parseFloat(data.total_amount));
+            if (data.status === 'Outstanding' && data.is_overdue && !isPartial) {
                 $row.addClass('table-danger');
-            } else if (data.status === 'Settled') {
+            } else if (data.status === 'Settled' || parseFloat(data.balance_amount) <= 0) {
                 $row.addClass('table-success');
-            } else if (data.status === 'Partial') {
+            } else if (isPartial) {
                 $row.addClass('table-warning');
             }
         },
@@ -1977,11 +1978,18 @@ function initializeAmountFormatting() {
     });
 }
 
-function getStatusBadge(status, isOverdue = false) {
+function getStatusBadge(status, isOverdue = false, totalAmount = 0, balanceAmount = 0) {
     let badgeClass = '';
     let displayText = status;
+    const total = parseFloat(totalAmount) || 0;
+    const balance = parseFloat(balanceAmount) || 0;
+    const isPartial = balance > 0 && balance < total;
+
+    if (status === 'Settled' || balance <= 0) displayText = 'Fully Paid';
+    else if (isPartial) displayText = 'Partial';
+    else if (status === 'Outstanding') displayText = 'Pending';
     
-    if (status === 'Pending' && isOverdue) {
+    if ((status === 'Pending' || status === 'Outstanding') && isOverdue && !isPartial) {
         badgeClass = 'statusBadge2';  // Red - Overdue
         displayText = 'Overdue';
     } else {
@@ -1994,6 +2002,12 @@ function getStatusBadge(status, isOverdue = false) {
                 break;
             case 'Partial':
                 badgeClass = 'statusBadge3';  // Orange - Partial
+                break;
+            case 'Outstanding':
+                badgeClass = isPartial ? 'statusBadge3' : 'statusBadge4';
+                break;
+            case 'Settled':
+                badgeClass = 'statusBadge1';  // Green - Fully Paid
                 break;
             case 'Credit Generated':
                 badgeClass = 'statusBadge5';  // Purple - Credit Generated
@@ -2011,7 +2025,7 @@ function getStatusBadge(status, isOverdue = false) {
                 badgeClass = 'statusBadge3';  // Orange - Default
         }
     }
-    
+
     return `<span class="${badgeClass}">${displayText}</span>`;
 }
 

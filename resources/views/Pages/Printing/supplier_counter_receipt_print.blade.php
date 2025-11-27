@@ -72,6 +72,13 @@
             break-inside: avoid;
         }
 
+        .page-divider {
+            border-top: 2px solid #000 !important;
+            margin-top: 8px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
         /* Prevent totals/footer block from breaking across pages */
         .tablefooterDiv,
         .tablefooterDiv * {
@@ -157,6 +164,8 @@
                 font-size: 12px;
             }
         }
+        @media print { .screen-root { display: none !important; } .print-root { display: block !important; } }
+        @media screen { .print-root { display: none !important; } }
 
         /* Header Controls Styling */
         .header-controls {
@@ -283,33 +292,26 @@
         @php
             $totalRecords = $pendingTransactions->count();
             $regularPageSize = 25;
-            $lastPageMaxSize = 12; // Leave more space for totals/footer on last page
-            
-            // Calculate custom pagination
+            $lastPageMaxSize = 12;
             $chunks = collect();
             $currentIndex = 0;
-            
-            // If there are no records, create one empty chunk to ensure the layout is still shown
             if ($totalRecords == 0) {
-                $chunks->push(collect()); // Empty collection for the single page
+                $chunks->push(collect());
             } else {
                 while ($currentIndex < $totalRecords) {
                     $remainingRecords = $totalRecords - $currentIndex;
-                    
                     if ($remainingRecords > $regularPageSize && $remainingRecords <= $regularPageSize + $lastPageMaxSize) {
                         $chunkSize = $remainingRecords - $lastPageMaxSize;
                     } else {
                         $chunkSize = min($regularPageSize, $remainingRecords);
                     }
-                    
                     $chunks->push($pendingTransactions->slice($currentIndex, $chunkSize));
                     $currentIndex += $chunkSize;
                 }
             }
-            
             $totalPages = $chunks->count();
         @endphp
-
+        <div class="screen-root">
         @foreach($chunks as $pageIndex => $pageData)
             @if($pageIndex > 0)
                 <div class="page-break"></div>
@@ -457,15 +459,12 @@
                 </tbody>
             </table>
 
-            <!-- Show continuation message on all pages except the last -->
             @if($pageIndex < $totalPages - 1)
                 <span style="font-size: 9px;">*Receipt continues on the next page...</span>
             @endif
 
-            <!-- Total section and footer only on last page -->
             @if($pageIndex == $totalPages - 1)
                 <div class="footer-section">
-                <!-- Total section immediately after last table -->
                 <div class="d-flex justify-content-end tablefooterDiv mt-3">
                     <div class="totalDiv">
                         <table class="table table-borderless">
@@ -497,16 +496,12 @@
                         </table>
                     </div>
                 </div>
-
                 @php
                      $lastPageRecords = $pageData->count();
                      $remainingRows = $lastPageMaxSize - $lastPageRecords;
-                     $spacerHeight = max(50, $remainingRows * 20); // Reduced spacing
+                     $spacerHeight = max(50, $remainingRows * 20);
                  @endphp
-                 
                  <div style="height: {{ $spacerHeight }}px;"></div>
-
-                <!-- Footer at bottom of last page -->
                 <div class="d-flex justify-content-between signatory text-center mb-3" style="font-size: 12px; margin-top: 20px; page-break-inside: avoid;">
                     <div class="preparedDiv">
                         <div>Prepared by:</div>
@@ -524,6 +519,8 @@
                 </div>
             @endif
         @endforeach
+        </div>
+        <div id="printContainer" class="print-root"></div>
     </body>
 
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
@@ -547,8 +544,43 @@
             // };
         };
 
+        function buildPrintPages() {
+            const container = document.getElementById('printContainer');
+            if (!container) return;
+            const headerEl = document.querySelector('header');
+            const headerHtml = headerEl ? headerEl.outerHTML : '';
+            const theadEl = document.querySelector('.receipt-table thead');
+            const theadHtml = theadEl ? theadEl.outerHTML : '';
+            const footerSectionEl = Array.from(document.querySelectorAll('.footer-section')).pop();
+            const footerTotalsHtml = footerSectionEl ? footerSectionEl.outerHTML : '';
+            const signatoryEl = document.querySelector('.signatory');
+            const signatoryHtml = signatoryEl ? signatoryEl.outerHTML : '';
+            const rows = Array.from(document.querySelectorAll('.receipt-table tbody tr'));
+            const pageSize = 10;
+            let html = '';
+            if (rows.length === 0) {
+                html = '<div>' + headerHtml + '<table class="table receipt-table table-bordered">' + theadHtml + '<tbody></tbody></table>' + footerTotalsHtml + '</div>';
+                container.innerHTML = html;
+                return;
+            }
+            for (let i = 0; i < rows.length; i += pageSize) {
+                const pageRows = rows.slice(i, i + pageSize);
+                const rowsHtml = pageRows.map(r => r.outerHTML).join('');
+                const isLast = i + pageSize >= rows.length;
+                html += '<div>' + headerHtml + '<table class="table receipt-table table-bordered">' + theadHtml + '<tbody>' + rowsHtml + '</tbody></table>' + (isLast ? footerTotalsHtml : '<div class="page-divider"></div>') + '</div>' + (isLast ? '' : '<div class="page-break"></div>');
+            }
+            container.innerHTML = html;
+        }
+
+        function clearPrintPages() {
+            const container = document.getElementById('printContainer');
+            if (container) container.innerHTML = '';
+        }
+
         function printStatement() {
+            buildPrintPages();
             window.print();
+            setTimeout(clearPrintPages, 0);
         }
 
         function handleFilterChange() {
