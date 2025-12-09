@@ -1539,6 +1539,8 @@ function setupEventHandlers() {
         let rawValue = $(this).val().replace(/,/g, ''); // Remove existing commas
         let enteredAmount = parseFloat(rawValue) || 0;
         let balanceAmount = parseFloat($(this).data('balance-amount')) || 0;
+        let enteredCents = Math.round(enteredAmount * 100);
+        let balanceCents = Math.round(balanceAmount * 100);
         let paymentTypeField = $('#payment_type');
         let amountField = $(this);
         
@@ -1572,7 +1574,7 @@ function setupEventHandlers() {
         // Remove any existing validation classes
         amountField.removeClass('is-invalid is-valid');
         
-        if (enteredAmount === 0) {
+        if (enteredCents === 0) {
             // No amount entered yet - reset to default styling
             paymentTypeField.val('full');
             
@@ -1587,12 +1589,12 @@ function setupEventHandlers() {
             return;
         }
         
-        if (enteredAmount >= balanceAmount) {
+        if (enteredCents >= balanceCents) {
             // Amount equals or exceeds balance - full payment (overpayment allowed)
             paymentTypeField.val('full');
             
             // Show overpayment info if amount exceeds balance
-            if (enteredAmount > balanceAmount) {
+            if (enteredCents > balanceCents) {
                 // Over payment - green input
                 console.log('Applying overpayment styling');
                 amountField.attr('style', amountField.attr('style').replace(/border-color:[^;]*;?/g, '').replace(/background-color:[^;]*;?/g, '') + 
@@ -1624,14 +1626,17 @@ function setupEventHandlers() {
                 
                 // Handle different positioning for check amount field
                 if (amountField.attr('id') === 'check_amount_display') {
-                    // For check amount field, add status text to the relative container
                     amountField.parent().append('<span class="payment-status" style="position: absolute; top: -20px; right: 0; color: #28a745; font-size: 7px; font-weight: 700; text-transform: uppercase;">Full Payment</span>');
                 } else {
-                    // For other fields, use the original method
-                    amountField.prev('label').after('<span class="payment-status" style="padding-left: 90px; color: #28a745; font-size: 7px; font-weight: 700; text-transform: uppercase;">Full Payment</span>');
+                    var prevLabel = amountField.prev('label');
+                    if (prevLabel.length) {
+                        prevLabel.after('<span class="payment-status" style="padding-left: 90px; color: #28a745; font-size: 7px; font-weight: 700; text-transform: uppercase;">Full Payment</span>');
+                    } else {
+                        amountField.after('<span class="payment-status" style="margin-left: 8px; color: #28a745; font-size: 7px; font-weight: 700; text-transform: uppercase;">Full Payment</span>');
+                    }
                 }
             }
-        } else if (enteredAmount < balanceAmount && enteredAmount > 0) {
+        } else if (enteredCents < balanceCents && enteredCents > 0) {
             // Less than balance - partial payment - yellow input
             paymentTypeField.val('partial');
             
