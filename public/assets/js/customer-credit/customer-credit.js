@@ -726,8 +726,6 @@ function populateModal(data) {
                         statusBadge = '<span class="badge bg-success">Paid</span>';
                     } else if (status.includes('partial')) {
                         statusBadge = '<span class="badge bg-warning">Partial</span>';
-                    } else if (transaction.is_overdue) {
-                        statusBadge = '<span class="badge bg-danger">Overdue</span>';
                     } else {
                         statusBadge = '<span class="badge bg-secondary">Pending</span>';
                     }
