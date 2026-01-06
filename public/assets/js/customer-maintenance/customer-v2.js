@@ -112,6 +112,22 @@ $(document).ready(async function () {
         downloadToCSV(jsonArr);
     });
 
+    // Auto-comma formatting for Credit Limit input
+    $('#CreditLimit').on('keyup', function(event) {
+        // Skip for arrow keys
+        if (event.which >= 37 && event.which <= 40) return;
+
+        // Get value and remove existing commas
+        let value = $(this).val().replace(/,/g, '');
+        
+        // Check if it's a number
+        if (value && !isNaN(value)) {
+            // Format with commas
+            let formattedValue = Number(value).toLocaleString('en-US');
+            $(this).val(formattedValue);
+        }
+    });
+
     $("#deleteCustBtn").on("click", async function () {
         if ($(this).text().toLowerCase() == 'cancel') {
             $(this).text('Delete');
@@ -501,6 +517,7 @@ const CustomerModal = {
         $('#Salesman').val(custData.salesman && custData.salesman.Name ? custData.salesman.Name : '');
         $('#PriceCode').val(custData.PriceCode);
         $('#CustomerClass').val(custData.CustomerClass);
+        $('#CreditLimit').val(custData.CreditLimit ? Number(custData.CreditLimit).toLocaleString('en-US') : '');
         $('#Telephone').val(custData.Telephone);
         $('#Contact').val(custData.Contact);
         $('#address').val(custData.SoldToAddr1);
@@ -639,6 +656,7 @@ const CustomerModal = {
             Salesperson : salespersonCode,
             PriceCode : $('#PriceCode').val(),
             CustomerClass : $('#CustomerClass').val(),
+            CreditLimit : $('#CreditLimit').val().replace(/,/g, ''),
             Telephone : $('#Telephone').val(),
             Contact : $('#Contact').val(),
             SoldToAddr1 : $('#address').val(),

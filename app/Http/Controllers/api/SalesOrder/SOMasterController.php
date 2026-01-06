@@ -48,6 +48,7 @@ class SOMasterController extends Controller
                 'ShipAddress3',
                 'ShipToGpsLat',
                 'ShipToGpsLong',
+                'SpecialInstruction',
             )->whereBetween('EntrySystemDate', [$oneMonthAgo, $today])->get();
             
             if (count($data) == 0) {
@@ -152,6 +153,7 @@ class SOMasterController extends Controller
                 'ShipToGpsLat'=> $data['CustomerInfo']['SoldToGpsLat'],
                 'ShipToGpsLong'=> $data['CustomerInfo']['SoldToGpsLong'],
                 'LastOperator' => $data['LastOperator'],
+                'SpecialInstruction' => $data['SpecialInstruction'] ?? null,
             ]);            
             // Set MWarehouse for each item from the parent SOMaster warehouse
             foreach ($items as &$item) {
@@ -229,7 +231,7 @@ class SOMasterController extends Controller
     public function show(string $salesorderID)
     {
         try {
-            $data = SOMaster::select('SalesOrder', 'NextDetailLine', 'OrderStatus', 'DocumentType', 'Customer', 'CustomerName', 'Salesperson', 'CustomerPoNumber', 'OrderDate', 'EntrySystemDate', 'ReqShipDate', 'DateLastDocPrt', 'InvoiceCount', 'Branch', 'Warehouse', 'ShipAddress1', 'ShipAddress2', 'ShipAddress3', 'ShipToGpsLat', 'ShipToGpsLong', 'Branch', )
+            $data = SOMaster::select('SalesOrder', 'NextDetailLine', 'OrderStatus', 'DocumentType', 'Customer', 'CustomerName', 'Salesperson', 'CustomerPoNumber', 'OrderDate', 'EntrySystemDate', 'ReqShipDate', 'DateLastDocPrt', 'InvoiceCount', 'Branch', 'Warehouse', 'ShipAddress1', 'ShipAddress2', 'ShipAddress3', 'ShipToGpsLat', 'ShipToGpsLong', 'Branch', 'SpecialInstruction')
                 ->where('SalesOrder', $salesorderID)
                 ->first();
             $details = SODetail::select('SalesOrder', 'SalesOrderLine', 'MStockCode', 'MStockDes', 'MWarehouse', 'MOrderQty', 'MOrderUom', 'MStockQtyToShp', 'MStockingUom', 'MconvFactOrdUm', 'MPrice', 'MPriceUom', 'MProductClass', 'MStockUnitMass', 'MStockUnitVol', 'MPriceCode', 'MConvFactAlloc', 'MConvFactUnitQ', 'MAltUomUnitQ', 'MUnitCost', 'QTYinPCS')
@@ -318,6 +320,7 @@ class SOMasterController extends Controller
                 'ShipToGpsLat',
                 'ShipToGpsLong',
                 'EntrySystemDate',
+                'SpecialInstruction',
             )->whereIn('SalesOrder', $request->salesOrder)->get();
             
             if (count($data) == 0) {
@@ -375,6 +378,7 @@ class SOMasterController extends Controller
             'ShipAddress3' => $customerDetails->SoldToAddr3,
             'ShipToGpsLat' => $customerDetails->SoldToGpsLat,
             'ShipToGpsLong' => $customerDetails->SoldToGpsLong,
+            'SpecialInstruction' => $request->data['SpecialInstruction'] ?? null,
         ]);
         $SOdata = SOMaster::select('SalesOrder')->with('sodetails')->where('SalesOrder', $salesOrderId)->first();
         $sodetails = $SOdata ? $SOdata->sodetails->toArray() : []; // Convert collection to array
@@ -680,7 +684,7 @@ class SOMasterController extends Controller
                 'success' => true,
                 'message' => 'Sales Order set status to "Release Back Order"',
                 'data' => $safe
-            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);  // HTTP 200 OK
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE); 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

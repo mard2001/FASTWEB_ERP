@@ -140,16 +140,22 @@
                         </div>
                     </div>
                     
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="mb-3">
                             <label for="PriceCode">Price Code</label>
                             <input disabled type="text" id="PriceCode" name="PriceCode" class="form-control bg-white needField" required placeholder="priceCode" onkeypress="return /[0-9]/.test(event.key)" maxlength="2">
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="mb-3">
                             <label for="CustomerClass">Customer Class</label>
                             <input disabled type="text" id="CustomerClass" name="CustomerClass" class="form-control bg-white needField" required placeholder="CustomerClass" maxlength="7">
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="CreditLimit">Credit Limit</label>
+                            <input disabled type="text" id="CreditLimit" name="CreditLimit" class="form-control bg-white" required placeholder="CreditLimit" onkeypress="return /[0-9.]/.test(event.key)">
                         </div>
                     </div>
                 </div>

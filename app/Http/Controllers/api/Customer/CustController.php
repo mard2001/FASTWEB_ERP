@@ -197,7 +197,7 @@ class CustController extends Controller
     public function show($id)
     {
         try {
-            $data = Customer::select('Customer', 'Name', 'ShortName', 'Salesperson', 'PriceCode', 'CustomerClass', 'Telephone', 'Contact', 'SoldToAddr1', 'SoldToAddr2', 'SoldToAddr3', 'SoldToAddr4', 'SoldPostalCode')
+            $data = Customer::select('Customer', 'Name', 'ShortName', 'Salesperson', 'PriceCode', 'CustomerClass', 'Telephone', 'Contact', 'SoldToAddr1', 'SoldToAddr2', 'SoldToAddr3', 'SoldToAddr4', 'SoldPostalCode', 'CreditLimit')
                 ->with('salesman')->where('Customer', $id)->first();
 
             if (!$data) {

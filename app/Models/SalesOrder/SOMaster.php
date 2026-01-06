@@ -50,7 +50,8 @@ class SOMaster extends Model
         'ShipToGpsLong',
         'CompanyTaxNo',
         'ApproveDate',
-        'Approver'
+        'Approver',
+        'SpecialInstruction'
     ];
 
     protected $attributes = [

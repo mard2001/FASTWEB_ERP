@@ -319,7 +319,7 @@
                         </tr>
                         <tr>
                             <td rowspan="3" class="p-0">
-                                <textarea class="form-control px-2 h-100 w-100" id="poComment" rows="5" style="resize: none; height: 100px !important; margin-top: -6px;"></textarea>
+                                <textarea class="form-control px-2 h-100 w-100" id="poComment" name="SpecialInstruction" rows="5" style="resize: none; height: 100px !important; margin-top: -6px;"></textarea>
                             </td>
                             <td>TAX: </td>
                             <td id="taxCost" class="text-end"></td>

@@ -1368,6 +1368,7 @@ const SOModal = {
         $('#grandTotal').html((SODetails.grandTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         $('#OrderDate').val(SODetails.OrderDate.substring(0, 10));
         $('#ReqShipDate').val(SODetails.ReqShipDate.substring(0, 10));
+        $('#poComment').val(SODetails.SpecialInstruction || '');
 
         datatables.initSOItemsDatatable(SODetails.details);
         setTimeout(() => {
