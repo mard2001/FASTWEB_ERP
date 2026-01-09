@@ -7,7 +7,7 @@ let currentEditId = null;
 let accountsPayableData = [];
 let filteredData = [];
 let accountsPayableTable;
-let statusFilterVS;
+
 let supplierFilterVS;
 let filteredStartDate;
 let filteredEndDate;
@@ -266,30 +266,8 @@ function populateGcashDropdown() {
 
 // Initialize Virtual Select filters
 function initializeFilters() {
-    // Initialize Status filter
-    VirtualSelect.init({
-        ele: '#statusFilter_VS',
-        options: [
-            { label: 'All Status', value: '' },
-            { label: 'Pending', value: 'Pending' },
-            { label: 'Partial', value: 'Partial' },
-            { label: 'Paid', value: 'Paid' },
-            { label: 'Overdue', value: 'overdue' }
-        ],
-        placeholder: 'Select Status',
-        search: false,
-        multiple: false
-    });
-
-    // Store the element reference (VirtualSelect attaches methods to the DOM node)
-    statusFilterVS = document.querySelector('#statusFilter_VS');
-
     // Set up event listeners for filters
     $('#rrNumberFilter').on('change keyup', function() {
-        applyFilters();
-    });
-
-    document.querySelector('#statusFilter_VS').addEventListener('change', function() {
         applyFilters();
     });
 }
@@ -581,11 +559,7 @@ function initDateRangePicker() {
 function applyFilters() {
     const rrNumberFilterRaw = $('#rrNumberFilter').val();
     let rrNumberFilter = (rrNumberFilterRaw || '').toLowerCase();
-    let statusFilter = '';
-    if (statusFilterVS && typeof statusFilterVS.getSelectedOptions === 'function') {
-        const statusOpts = statusFilterVS.getSelectedOptions();
-        statusFilter = (Array.isArray(statusOpts) && statusOpts[0] && statusOpts[0].value) ? statusOpts[0].value : '';
-    }
+
     let supplierFilter = '';
     if (supplierFilterVS && typeof supplierFilterVS.getSelectedOptions === 'function') {
         const supplierOpts = supplierFilterVS.getSelectedOptions();
@@ -595,7 +569,6 @@ function applyFilters() {
     filteredData = accountsPayableData.filter(function(item) {
         let matchesDate = true;
         let matchesRRNumber = true;
-        let matchesStatus = true;
         let matchesSupplier = true;
 
         // Date filter
@@ -612,21 +585,14 @@ function applyFilters() {
             matchesRRNumber = false;
         }
 
-        // Status filter
-        if (statusFilter) {
-            if (statusFilter === 'overdue') {
-                matchesStatus = item.status === 'Pending' && item.is_overdue;
-            } else {
-                matchesStatus = item.status === statusFilter;
-            }
-        }
+
 
         // Supplier filter
         if (supplierFilter && item.supplier_code !== supplierFilter) {
             matchesSupplier = false;
         }
 
-        return matchesDate && matchesRRNumber && matchesStatus && matchesSupplier;
+        return matchesDate && matchesRRNumber && matchesSupplier;
     });
 
     // Update DataTable

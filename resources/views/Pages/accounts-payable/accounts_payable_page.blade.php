@@ -84,10 +84,7 @@
                 <span></span> <i class="mdi mdi-chevron-down float-end"></i>
             </div>
         </div>
-        <div class="mb-1 whMoverangeDiv">
-            <label class="form-label">STATUS</label>
-            <div id="statusFilter_VS" class="VSSelect"></div>
-        </div>
+
     </div>
 </div>
 @endsection

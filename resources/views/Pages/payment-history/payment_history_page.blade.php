@@ -20,10 +20,7 @@
                 <span></span> <i class="mdi mdi-chevron-down float-end"></i>
             </div>
         </div>
-        <div class="mb-1 whMoverangeDiv">
-            <label class="form-label">PAYMENT STATUS</label>
-            <div id="paymentStatusFilter_VS" class="VSSelect"></div>
-        </div>
+
     </div>
 </div>
 @endsection

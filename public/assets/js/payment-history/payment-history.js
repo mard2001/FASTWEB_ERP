@@ -2,7 +2,7 @@ let paymentHistoryData = [];
 let filteredData = [];
 let paymentHistoryTable;
 let supplierFilterVS;
-let paymentStatusFilterVS;
+
 let filteredStartDate;
 let filteredEndDate;
 let suppliersData = [];
@@ -85,23 +85,6 @@ function populateSupplierDropdowns() {
 
 // Initialize Virtual Select filters
 function initializeFilters() {
-    // Initialize Payment Status filter (Full/Partial)
-    paymentStatusFilterVS = VirtualSelect.init({
-        ele: '#paymentStatusFilter_VS',
-        options: [
-            { label: 'All Status', value: '' },
-            { label: 'Full Payment', value: 'full' },
-            { label: 'Partial Payment', value: 'partial' }
-        ],
-        placeholder: 'Select Payment Status',
-        search: false,
-        multiple: false
-    });
-
-    // Set up event listeners for filters
-    document.querySelector('#paymentStatusFilter_VS').addEventListener('change', function() {
-        applyFilters();
-    });
 }
 
 // Load payment history data
@@ -338,7 +321,6 @@ function initDateRangePicker() {
 // Apply filters
 function applyFilters() {
     let supplierFilter = '';
-    let paymentStatusFilter = '';
     
     // Safe check for supplier filter
     if (supplierFilterVS && typeof supplierFilterVS.getSelectedOptions === 'function') {
@@ -348,18 +330,11 @@ function applyFilters() {
         }
     }
     
-    // Safe check for payment status filter
-    if (paymentStatusFilterVS && typeof paymentStatusFilterVS.getSelectedOptions === 'function') {
-        const selectedOptions = paymentStatusFilterVS.getSelectedOptions();
-        if (selectedOptions && selectedOptions.length > 0) {
-            paymentStatusFilter = selectedOptions[0].value || '';
-        }
-    }
+
 
     filteredData = paymentHistoryData.filter(function(item) {
         let matchesDate = true;
         let matchesSupplier = true;
-        let matchesPaymentStatus = true;
 
         // Date filter
         if (filteredStartDate && filteredEndDate) {
@@ -377,12 +352,9 @@ function applyFilters() {
             }
         }
 
-        // Payment status filter
-        if (paymentStatusFilter && item.payment_status !== paymentStatusFilter) {
-            matchesPaymentStatus = false;
-        }
 
-        return matchesDate && matchesSupplier && matchesPaymentStatus;
+
+        return matchesDate && matchesSupplier;
     });
 
     // Update DataTable
